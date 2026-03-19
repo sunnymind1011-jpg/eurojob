@@ -665,9 +665,7 @@ let allJobs = [];
 let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
 let activeFilters = new Set(['country:ES','country:GB','visa:true']);
 // Vercel API URL — 배포 후 자동으로 같은 도메인에서 호출됨
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'  // 로컬 테스트용
-  : '';                       // Vercel: 같은 도메인 /api/jobs
+const API_URL = '';                     // Vercel: 같은 도메인 /api/jobs
 
 // ════════════════════════════════════════
 //  NAV
