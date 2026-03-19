@@ -664,10 +664,10 @@ textarea::placeholder{color:var(--text3);}
 let allJobs = [];
 let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
 let activeFilters = new Set(['country:ES','country:GB','visa:true']);
-let jsearchKey = localStorage.getItem('ej_jsearch') || '804d41afa6mshfacd6e6662b519ap1a1554jsn197924664c5f';
-let logs = [];
-
-if (jsearchKey) document.getElementById('jsearchKey').value = jsearchKey;
+// Vercel API URL — 배포 후 자동으로 같은 도메인에서 호출됨
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'  // 로컬 테스트용
+  : '';                       // Vercel: 같은 도메인 /api/jobs
 
 // ════════════════════════════════════════
 //  NAV
@@ -681,10 +681,6 @@ function nav(id, el) {
   if (id==='ai') updatePromptPreview();
 }
 
-function saveJKey() {
-  jsearchKey = document.getElementById('jsearchKey').value.trim();
-  if (jsearchKey) localStorage.setItem('ej_jsearch', jsearchKey);
-}
 
 // ════════════════════════════════════════
 //  STATUS / LOG
@@ -709,119 +705,29 @@ function addLog(type, msg) {
 // ════════════════════════════════════════
 //  JSEARCH API
 // ════════════════════════════════════════
-const JSEARCH_QUERIES = [
-  { q: 'Marketing Manager jobs in Spain',       country: 'ES' },
-  { q: 'Digital Marketing jobs in Spain',       country: 'ES' },
-  { q: 'Data Analyst jobs in Spain',            country: 'ES' },
-  { q: 'Data Scientist jobs in United Kingdom', country: 'GB' },
-  { q: 'Digital Marketing jobs in UK',          country: 'GB' },
-  { q: 'Data Engineer jobs in Germany',         country: 'DE' },
-  { q: 'HR Manager jobs in Netherlands',        country: 'NL' },
-  { q: 'Talent Acquisition jobs in Netherlands',country: 'NL' },
-  { q: 'Software Engineer jobs in Netherlands', country: 'NL' },
-  { q: 'Backend Developer jobs in Germany',     country: 'DE' },
-];
-
-async function startJSearch() {
-  document.getElementById('corsNotice').style.display = 'none';
-  allJobs = [];
-  addLog('info', '▶ 유럽 채용공고 수집 시작...');
-  setStatus('loading', '서버에 연결 중...', 0);
-
+async function startJSearch(force = false) {
+  setStatus('loading', '채용공고 불러오는 중...', 0);
+  addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
   try {
-    const evtSource = new EventSource('http://localhost:3000/jobs');
-
-    evtSource.onmessage = e => {
-      const d = JSON.parse(e.data);
-      if (d.type === 'progress') {
-        setStatus('loading', d.msg, d.i / d.total);
-      } else if (d.type === 'ok') {
-        addLog('ok', d.msg);
-      } else if (d.type === 'err') {
-        addLog('err', d.msg);
-      } else if (d.type === 'done') {
-        evtSource.close();
-        allJobs = d.jobs.map(r => normalizeJSearch(r));
-        allJobs = removeDups(allJobs);
-        updateAll();
-        setStatus('done', `✅ 수집 완료 — 총 ${allJobs.length}개 유럽 채용공고`);
-        document.getElementById('lastUpdated').textContent = new Date().toLocaleString('ko-KR');
-        addLog('ok', `완료: ${allJobs.length}개 (중복 제거)`);
-      }
-    };
-
-    evtSource.onerror = () => {
-      evtSource.close();
-      document.getElementById('corsNotice').style.display = 'block';
-      setStatus('error', '❌ 서버 연결 실패 — 아래 안내를 확인하세요.');
-      addLog('err', '❌ server.js가 실행 중인지 확인하세요: node server.js');
-    };
-
+    const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allJobs = (data.jobs || []).map(r => normalizeJSearch(r));
+    allJobs = removeDups(allJobs);
+    updateAll();
+    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
+    document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
+    document.getElementById('lastUpdated').textContent = fetchedAt;
+    setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+    addLog('ok', `완료: ${allJobs.length}개`);
   } catch(e) {
-    document.getElementById('corsNotice').style.display = 'block';
-    setStatus('error', '❌ 연결 실패');
+    setStatus('error', `❌ 로드 실패: ${e.message}`);
     addLog('err', e.message);
   }
 }
 
-function showCorsHelp() {
-  const key = document.getElementById('jsearchKey').value.trim() || 'YOUR_RAPIDAPI_KEY';
-  const cmd = `curl -G "https://jsearch.p.rapidapi.com/search" \\
-  --data-urlencode "query=Marketing Manager Spain" \\
-  --data-urlencode "page=1" \\
-  --data-urlencode "num_pages=1" \\
-  -H "x-rapidapi-key: ${key}" \\
-  -H "x-rapidapi-host: jsearch.p.rapidapi.com" \\
-  -s > jobs.json`;
-  const el = document.getElementById('curlCmd');
-  if (el) el.textContent = cmd;
-  document.getElementById('corsModal').classList.add('show');
-}
 
-function copyCurl() {
-  const text = document.getElementById('curlCmd')?.textContent || '';
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = event.target;
-    btn.textContent = '✅ 복사됨';
-    setTimeout(() => btn.textContent = '📋 명령어 복사', 1500);
-  });
-}
-
-
-function importJSON(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const raw = JSON.parse(ev.target.result);
-      let jobs = [];
-      if (Array.isArray(raw)) {
-        jobs = raw.map(r => r.job_id ? normalizeJSearch(r) : r);
-      } else if (raw.data && Array.isArray(raw.data)) {
-        jobs = raw.data.map(r => normalizeJSearch(r));
-      } else if (raw.jobs && Array.isArray(raw.jobs)) {
-        jobs = raw.jobs;
-      }
-      allJobs = removeDups([...allJobs, ...jobs]);
-      updateAll();
-      setStatus('done', `✅ JSON 가져오기 완료 — ${jobs.length}개 추가 (총 ${allJobs.length}개)`);
-      addLog('ok', `JSON 가져오기: ${jobs.length}개 추가됨`);
-      document.getElementById('corsNotice').style.display = 'none';
-    } catch(err) {
-      alert('JSON 파일 파싱 오류: ' + err.message);
-    }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
-}
-
-async function fetchJSearch(key, query) {
-  // 로컬 서버 경유 (CORS 없음)
-  const r = await fetch(`http://localhost:3000/search?q=${encodeURIComponent(query)}`);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const d = await r.json();
-  return d.data || [];
-}
 
 
 // ════════════════════════════════════════
@@ -1323,4 +1229,4 @@ if (savedResume) document.getElementById('resumeText').value = savedResume;
 
 </script>
 </body>
-</html>
+</html>  
