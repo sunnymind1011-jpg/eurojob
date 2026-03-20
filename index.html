@@ -1056,7 +1056,7 @@ function buildCard(j, showFeat) {
       ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
       ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
       <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
-      <span class="badge b-gray">${j.source}</span>
+      
     </div>
     ${skills.length?`<div class="jc-skills">${skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>`:''}
     <div class="jc-foot">
