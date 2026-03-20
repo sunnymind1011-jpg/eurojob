@@ -274,7 +274,20 @@ textarea::placeholder{color:var(--text3);}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
 @media(max-width:900px){.two-col{grid-template-columns:1fr;}.stats4,.stats5{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:640px){.sidebar{display:none;}.job-grid{grid-template-columns:1fr;}.drawer{width:100vw;}}
+@media(max-width:640px){
+  .sidebar{display:none;}
+  .job-grid{grid-template-columns:1fr;}
+  .drawer{width:100vw;}
+  .bottom-nav{display:flex;}
+  .content{padding:16px;padding-bottom:70px;}
+}
+
+/* ── BOTTOM NAV (모바일) ───────────── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:30;height:56px;align-items:stretch;}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;transition:color .15s;border:none;background:none;font-family:inherit;}
+.bn-item.active{color:var(--accent);}
+.bn-icon{font-size:18px;line-height:1;}
+  
 </style>
 </head>
 <body>
@@ -738,6 +751,16 @@ textarea::placeholder{color:var(--text3);}
 
   </div><!-- /content -->
 </div><!-- /main -->
+
+<!-- 모바일 하단 네비 -->
+<div class="bottom-nav">
+  <button class="bn-item active" onclick="nav('home',null);setBottomNav(this)"><span class="bn-icon">🏠</span>홈</button>
+  <button class="bn-item" onclick="nav('jobs',null);setBottomNav(this)"><span class="bn-icon">💼</span>채용공고</button>
+  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장</button>
+  <button class="bn-item" onclick="nav('ai',null);setBottomNav(this)"><span class="bn-icon">🤖</span>AI매칭</button>
+  <button class="bn-item" onclick="nav('tips',null);setBottomNav(this)"><span class="bn-icon">💡</span>꿀팁</button>
+</div>
+  
 </div><!-- /shell -->
 
 <script>
@@ -1280,6 +1303,11 @@ function toggleSaveFromDrawer(id, btn) {
   renderSaved();
 }
 
+function setBottomNav(el) {
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}  
+  
 function toggleChip(chip) {
   const f = chip.dataset.f;
   if (!f) return;
