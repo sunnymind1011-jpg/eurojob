@@ -138,8 +138,8 @@ export default async function handler(req, res) {
     // 2. 비상시 실시간 수집 (Remotive 포함)
     let allJobs = [];
     // Adzuna 수집
-    for (const country of COUNTRIES.slice(0, 3)) {
-      for (const cat of CATEGORIES.slice(0, 2)) {
+    for (const country of COUNTRIES) { 
+      for (const cat of CATEGORIES) {
         const jobs = await fetchAdzuna(country.code, cat.tag);
         allJobs.push(...jobs.map(j => normalizeAdzuna(j, country.code)));
       }
