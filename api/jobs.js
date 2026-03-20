@@ -17,6 +17,7 @@ const COUNTRIES = [
   { code: 'it', name: 'Italy',          flag: '🇮🇹' },
   { code: 'pl', name: 'Poland',         flag: '🇵🇱' },
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
+  { code: 'ie', name: 'Ireland',        flag: '🇮🇪' }, 
 ];
 
 const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
@@ -40,6 +41,7 @@ const COUNTRY_INFO = {
   it: { name: 'Italy',          flag: '🇮🇹', code: 'IT' },
   pl: { name: 'Poland',         flag: '🇵🇱', code: 'PL' },
   ch: { name: 'Switzerland',    flag: '🇨🇭', code: 'CH' },
+  ie: { name: 'Ireland', flag: '🇮🇪', code: 'IE' },
 };
 
 function companyEmoji(name) {
