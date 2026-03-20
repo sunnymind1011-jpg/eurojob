@@ -30,7 +30,7 @@ function fetchAdzuna(countryCode, categoryTag) {
 
     const req = https.request({
       hostname: 'api.adzuna.com',
-      path:     `/v1/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`,
+      path:     `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`,
       method:   'GET',
       headers:  { 'Content-Type': 'application/json' },
     }, res => {

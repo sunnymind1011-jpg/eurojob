@@ -38,7 +38,7 @@ function fetchAdzuna(countryCode, categoryTag) {
       content_type:   'application/json',
     });
 
-    const path = `/api/v1/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`;
+    const path = `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`;
 
     const req = https.request({
       hostname: 'api.adzuna.com',
