@@ -962,7 +962,7 @@ function updateHomeStats() {
   document.getElementById('hs-visa').textContent = allJobs.filter(j=>j.visaSponsored).length;
   document.getElementById('hs-remote').textContent = allJobs.filter(j=>j.remoteType!=='On-site').length;
   document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
-  const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,4);
+  const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,5);
   document.getElementById('homeGrid').innerHTML = featured.length
     ? featured.map(j=>buildCard(j,true)).join('')
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💼</div><div class="empty-title">공고를 수집하거나 샘플 데이터를 불러오세요</div></div>';
