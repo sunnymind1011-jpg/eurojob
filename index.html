@@ -480,7 +480,7 @@ textarea::placeholder{color:var(--text3);}
         <a href="https://blog.naver.com/sunnnymind/" target="_blank" class="blog-link">블로그 방문 →</a>
       </div>
       <div class="sec-hd">
-        <div><div class="sec-title">🔥 추천 공고</div><div class="sec-sub">비자 지원 + 최신 공고</div></div>
+        <div><div class="sec-title">🔥 최근 공고</div><div class="sec-sub">가장 최근에 올라온 공고</div></div>
         <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('jobs',null)">전체보기 →</span>
       </div>
       <div class="job-grid" id="homeGrid"></div>
@@ -663,7 +663,9 @@ textarea::placeholder{color:var(--text3);}
         <a href="https://blog.naver.com/sunnnymind/" target="_blank" class="blog-link">블로그 가기 →</a>
       </div>
       <div class="tips-grid">
-        <div class="tip-card"><div class="tip-icon">📄</div><div class="tip-cat">이력서</div><div class="tip-title">유럽식 CV 작성법</div><div class="tip-desc">영미권과 유럽 본토 CV는 다릅니다. 사진 첨부, 날짜 형식, Europass CV 활용법까지.</div></div>
+        <div class="tip-card"><div class="tip-icon">📄</div><div class="tip-cat">구직 사이트</div><div class="tip-title">유럽취업 구직사이트 총정리</div><div class="tip-desc">스페인에서 유럽취업을 위해 실제 이용한 구직 사이트 추천. 원격근무 포함 — 좋아요 최다!</div>
+  <div style="margin-top:10px;font-size:11px;color:var(--accent)">블로그에서 읽기 →</div>
+</div>
         <div class="tip-card"><div class="tip-icon">🛂</div><div class="tip-cat">비자</div><div class="tip-title">나라별 취업비자 완벽 정리</div><div class="tip-desc">스페인 작업허가증, 영국 Skilled Worker Visa, 독일 기회 카드. 요건과 준비 기간 총정리.</div></div>
         <div class="tip-card"><div class="tip-icon">🗣️</div><div class="tip-cat">인터뷰</div><div class="tip-title">영어 인터뷰 완벽 대비</div><div class="tip-desc">자주 나오는 질문 Top 20, STAR 방법론, 유럽 기업의 컬처핏 질문 대응법.</div></div>
         <div class="tip-card"><div class="tip-icon">💰</div><div class="tip-cat">급여</div><div class="tip-title">유럽 직무별 연봉 가이드</div><div class="tip-desc">세금 전·후 급여 계산, 생활비 대비 실수령액, 협상 팁까지. 나라별 평균 연봉.</div></div>
@@ -953,7 +955,7 @@ function updateHomeStats() {
   document.getElementById('hs-visa').textContent = allJobs.filter(j=>j.visaSponsored).length;
   document.getElementById('hs-remote').textContent = allJobs.filter(j=>j.remoteType!=='On-site').length;
   document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
-  const featured = allJobs.filter(j=>j.visaSponsored).sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,4);
+  const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,4);
   document.getElementById('homeGrid').innerHTML = featured.length
     ? featured.map(j=>buildCard(j,true)).join('')
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💼</div><div class="empty-title">공고를 수집하거나 샘플 데이터를 불러오세요</div></div>';
