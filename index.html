@@ -1373,14 +1373,14 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
 
 async function initAuth() {
   // 현재 세션 확인
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await onLogin(session.user);
   } else {
@@ -1388,7 +1388,7 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       await onLogin(session.user);
     } else if (event === 'SIGNED_OUT') {
@@ -1402,7 +1402,7 @@ async function onLogin(user) {
   isAdmin = user.email === ADMIN_EMAIL;
 
   // 사용자 정보를 DB에 기록 (접속 추적)
-  await supabase.from('users').upsert({
+  await sb.from('users').upsert({
     id: user.id,
     email: user.email,
     name: user.user_metadata?.full_name || '',
@@ -1420,7 +1420,7 @@ async function onLogin(user) {
 }
 
 async function signInWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: window.location.origin,
@@ -1433,7 +1433,7 @@ async function signInWithGoogle() {
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   currentUser = null;
   isAdmin = false;
   showLanding();
