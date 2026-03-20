@@ -1373,7 +1373,8 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 변수 이름을 sbc로 바꿔서 'supabase' 이름 중복 에러를 피합니다.
+const sbc = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
@@ -1388,14 +1389,17 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      await onLogin(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      showLanding();
-    }
-  });
-}
+  sbc.auth.onAuthStateChange((event, session) => { // 여기도 sbc로 수정
+  const landingPage = document.getElementById('landingPage');
+  const mainApp = document.getElementById('mainApp');
+  if (session) {
+    if(landingPage) landingPage.style.display = 'none';
+    if(mainApp) mainApp.style.display = 'flex';
+  } else {
+    if(landingPage) landingPage.style.display = 'flex';
+    if(mainApp) mainApp.style.display = 'none';
+  }
+});
 
 async function onLogin(user) {
   currentUser = user;
@@ -1420,7 +1424,7 @@ async function onLogin(user) {
 }
 
 async function signInWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await sbc.auth.signInWithOAuth({ // 여기서 sbc로 이름 맞춰줌
     provider: 'google',
     options: {
       redirectTo: window.location.origin,
