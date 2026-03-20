@@ -1011,6 +1011,7 @@ function openDrawer(id) {
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <a href="${j.url}" target="_blank" class="btn btn-primary btn-sm">지원하러 가기 →</a>
       <button class="btn btn-ghost btn-sm" onclick="openClaudeWithJD('${j.id}','coverletter')">✍️ 커버레터 (Claude.ai)</button>
+      <button class="btn btn-ghost btn-sm" id="drawer-save-${j.id}" onclick="toggleSaveFromDrawer('${j.id}',this)" style="color:${savedIds.has(j.id)?'var(--warn)':'var(--text2)'}">${savedIds.has(j.id)?'♥ 저장됨':'♡ 저장하기'}</button>
       <button class="btn btn-ghost btn-sm" onclick="openClaudeWithJD('${j.id}','match')">🤖 적합도 분석</button>
     </div>
     <div style="margin-top:10px;padding:10px 12px;background:rgba(62,207,160,.06);border:1px solid rgba(62,207,160,.15);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
@@ -1208,6 +1209,26 @@ function toggleSave(id, btn) {
   else { savedIds.add(id); btn.textContent='♥'; btn.classList.add('saved'); }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
+  renderSaved();
+}
+
+function toggleSaveFromDrawer(id, btn) {
+  if (savedIds.has(id)) {
+    savedIds.delete(id);
+    btn.textContent = "♡ 저장하기";
+    btn.style.color = "var(--text2)";
+  } else {
+    savedIds.add(id);
+    btn.textContent = "♥ 저장됨";
+    btn.style.color = "var(--warn)";
+  }
+  localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
+  document.getElementById("nb-saved").textContent = savedIds.size;
+  const cardBtn = document.querySelector(`.save-btn[onclick*="${id}"]`);
+  if (cardBtn) {
+    cardBtn.textContent = savedIds.has(id) ? "♥" : "♡";
+    savedIds.has(id) ? cardBtn.classList.add("saved") : cardBtn.classList.remove("saved");
+  }
   renderSaved();
 }
 
