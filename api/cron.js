@@ -1,76 +1,76 @@
-// api/cron.js
-// 매일 자동 실행 (vercel.json에서 스케줄 설정)
-// schedule: "0 0 * * *" = 매일 UTC 00:00 (한국시간 오전 9시)
+// api/cron.js — 매일 자동 실행 (한국시간 오전 9시)
+// vercel.json: "schedule": "0 0 * * *"
 
-const https = require('https');
+export const maxDuration = 60;
 
-const RAPIDAPI_KEY = '804d41afa6mshfacd6e6662b519ap1a1554jsn197924664c5f';
+const ADZUNA_APP_ID  = '22308f32';
+const ADZUNA_APP_KEY = '4902733d7210f0c75a0ad5a8d38a3c17';
 
-const QUERIES = [
-  { q: 'Marketing Manager',  country: 'es', location: 'Spain'         },
-  { q: 'Digital Marketing',  country: 'es', location: 'Spain'         },
-  { q: 'Data Analyst',       country: 'es', location: 'Spain'         },
-  { q: 'HR Manager',         country: 'es', location: 'Spain'         },
-  { q: 'Data Scientist',     country: 'gb', location: 'United Kingdom' },
-  { q: 'Digital Marketing',  country: 'gb', location: 'United Kingdom' },
-  { q: 'Data Engineer',      country: 'de', location: 'Germany'       },
-  { q: 'HR Manager',         country: 'nl', location: 'Netherlands'   },
-  { q: 'Talent Acquisition', country: 'nl', location: 'Netherlands'   },
-  { q: 'Software Engineer',  country: 'nl', location: 'Netherlands'   },
+const COUNTRIES = [
+  'gb','de','es','nl','fr','at','be','it','pl','ch'
 ];
 
-function fetchJSearch(query, country, location) {
-  return new Promise((resolve, reject) => {
+const CATEGORIES = [
+  'it-jobs',
+  'sales-jobs',
+  'scientific-qa-jobs',
+  'hr-jobs',
+];
+
+function fetchAdzuna(countryCode, categoryTag) {
+  return new Promise((resolve) => {
+    const https = require('https');
     const params = new URLSearchParams({
-      query:       `${query} jobs in ${location}`,
-      page:        '1',
-      num_pages:   '2',
-      country:     country,
-      date_posted: 'week',
+      app_id:           ADZUNA_APP_ID,
+      app_key:          ADZUNA_APP_KEY,
+      results_per_page: '20',
+      max_days_old:     '30',
+      content_type:     'application/json',
     });
+
     const req = https.request({
-      hostname: 'jsearch.p.rapidapi.com',
-      path:     `/search?${params}`,
+      hostname: 'api.adzuna.com',
+      path:     `/api/v1/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`,
       method:   'GET',
-      headers:  {
-        'x-rapidapi-host': 'jsearch.p.rapidapi.com',
-        'x-rapidapi-key':  RAPIDAPI_KEY,
-      },
+      headers:  { 'Content-Type': 'application/json' },
     }, res => {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
-        try { resolve(JSON.parse(data).data || []); }
-        catch(e) { reject(e); }
+        try { resolve(JSON.parse(data).results || []); }
+        catch(e) { resolve([]); }
       });
     });
-    req.on('error', reject);
-    req.setTimeout(12000, () => { req.destroy(); reject(new Error('timeout')); });
+
+    req.on('error', () => resolve([]));
+    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
     req.end();
   });
 }
 
-module.exports = async function handler(req, res) {
-  // Vercel cron 인증 확인
-  const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.CRON_SECRET) {
+export default async function handler(req, res) {
+  // Vercel cron 인증
+  if (process.env.CRON_SECRET &&
+      req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  console.log('⏰ Cron job 시작:', new Date().toISOString());
+  console.log('⏰ Cron 시작:', new Date().toISOString());
   let total = 0;
 
-  for (const q of QUERIES) {
-    try {
-      const jobs = await fetchJSearch(q.q, q.country, q.location);
+  for (const country of COUNTRIES) {
+    for (const cat of CATEGORIES) {
+      const jobs = await fetchAdzuna(country, cat);
       total += jobs.length;
-      console.log(`  ✅ ${q.q}/${q.location}: ${jobs.length}개`);
-      await new Promise(r => setTimeout(r, 400));
-    } catch(e) {
-      console.error(`  ❌ ${q.q}: ${e.message}`);
+      console.log(`  ${country} / ${cat}: ${jobs.length}개`);
+      await new Promise(r => setTimeout(r, 150));
     }
   }
 
   console.log(`⏰ Cron 완료: 총 ${total}개`);
-  res.status(200).json({ ok: true, message: `Cron 완료: ${total}개 수집`, timestamp: new Date().toISOString() });
-};
+  res.status(200).json({
+    ok: true,
+    message: `Cron 완료: ${total}개 수집`,
+    timestamp: new Date().toISOString(),
+  });
+}
