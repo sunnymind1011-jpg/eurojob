@@ -705,23 +705,24 @@ function addLog(type, msg) {
 // ════════════════════════════════════════
 async function startJSearch(force = false) {
   setStatus('loading', '채용공고 불러오는 중...', 0);
-  addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
   try {
-    const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
+    const url = `/api/jobs${force ? '?refresh=1' : ''}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    allJobs = (data.jobs || []).map(r => normalizeJSearch(r));
+    if (!data.ok || !data.jobs) throw new Error('API 응답 오류');
+    allJobs = data.jobs.map(r => normalizeJSearch(r));
     allJobs = removeDups(allJobs);
     updateAll();
-    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
-    document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
-    document.getElementById('lastUpdated').textContent = fetchedAt;
-    setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+    const t = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
+    document.getElementById('fetchedAt').textContent = t ? `수집: ${t}` : '';
+    document.getElementById('lastUpdated').textContent = t;
+    setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고`);
     addLog('ok', `완료: ${allJobs.length}개`);
   } catch(e) {
     setStatus('error', `❌ 로드 실패: ${e.message}`);
     addLog('err', e.message);
+    console.error(e);
   }
 }
 
@@ -733,22 +734,23 @@ async function startJSearch(force = false) {
 // ════════════════════════════════════════
 function normalizeJSearch(r) {
   const desc = r.job_description || '';
-  const loc = `${r.job_city||''}, ${r.job_country||''}`.replace(/^,\s*/,'');
-  const salary = buildSalary(r);
+  const city = r.job_city || r.job_state || '';
+  const country = r.job_country || '';
+  const loc = [city, country].filter(Boolean).join(', ');
   return {
     id:           r.job_id || rand(),
     title:        r.job_title || '',
     company:      r.employer_name || '',
     location:     loc,
-    country:      detectCountry(loc + ' ' + (r.job_country||'')),
-    flag:         countryFlag(detectCountry(loc + ' ' + (r.job_country||''))),
-    logo:         companyEmoji(r.employer_name||''),
+    country:      detectCountry(loc + ' ' + country),
+    flag:         countryFlag(detectCountry(loc + ' ' + country)),
+    logo:         companyEmoji(r.employer_name || ''),
     description:  desc,
-    url:          r.job_apply_link || r.job_url || '#',
-    salary:       salary,
-    postedAt:     r.job_posted_at_datetime_utc || new Date().toISOString(),
+    url:          r.job_apply_link || '#',
+    salary:       buildSalary(r),
+    postedAt:     r.job_posted_at_datetime_utc || r.job_posted_at || new Date().toISOString(),
     source:       r.job_publisher || 'JSearch',
-    skills:       (r.job_required_skills || []).slice(0,6),
+    skills:       (r.job_required_skills || []).slice(0, 6),
     visaSponsored: detectVisa(desc),
     remoteType:   r.job_is_remote ? 'Remote' : detectRemote(desc),
     languageReqs: detectLangs(desc),
