@@ -1,11 +1,11 @@
 // api/jobs.js — Adzuna API 기반 유럽 채용공고 수집
+import https from 'https';
 
 export const maxDuration = 60;
 
 const ADZUNA_APP_ID  = '22308f32';
 const ADZUNA_APP_KEY = '4902733d7210f0c75a0ad5a8d38a3c17';
 
-// 유럽 국가 코드 (Adzuna 지원 국가)
 const COUNTRIES = [
   { code: 'gb', name: 'United Kingdom', flag: '🇬🇧' },
   { code: 'de', name: 'Germany',        flag: '🇩🇪' },
@@ -19,53 +19,15 @@ const COUNTRIES = [
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
 ];
 
-// 데이터 직군 키워드 검색 (it-jobs에서 what 파라미터로 추가 수집)
 const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
 const MAJOR_COUNTRIES = ['gb', 'de', 'es', 'nl', 'fr'];
 
-// 직군 카테고리 (Adzuna 실제 카테고리 태그)
 const CATEGORIES = [
   { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
   { tag: 'pr-advertising-marketing-jobs', label: '마케팅 / 광고 / PR' },
   { tag: 'hr-jobs',                       label: 'HR / 채용'          },
   { tag: 'scientific-qa-jobs',            label: '데이터 / 분석 / 과학' },
 ];
-
-function fetchAdzuna(countryCode, categoryTag) {
-  return new Promise((resolve) => {
-    const https = require('https');
-    const params = new URLSearchParams({
-      app_id:           ADZUNA_APP_ID,
-      app_key:          ADZUNA_APP_KEY,
-      results_per_page: '20',
-      max_days_old:     '21',
-    });
-
-    const path = `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`;
-
-    const req = https.request({
-      hostname: 'api.adzuna.com',
-      path,
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed.results || []);
-        } catch(e) {
-          resolve([]);
-        }
-      });
-    });
-
-    req.on('error', () => resolve([]));
-    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
-    req.end();
-  });
-}
 
 const COUNTRY_INFO = {
   gb: { name: 'United Kingdom', flag: '🇬🇧', code: 'GB' },
@@ -79,35 +41,6 @@ const COUNTRY_INFO = {
   pl: { name: 'Poland',         flag: '🇵🇱', code: 'PL' },
   ch: { name: 'Switzerland',    flag: '🇨🇭', code: 'CH' },
 };
-
-function normalizeAdzuna(raw, countryCode) {
-  const info = COUNTRY_INFO[countryCode] || { name: countryCode, flag: '🌍', code: countryCode.toUpperCase() };
-  const location = raw.location?.display_name || info.name;
-  const desc = raw.description || '';
-  const salary = raw.salary_min && raw.salary_max
-    ? `${raw.currency || '€'}${Math.round(raw.salary_min).toLocaleString()}–${Math.round(raw.salary_max).toLocaleString()}/yr`
-    : null;
-
-  return {
-    id:           String(raw.id || Math.random()),
-    title:        raw.title || '',
-    company:      raw.company?.display_name || '',
-    location:     location,
-    country:      info.code,
-    flag:         info.flag,
-    logo:         companyEmoji(raw.company?.display_name || ''),
-    description:  desc,
-    url:          raw.redirect_url || '#',
-    salary,
-    postedAt:     raw.created || new Date().toISOString(),
-    source:       'Adzuna',
-    skills:       [],
-    visaSponsored: false,
-    relocation:   detectRelocation(desc),
-    remoteType:   detectRemote(desc),
-    languageReqs: detectLangs(desc),
-  };
-}
 
 function companyEmoji(name) {
   const e = ['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];
@@ -141,31 +74,64 @@ function removeDups(jobs) {
   });
 }
 
-// 메모리 캐시 — Vercel에서 같은 인스턴스 재사용 시 효과 있음
-let cache = { jobs: [], fetchedAt: null };
+function normalizeAdzuna(raw, countryCode) {
+  const info = COUNTRY_INFO[countryCode] || { name: countryCode, flag: '🌍', code: countryCode.toUpperCase() };
+  const location = raw.location?.display_name || info.name;
+  const desc = raw.description || '';
+  const salary = raw.salary_min && raw.salary_max
+    ? `${raw.currency || '€'}${Math.round(raw.salary_min).toLocaleString()}–${Math.round(raw.salary_max).toLocaleString()}/yr`
+    : null;
+  return {
+    id:           String(raw.id || Math.random()),
+    title:        raw.title || '',
+    company:      raw.company?.display_name || '',
+    location,
+    country:      info.code,
+    flag:         info.flag,
+    logo:         companyEmoji(raw.company?.display_name || ''),
+    description:  desc,
+    url:          raw.redirect_url || '#',
+    salary,
+    postedAt:     raw.created || new Date().toISOString(),
+    source:       'Adzuna',
+    skills:       [],
+    visaSponsored: false,
+    relocation:   detectRelocation(desc),
+    remoteType:   detectRemote(desc),
+    languageReqs: detectLangs(desc),
+  };
+}
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
-
-  const { refresh } = req.query;
-  const cacheAgeHours = cache.fetchedAt
-    ? (Date.now() - new Date(cache.fetchedAt)) / 3600000
-    : 999;
-
-  // 캐시 유효하면 바로 반환
-  if (cache.jobs.length > 0 && cacheAgeHours < 12 && refresh !== '1') {
-    return res.status(200).json({
-      ok: true, count: cache.jobs.length,
-      fetchedAt: cache.fetchedAt, cached: true, jobs: cache.jobs,
+function fetchAdzuna(countryCode, categoryTag) {
+  return new Promise((resolve) => {
+    const params = new URLSearchParams({
+      app_id:           ADZUNA_APP_ID,
+      app_key:          ADZUNA_APP_KEY,
+      results_per_page: '20',
+      max_days_old:     '21',
     });
-  }
-
+    const path = `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`;
+    const req = https.request({
+      hostname: 'api.adzuna.com',
+      path,
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data).results || []); }
+        catch(e) { resolve([]); }
+      });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
 
 function fetchAdzunaKeyword(countryCode, keyword) {
   return new Promise((resolve) => {
-    const https = require('https');
     const params = new URLSearchParams({
       app_id:           ADZUNA_APP_ID,
       app_key:          ADZUNA_APP_KEY,
@@ -173,7 +139,6 @@ function fetchAdzunaKeyword(countryCode, keyword) {
       max_days_old:     '21',
       what:             keyword,
     });
-
     const req = https.request({
       hostname: 'api.adzuna.com',
       path:     `/v1/api/jobs/${countryCode}/search/1?${params}`,
@@ -195,12 +160,9 @@ function fetchAdzunaKeyword(countryCode, keyword) {
 
 function fetchRemotive() {
   return new Promise((resolve) => {
-    const https = require('https');
-    // 마케팅, 데이터, HR 카테고리
     const categories = ['marketing', 'data', 'hr'];
     let allJobs = [];
     let done = 0;
-
     categories.forEach(cat => {
       const req = https.request({
         hostname: 'remotive.com',
@@ -212,8 +174,7 @@ function fetchRemotive() {
         res.on('data', c => data += c);
         res.on('end', () => {
           try {
-            const parsed = JSON.parse(data);
-            const jobs = (parsed.jobs || []).map(r => ({
+            const jobs = (JSON.parse(data).jobs || []).map(r => ({
               id:           String(r.id),
               title:        r.title || '',
               company:      r.company_name || '',
@@ -245,6 +206,9 @@ function fetchRemotive() {
   });
 }
 
+// 메모리 캐시 (같은 Vercel 인스턴스 재사용 시 유효)
+let cache = { jobs: [], fetchedAt: null };
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -255,7 +219,7 @@ export default async function handler(req, res) {
     ? (Date.now() - new Date(cache.fetchedAt)) / 3600000
     : 999;
 
-  if (cache.jobs.length > 0 && cacheAgeHours < 6 && refresh !== '1') {
+  if (cache.jobs.length > 0 && cacheAgeHours < 12 && refresh !== '1') {
     return res.status(200).json({
       ok: true, count: cache.jobs.length,
       fetchedAt: cache.fetchedAt, cached: true, jobs: cache.jobs,
@@ -268,29 +232,19 @@ export default async function handler(req, res) {
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
       const jobs = await fetchAdzuna(country.code, cat.tag);
-      const normalized = jobs.map(j => normalizeAdzuna(j, country.code));
-      allJobs.push(...normalized);
-      console.log(`${country.flag} ${country.name} / ${cat.label}: ${jobs.length}개`);
+      allJobs.push(...jobs.map(j => normalizeAdzuna(j, country.code)));
       await new Promise(r => setTimeout(r, 150));
     }
   }
 
-  // 데이터 직군 키워드 검색 추가 (it-jobs에서 what 파라미터)
-  console.log('🔄 데이터 직군 키워드 검색...');
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
-      const jobs = await fetchAdzunaKeyword(country, kw);
-      allJobs.push(...jobs);
-      console.log(`${country} / "${kw}": ${jobs.length}개`);
+      allJobs.push(...await fetchAdzunaKeyword(country, kw));
       await new Promise(r => setTimeout(r, 150));
     }
   }
 
-  // Remotive API 추가 (무료, API Key 불필요)
-  console.log('🔄 Remotive 수집 중...');
-  const remotive = await fetchRemotive();
-  allJobs.push(...remotive);
-  console.log(`Remotive: ${remotive.length}개`);
+  allJobs.push(...await fetchRemotive());
 
   cache.jobs = removeDups(allJobs);
   cache.fetchedAt = new Date().toISOString();
