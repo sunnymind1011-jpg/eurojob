@@ -588,12 +588,28 @@ textarea::placeholder{color:var(--text3);}
           <div class="sub">채용공고 탭에서 공고를 클릭하면 자동으로 여기에 채워져요</div>
           <textarea id="aiJD" rows="12" placeholder="또는 채용공고를 직접 붙여넣으세요..."></textarea>
           <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-primary" style="justify-content:center" onclick="openClaudeMatch()">
-              🤖 Claude.ai에서 적합도 분석하기
-            </button>
-            <button class="btn btn-ghost" style="justify-content:center" onclick="openClaudeCoverLetter()">
-              ✍️ Claude.ai에서 커버레터 작성하기
-            </button>
+            <button class="btn btn-primary" style="justify-content:center" onclick="runQuickMatch()">
+            ⚡ 앱에서 바로 분석하기
+          </button>
+          <button class="btn btn-ghost" style="justify-content:center" onclick="openClaudeMatch()">
+            🤖 Claude.ai에서 상세 분석하기 →
+          </button>
+          <button class="btn btn-ghost" style="justify-content:center" onclick="openClaudeCoverLetter()">
+            ✍️ Claude.ai에서 커버레터 작성하기 →
+          </button>
+        </div>
+        </div>
+      </div>
+
+      <!-- AI 즉시 분석 결과 -->
+      <div id="aiResultArea" style="display:none;margin-bottom:18px">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3>⚡ 즉시 분석 결과</h3>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('aiResultArea').style.display='none'">닫기</button>
+          </div>
+          <div id="aiResultContent" style="font-size:13px;color:var(--text2);line-height:1.9;white-space:pre-wrap;min-height:80px">
+            <div style="display:flex;align-items:center;gap:8px;color:var(--warn)"><div class="spinner"></div> 분석 중...</div>
           </div>
         </div>
       </div>
@@ -1107,24 +1123,67 @@ function openClaudeWithJD(jobId, type) {
   showCopiedToast(type);
 }
 
+async function runQuickMatch() {
+  const resume = document.getElementById('resumeText').value.trim();
+  const jd = document.getElementById('aiJD').value.trim();
+  if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
+
+  const resultArea = document.getElementById('aiResultArea');
+  const resultContent = document.getElementById('aiResultContent');
+  resultArea.style.display = 'block';
+  resultContent.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--warn)"><div class="spinner"></div> 분석 중...</div>';
+  resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `이력서와 채용공고를 분석해서 간략하게 한국어로 알려줘:
+
+1. 적합도 점수 (0~100점) + 한줄 평가
+2. 매칭 강점 3가지 (✅)
+3. 부족한 점 2가지 (❌)
+4. 한줄 지원 전략
+
+---
+## 이력서
+${resume}
+
+---
+## 채용공고
+${jd}`
+        }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '분석 실패';
+    resultContent.textContent = text;
+  } catch(e) {
+    resultContent.textContent = '❌ 분석 실패: ' + e.message;
+  }
+}
+
 function openClaudeMatch() {
   const resume = document.getElementById('resumeText').value.trim();
   const jd = document.getElementById('aiJD').value.trim();
   if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
   const prompt = buildMatchPrompt(resume, jd);
-  copyToClipboard(prompt);
-  window.open('https://claude.ai', '_blank');
-  showCopiedToast('match');
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
 }
 
 function openClaudeCoverLetter() {
   const resume = document.getElementById('resumeText').value.trim();
   const jd = document.getElementById('aiJD').value.trim();
   if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
-  const prompt = buildCLPrompt(resume, jd, 'ko', 'professional');
-  copyToClipboard(prompt);
-  window.open('https://claude.ai', '_blank');
-  showCopiedToast('coverletter');
+  const prompt = buildCLPrompt(resume, jd, 'en', 'professional');
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
 }
 
 function openClaudeCoverLetterFull() {
