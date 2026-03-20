@@ -19,6 +19,10 @@ const COUNTRIES = [
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
 ];
 
+// 데이터 직군 키워드 검색 (it-jobs에서 what 파라미터로 추가 수집)
+const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
+const MAJOR_COUNTRIES = ['gb', 'de', 'es', 'nl', 'fr'];
+
 // 직군 카테고리 (Adzuna 실제 카테고리 태그)
 const CATEGORIES = [
   { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
@@ -34,7 +38,7 @@ function fetchAdzuna(countryCode, categoryTag) {
       app_id:           ADZUNA_APP_ID,
       app_key:          ADZUNA_APP_KEY,
       results_per_page: '20',
-      max_days_old:     '30',
+      max_days_old:     '21',
     });
 
     const path = `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`;
@@ -141,6 +145,36 @@ function removeDups(jobs) {
 let cache = { jobs: [], fetchedAt: null };
 
 
+function fetchAdzunaKeyword(countryCode, keyword) {
+  return new Promise((resolve) => {
+    const https = require('https');
+    const params = new URLSearchParams({
+      app_id:           ADZUNA_APP_ID,
+      app_key:          ADZUNA_APP_KEY,
+      results_per_page: '20',
+      max_days_old:     '21',
+      what:             keyword,
+    });
+
+    const req = https.request({
+      hostname: 'api.adzuna.com',
+      path:     `/v1/api/jobs/${countryCode}/search/1?${params}`,
+      method:   'GET',
+      headers:  { 'Content-Type': 'application/json' },
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try { resolve((JSON.parse(data).results || []).map(j => normalizeAdzuna(j, countryCode))); }
+        catch(e) { resolve([]); }
+      });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
+
 function fetchRemotive() {
   return new Promise((resolve) => {
     const https = require('https');
@@ -219,6 +253,17 @@ export default async function handler(req, res) {
       const normalized = jobs.map(j => normalizeAdzuna(j, country.code));
       allJobs.push(...normalized);
       console.log(`${country.flag} ${country.name} / ${cat.label}: ${jobs.length}개`);
+      await new Promise(r => setTimeout(r, 150));
+    }
+  }
+
+  // 데이터 직군 키워드 검색 추가 (it-jobs에서 what 파라미터)
+  console.log('🔄 데이터 직군 키워드 검색...');
+  for (const country of MAJOR_COUNTRIES) {
+    for (const kw of DATA_KEYWORDS) {
+      const jobs = await fetchAdzunaKeyword(country, kw);
+      allJobs.push(...jobs);
+      console.log(`${country} / "${kw}": ${jobs.length}개`);
       await new Promise(r => setTimeout(r, 150));
     }
   }
