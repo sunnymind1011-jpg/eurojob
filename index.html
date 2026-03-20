@@ -528,26 +528,17 @@ textarea::placeholder{color:var(--text3);}
 
     <!-- ★ SAVED ─────────────────────────────────────── -->
     <div class="page" id="page-saved">
-      <div class="sec-hd" style="margin-bottom:20px">
-        <div class="sec-title">🔖 저장목록</div>
-        <button class="btn btn-ghost btn-sm">+ 새 폴더</button>
-      </div>
-      <div class="col-grid">
-        <div class="col-card"><div class="col-icon">🇪🇸</div><div class="col-name">스페인 공고</div><div class="col-count" id="cc-es">0개</div></div>
-        <div class="col-card"><div class="col-icon">🇬🇧</div><div class="col-name">영국 공고</div><div class="col-count" id="cc-gb">0개</div></div>
-        <div class="col-card"><div class="col-icon">🌟</div><div class="col-name">최우선 지원</div><div class="col-count">0개</div></div>
-        <div class="col-card"><div class="col-icon">📊</div><div class="col-name">데이터 직군</div><div class="col-count">0개</div></div>
-        <div class="col-card col-add"><div style="font-size:20px">+</div><div>새 컬렉션</div></div>
-      </div>
-      <div class="sec-hd"><div class="sec-title">저장된 공고</div></div>
-      <div class="job-grid" id="savedGrid">
-        <div class="empty" style="grid-column:1/-1">
-          <div class="empty-icon">🔖</div>
-          <div class="empty-title">아직 저장한 공고가 없어요</div>
-          <div class="empty-text">공고 카드의 ♡ 버튼으로 저장하세요.</div>
-        </div>
-      </div>
+  <div class="sec-hd" style="margin-bottom:20px">
+    <div><div class="sec-title">🔖 저장목록</div><div class="sec-sub" id="saved-sub">0개 저장됨</div></div>
+  </div>
+  <div class="job-grid" id="savedGrid">
+    <div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">🔖</div>
+      <div class="empty-title">아직 저장한 공고가 없어요</div>
+      <div class="empty-text">공고 카드의 ♡ 버튼으로 저장하세요.</div>
     </div>
+  </div>
+</div>
 
     <!-- ★ AI MATCHING ───────────────────────────────── -->
     <div class="page" id="page-ai">
@@ -998,12 +989,12 @@ function filterJobs() {
 }
 
 function renderSaved() {
-  const savedJobs = allJobs.filter(j=>savedIds.has(j.id));
+  const savedJobs = allJobs.filter(j => savedIds.has(j.id));
+  const sub = document.getElementById('saved-sub');
+  if (sub) sub.textContent = `${savedJobs.length}개 저장됨`;
   document.getElementById('savedGrid').innerHTML = savedJobs.length
-    ? savedJobs.map(j=>buildCard(j,false)).join('')
-    : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔖</div><div class="empty-title">저장한 공고가 없어요</div></div>';
-  document.getElementById('cc-es').textContent = savedJobs.filter(j=>j.country==='ES').length+'개';
-  document.getElementById('cc-gb').textContent = savedJobs.filter(j=>j.country==='GB').length+'개';
+    ? savedJobs.map(j => buildCard(j, false)).join('')
+    : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔖</div><div class="empty-title">저장한 공고가 없어요</div><div class="empty-text">공고 카드의 ♡ 버튼으로 저장하세요.</div></div>';
 }
 
 function buildCard(j, showFeat) {
@@ -1518,6 +1509,9 @@ function showMain() {
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('mainApp').style.display = 'flex';
   document.getElementById('adminDashboard').style.display = 'none';
+
+  // 저장된 ID 복원 ← 이 줄 추가
+  savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
 
   // 공고 불러오기
   startJSearch();
