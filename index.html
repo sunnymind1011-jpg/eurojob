@@ -717,13 +717,15 @@ textarea::placeholder{color:var(--text3);}
         <div class="ctab" onclick="selectVisa(this,'GB')">🇬🇧 영국</div>
         <div class="ctab" onclick="selectVisa(this,'DE')">🇩🇪 독일</div>
         <div class="ctab" onclick="selectVisa(this,'NL')">🇳🇱 네덜란드</div>
+        <div class="ctab" onclick="selectVisa(this,'FR')">🇫🇷 프랑스</div>
         <div class="ctab" onclick="selectVisa(this,'PT')">🇵🇹 포르투갈</div>
+        <div class="ctab" onclick="selectVisa(this,'CH')">🇨🇭 스위스</div>
       </div>
       <div class="two-col">
         <div class="card" id="visaMain"></div>
         <div class="card" id="visaDocs"></div>
       </div>
-    </div>
+    <div class="card" id="visaWH" style="margin-top:14px"></div>
 
    <!-- ★ COFFEE CHAT ──────────────────────────────────── -->
     <div class="page" id="page-chat">
@@ -1510,11 +1512,55 @@ ${jd}`;
 //  VISA DATA
 // ════════════════════════════════════════
 const VISA_DATA = {
-  ES:{name:'스페인',visa:'Autorización de Trabajo',period:'1~3개월',salary:'€21,000+',sponsor:'필수',lang:'스페인어 권장',docs:['여권 (유효기간 6개월+)','고용 계약서 (회사 서명)','학력/경력 증명서 (아포스티유)','스페인어 번역 공증본','범죄경력증명서 (3개월 이내)','건강보험 증빙']},
-  GB:{name:'영국',visa:'Skilled Worker Visa',period:'3~8주',salary:'£26,200+',sponsor:'필수',lang:'영어 능력 증명',docs:['유효 여권','CoS (Certificate of Sponsorship)','영어 능력 증명 (IELTS 등)','결핵 검사 결과 (해당국)','범죄경력증명서','거주지 증명']},
-  DE:{name:'독일',visa:'EU Blue Card / Fachkräfte',period:'1~3개월',salary:'€58,400+',sponsor:'취업 계약 필수',lang:'독일어 우대',docs:['여권','대학 졸업증명서 (아나빈 인증)','고용 계약서','학력 인증 서류','범죄경력증명서','건강보험 가입 증명']},
-  NL:{name:'네덜란드',visa:'Highly Skilled Migrant',period:'2~4주',salary:'€4,752+/월',sponsor:'IND 인증 기업',lang:'영어 OK',docs:['여권','고용주 IND 신청','학력 증명서','범죄경력증명서 (선택)','거주 등록 (BSN)']},
-  PT:{name:'포르투갈',visa:'D3 Highly Qualified Visa',period:'1~2개월',salary:'€1,600+',sponsor:'고용 계약 필수',lang:'포르투갈어 우대',docs:['여권','고용 계약서','학력 증명서 (아포스티유)','범죄경력증명서','건강보험 증명']},
+  ES:{
+    name:'스페인', visa:'Autorización de Residencia y Trabajo',
+    period:'1~3개월', salary:'€21,000+ (SMI 기준)',
+    sponsor:'고용주 필수', lang:'스페인어 권장',
+    docs:['여권 (유효기간 6개월+)','고용 계약서 (회사 서명)','학력/경력 증명서 (아포스티유)','스페인어 번역 공증본','범죄경력증명서 (3개월 이내)','건강보험 증빙'],
+    wh:{name:'워킹홀리데이', age:'만 18~30세', quota:'제한 없음', period:'최대 12개월', note:'상시 신청 가능'}
+  },
+  GB:{
+    name:'영국', visa:'Skilled Worker Visa',
+    period:'3~8주', salary:'£41,700+/yr (2026년 기준)',
+    sponsor:'필수 (licensed sponsor)', lang:'영어 B2 이상 (2026.1.8~)',
+    docs:['유효 여권','CoS (Certificate of Sponsorship)','영어 능력 증명 (IELTS B2 등)','결핵 검사 결과','범죄경력증명서','거주지 증명'],
+    wh:{name:'청년교류제도 (YMS)', age:'만 18~35세', quota:'연간 배정', period:'최대 2년', note:'영국은 YMS로 운영, 별도 신청'}
+  },
+  DE:{
+    name:'독일', visa:'EU Blue Card (Blaue Karte EU)',
+    period:'1~3개월', salary:'€50,700+/yr (부족 직종 €45,934+)',
+    sponsor:'취업 계약 필수', lang:'독일어 우대 (필수 아님)',
+    docs:['여권','대학 졸업증명서 (아나빈 인증)','고용 계약서','학력 인증 서류','범죄경력증명서','건강보험 가입 증명'],
+    wh:{name:'워킹홀리데이', age:'만 18~34세 (2025.1.1~)', quota:'제한 없음', period:'최대 12개월', note:'상시 신청, 비자비 €75'}
+  },
+  NL:{
+    name:'네덜란드', visa:'Highly Skilled Migrant (Kennismigrant)',
+    period:'2~4주', salary:'30세 이상 €5,942/월 | 30세 미만 €4,357/월',
+    sponsor:'IND 인증 기업 필수', lang:'영어 OK',
+    docs:['여권','IND 인증 고용주 계약','학력 증명서','범죄경력증명서 (선택)','거주 등록 (BSN)'],
+    wh:{name:'워킹홀리데이', age:'만 18~30세', quota:'연 200명 선착순', period:'최대 12개월', note:'사전 IND 등록 후 입국'}
+  },
+  FR:{
+    name:'프랑스', visa:'Talent Passport / Salarié Détaché',
+    period:'1~3개월', salary:'역할에 따라 상이',
+    sponsor:'고용주 필수', lang:'프랑스어 권장',
+    docs:['여권','고용 계약서','학력 증명서 (아포스티유)','범죄경력증명서','건강보험 증빙','거주지 증명'],
+    wh:{name:'워킹홀리데이', age:'만 18~31세 (생일 전날까지)', quota:'연 2,000명 선착순', period:'최대 12개월', note:'무료 발급, 학업 불가'}
+  },
+  PT:{
+    name:'포르투갈', visa:'Visto de Trabalho (D3 / D1)',
+    period:'1~2개월', salary:'€1,020+ (최저임금 기준)',
+    sponsor:'고용 계약 필수', lang:'포르투갈어 우대',
+    docs:['여권','고용 계약서','학력 증명서 (아포스티유)','범죄경력증명서','건강보험 증빙'],
+    wh:{name:'워킹홀리데이', age:'만 18~34세', quota:'연 200명 선착순', period:'최대 12개월', note:'AIMA에서 체류허가 신청'}
+  },
+  CH:{
+    name:'스위스', visa:'B 허가증 (장기 취업)',
+    period:'수개월 (주 칸톤별 상이)', salary:'CHF 85,000~150,000+/yr (직종별)',
+    sponsor:'필수 (스위스 법인)', lang:'독일어/프랑스어/이탈리아어',
+    docs:['여권','고용 계약서','학력/경력 증명서','채용 공고 및 내국인 채용 노력 증빙','범죄경력증명서','건강보험 증빙'],
+    wh:null
+  },
 };
 
 function selectVisa(tab, code) {
@@ -1532,6 +1578,21 @@ function selectVisa(tab, code) {
   document.getElementById('visaDocs').innerHTML = `
     <h3>📋 준비 서류</h3><div class="sub" style="margin-bottom:14px"></div>
     ${v.docs.map((d,i)=>`<div style="display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:${i<3?'var(--accent3)':'var(--warn)'}">✓</span>${d}</div>`).join('')}`;
+  const whDiv = document.getElementById('visaWH');
+  if (whDiv) {
+    if (v.wh) {
+      whDiv.innerHTML = `
+        <h3>🏖️ 워킹홀리데이 (한국인 기준)</h3>
+        <div class="visa-table">
+          <div class="visa-row"><span style="color:var(--text2)">나이 제한</span><span style="color:var(--accent3)">${v.wh.age}</span></div>
+          <div class="visa-row"><span style="color:var(--text2)">쿼터</span><span>${v.wh.quota}</span></div>
+          <div class="visa-row"><span style="color:var(--text2)">체류 기간</span><span>${v.wh.period}</span></div>
+          <div class="visa-row"><span style="color:var(--text2)">비고</span><span style="font-size:11px">${v.wh.note}</span></div>
+        </div>`;
+    } else {
+      whDiv.innerHTML = `<h3>🏖️ 워킹홀리데이</h3><div style="font-size:13px;color:var(--text3);padding:8px 0">한국과 워킹홀리데이 협정 없음</div>`;
+    }
+  }
 }
 
 // ════════════════════════════════════════
