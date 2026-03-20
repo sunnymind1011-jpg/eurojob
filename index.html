@@ -791,8 +791,29 @@ function addLog(type, msg) {
 //  JSEARCH API
 // ════════════════════════════════════════
 async function startJSearch(force = false) {
+  // 캐시된 데이터 먼저 즉시 표시
+  if (!force) {
+    const cached = localStorage.getItem('ej_jobs_cache');
+    if (cached) {
+      try {
+        const { jobs, fetchedAt } = JSON.parse(cached);
+        allJobs = jobs;
+        updateAll();
+        const t = new Date(fetchedAt).toLocaleString('ko-KR');
+        document.getElementById('fetchedAt').textContent = `수집: ${t}`;
+        document.getElementById('lastUpdated').textContent = t;
+        setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+        // 백그라운드에서 조용히 최신 데이터로 업데이트
+        fetchAdzunaJobs(false);
+        return;
+      } catch(e) {}
+    }
+  }
   setStatus('loading', '채용공고 불러오는 중...', 0);
-  addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
+  await fetchAdzunaJobs(force);
+}
+
+async function fetchAdzunaJobs(force = false) {
   try {
     const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
     const res = await fetch(url);
@@ -800,6 +821,10 @@ async function startJSearch(force = false) {
     const data = await res.json();
     allJobs = data.jobs || [];
     allJobs = removeDups(allJobs);
+    localStorage.setItem('ej_jobs_cache', JSON.stringify({
+      jobs: allJobs,
+      fetchedAt: data.fetchedAt || new Date().toISOString()
+    }));
     updateAll();
     const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
     document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
