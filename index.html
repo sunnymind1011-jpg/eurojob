@@ -431,6 +431,10 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="country:NL" onclick="toggleChip(this)">🇳🇱 네덜란드</div>
         <div class="chip" data-f="country:FR" onclick="toggleChip(this)">🇫🇷 프랑스</div>
         <div class="chip" data-f="country:PT" onclick="toggleChip(this)">🇵🇹 포르투갈</div>
+        <div class="chip" data-f="country:CH" onclick="toggleChip(this)">🇨🇭 스위스</div>
+        <div class="chip" data-f="country:IT" onclick="toggleChip(this)">🇮🇹 이탈리아</div>
+        <div class="chip" data-f="country:BE" onclick="toggleChip(this)">🇧🇪 벨기에</div>
+        <div class="chip" data-f="country:EU" onclick="toggleChip(this)">🌍 기타유럽</div>
       </div>
       <div class="filter-row">
         <span class="f-lbl">⚡</span>
@@ -840,18 +844,24 @@ function updateHomeStats() {
 function filterJobs() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const sort = document.getElementById('sortBy').value;
+  const selectedCountries = [...activeFilters]
+    .filter(f => f.startsWith('country:'))
+    .map(f => f.split(':')[1]);
   let jobs = allJobs.filter(j=>{
     if (q && !`${j.title} ${j.company} ${j.location}`.toLowerCase().includes(q)) return false;
+    // 국가 OR 조건
+    if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
+    // 나머지 AND 조건
     for (const f of activeFilters) {
       const [k,v] = f.split(':');
-      if (k==='country' && j.country!==v) return false;
-      if (k==='visa' && !j.visaSponsored) return false;
+      if (k==='country') continue;
+      if (k==='relocation' && !j.relocation) return false;
       if (k==='remote' && j.remoteType!==v) return false;
-      if (k==='lang' && !j.languageReqs.includes(v)) return false;
+      if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
     }
     return true;
   });
-  if (sort==='visa') jobs.sort((a,b)=>b.visaSponsored-a.visaSponsored);
+  if (sort==='relocation') jobs.sort((a,b)=>(b.relocation||false)-(a.relocation||false));
   else if (sort==='remote') jobs.sort((a,b)=>(a.remoteType==='Remote'?0:a.remoteType==='Hybrid'?1:2)-(b.remoteType==='Remote'?0:b.remoteType==='Hybrid'?1:2));
   else jobs.sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt));
   document.getElementById('jobs-sub').textContent = `유럽 전역 ${jobs.length}개 포지션`;
@@ -1123,9 +1133,18 @@ function toggleSave(id, btn) {
 }
 
 function toggleChip(chip) {
-  const f = chip.dataset.f, [k] = f.split(':');
-  if (chip.classList.contains('on')) { chip.classList.remove('on','g','p'); activeFilters.delete(f); }
-  else { chip.classList.add('on', k==='country'?'g':k==='visa'?'p':''); activeFilters.add(f); }
+  const f = chip.dataset.f;
+  if (!f) return;
+  const [k] = f.split(':');
+  if (chip.classList.contains('on')) {
+    chip.classList.remove('on','g','p');
+    activeFilters.delete(f);
+  } else {
+    const colorClass = k==='country' ? 'g' : k==='relocation' ? 'p' : '';
+    chip.classList.add('on');
+    if (colorClass) chip.classList.add(colorClass);
+    activeFilters.add(f);
+  }
   filterJobs();
 }
 
@@ -1666,6 +1685,10 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="country:NL" onclick="toggleChip(this)">🇳🇱 네덜란드</div>
         <div class="chip" data-f="country:FR" onclick="toggleChip(this)">🇫🇷 프랑스</div>
         <div class="chip" data-f="country:PT" onclick="toggleChip(this)">🇵🇹 포르투갈</div>
+        <div class="chip" data-f="country:CH" onclick="toggleChip(this)">🇨🇭 스위스</div>
+        <div class="chip" data-f="country:IT" onclick="toggleChip(this)">🇮🇹 이탈리아</div>
+        <div class="chip" data-f="country:BE" onclick="toggleChip(this)">🇧🇪 벨기에</div>
+        <div class="chip" data-f="country:EU" onclick="toggleChip(this)">🌍 기타유럽</div>
       </div>
       <div class="filter-row">
         <span class="f-lbl">⚡</span>
@@ -2162,18 +2185,24 @@ function updateHomeStats() {
 function filterJobs() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const sort = document.getElementById('sortBy').value;
+  const selectedCountries = [...activeFilters]
+    .filter(f => f.startsWith('country:'))
+    .map(f => f.split(':')[1]);
   let jobs = allJobs.filter(j=>{
     if (q && !`${j.title} ${j.company} ${j.location}`.toLowerCase().includes(q)) return false;
+    // 국가 OR 조건
+    if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
+    // 나머지 AND 조건
     for (const f of activeFilters) {
       const [k,v] = f.split(':');
-      if (k==='country' && j.country!==v) return false;
-      if (k==='visa' && !j.visaSponsored) return false;
+      if (k==='country') continue;
+      if (k==='relocation' && !j.relocation) return false;
       if (k==='remote' && j.remoteType!==v) return false;
-      if (k==='lang' && !j.languageReqs.includes(v)) return false;
+      if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
     }
     return true;
   });
-  if (sort==='visa') jobs.sort((a,b)=>b.visaSponsored-a.visaSponsored);
+  if (sort==='relocation') jobs.sort((a,b)=>(b.relocation||false)-(a.relocation||false));
   else if (sort==='remote') jobs.sort((a,b)=>(a.remoteType==='Remote'?0:a.remoteType==='Hybrid'?1:2)-(b.remoteType==='Remote'?0:b.remoteType==='Hybrid'?1:2));
   else jobs.sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt));
   document.getElementById('jobs-sub').textContent = `유럽 전역 ${jobs.length}개 포지션`;
@@ -2445,9 +2474,18 @@ function toggleSave(id, btn) {
 }
 
 function toggleChip(chip) {
-  const f = chip.dataset.f, [k] = f.split(':');
-  if (chip.classList.contains('on')) { chip.classList.remove('on','g','p'); activeFilters.delete(f); }
-  else { chip.classList.add('on', k==='country'?'g':k==='visa'?'p':''); activeFilters.add(f); }
+  const f = chip.dataset.f;
+  if (!f) return;
+  const [k] = f.split(':');
+  if (chip.classList.contains('on')) {
+    chip.classList.remove('on','g','p');
+    activeFilters.delete(f);
+  } else {
+    const colorClass = k==='country' ? 'g' : k==='relocation' ? 'p' : '';
+    chip.classList.add('on');
+    if (colorClass) chip.classList.add(colorClass);
+    activeFilters.add(f);
+  }
   filterJobs();
 }
 
