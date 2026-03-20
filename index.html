@@ -1367,81 +1367,89 @@ function saveAllKeys() {
 
 
 // ════════════════════════════════════════
-//  SUPABASE 인증
+//  SUPABASE 인증 (모든 에러 해결 버전)
 // ════════════════════════════════════════
 const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-// 변수 이름을 sbc로 바꿔서 'supabase' 이름 중복 에러를 피합니다.
-const sbc = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 중요: window.supabase를 사용하여 이름 충돌을 완전히 방지합니다.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
 
+// 초기화 함수
 async function initAuth() {
-  // 현재 세션 확인
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await onLogin(session.user);
   } else {
     showLanding();
   }
 
-  // 로그인/로그아웃 상태 변경 감지
-  sbc.auth.onAuthStateChange((event, session) => { // 여기도 sbc로 수정
-  const landingPage = document.getElementById('landingPage');
-  const mainApp = document.getElementById('mainApp');
-  if (session) {
-    if(landingPage) landingPage.style.display = 'none';
-    if(mainApp) mainApp.style.display = 'flex';
-  } else {
-    if(landingPage) landingPage.style.display = 'flex';
-    if(mainApp) mainApp.style.display = 'none';
-  }
-});
+  // 상태 변경 감지 (로그인/로그아웃 시 화면 자동 전환)
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      onLogin(session.user);
+    } else {
+      currentUser = null;
+      isAdmin = false;
+      showLanding();
+    }
+  });
+}
 
+// 로그인 성공 시 실행되는 함수
 async function onLogin(user) {
   currentUser = user;
   isAdmin = user.email === ADMIN_EMAIL;
 
-  // 사용자 정보를 DB에 기록 (접속 추적)
-  await supabase.from('users').upsert({
-    id: user.id,
-    email: user.email,
-    name: user.user_metadata?.full_name || '',
-    avatar: user.user_metadata?.avatar_url || '',
-    last_seen: new Date().toISOString(),
-  }, { onConflict: 'id' }).select();
+  // 화면 전환
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
 
+  // DB에 사용자 접속 기록 저장
+  try {
+    await sb.from('users').upsert({
+      id: user.id,
+      email: user.email,
+      name: user.user_metadata?.full_name || '',
+      avatar: user.user_metadata?.avatar_url || '',
+      last_seen: new Date().toISOString(),
+    });
+  } catch (e) { console.log("DB 저장 스킵"); }
+
+  // 관리자라면 관리자용 버튼이나 대시보드 표시
   if (isAdmin) {
-    // 관리자 → 관리자 대시보드 표시
-    showAdminDashboard();
-  } else {
-    // 일반 사용자 → 앱 표시
-    showMain();
+    const dash = document.getElementById('adminDashboard');
+    if(dash) dash.style.display = 'block';
   }
 }
 
+// 구글 로그인 실행
 async function signInWithGoogle() {
-  const { error } = await sbc.auth.signInWithOAuth({ // 여기서 sbc로 이름 맞춰줌
+  const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-    }
+    options: { redirectTo: window.location.origin }
   });
   if (error) {
-    document.getElementById('loginError').style.display = 'block';
-    document.getElementById('loginError').textContent = '로그인 실패: ' + error.message;
+    const errDiv = document.getElementById('loginError');
+    if(errDiv) {
+      errDiv.style.display = 'block';
+      errDiv.textContent = '로그인 실패: ' + error.message;
+    }
   }
 }
 
+// 로그아웃 실행
 async function signOut() {
-  await supabase.auth.signOut();
-  currentUser = null;
-  isAdmin = false;
-  showLanding();
+  await sb.auth.signOut();
+  window.location.reload(); // 깔끔하게 새로고침
 }
+
+// 페이지 로드 시 인증 시작
+initAuth();
 
 function showLanding() {
   document.getElementById('landingPage').style.display = 'flex';
