@@ -274,12 +274,14 @@ textarea::placeholder{color:var(--text3);}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
 @media(max-width:900px){.two-col{grid-template-columns:1fr;}.stats4,.stats5{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:640px){
-  .sidebar{display:none;}
-  .job-grid{grid-template-columns:1fr;}
-  .drawer{width:100vw;}
-  .bottom-nav{display:flex;}
-  .content{padding:16px;padding-bottom:70px;}
+@media (max-width: 640px) {
+    .sidebar { display: none !important; } /* 사이드바 확실히 숨김 */
+    .bottom-nav { 
+        display: flex !important; /* 모바일 네비 확실히 노출 */
+        visibility: visible;
+        opacity: 1;
+    }
+    .main { padding-bottom: 60px; } /* 하단바에 가려지지 않게 여백 추가 */
 }
 
 /* ── BOTTOM NAV (모바일) ───────────── */
