@@ -791,29 +791,48 @@ function addLog(type, msg) {
 //  JSEARCH API
 // ════════════════════════════════════════
 async function startJSearch(force = false) {
-  // 캐시된 데이터 먼저 즉시 표시
   if (!force) {
     const cached = localStorage.getItem('ej_jobs_cache');
     if (cached) {
       try {
         const { jobs, fetchedAt, cachedAt } = JSON.parse(cached);
-        // 캐시가 6시간 이내면 그냥 사용, 넘으면 새로 불러옴
         const cacheAge = (Date.now() - new Date(cachedAt)) / 3600000;
-        if (cacheAge > 6) throw new Error('캐시 만료');
-        allJobs = jobs;
-        updateAll();
-        const t = new Date(fetchedAt).toLocaleString('ko-KR');
-        document.getElementById('fetchedAt').textContent = `수집: ${t}`;
-        document.getElementById('lastUpdated').textContent = t;
-        setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
-        // 백그라운드에서 조용히 최신 데이터로 업데이트
-        fetchAdzunaJobs(false);
-        return;
+        if (cacheAge < 12) {
+          allJobs = jobs;
+          updateAll();
+          const t = new Date(fetchedAt).toLocaleString('ko-KR');
+          document.getElementById('fetchedAt').textContent = `수집: ${t}`;
+          document.getElementById('lastUpdated').textContent = t;
+          setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+          return;
+        }
       } catch(e) {}
     }
   }
   setStatus('loading', '채용공고 불러오는 중...', 0);
-  await fetchAdzunaJobs(force);
+  addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
+  try {
+    const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allJobs = data.jobs || [];
+    allJobs = removeDups(allJobs);
+    localStorage.setItem('ej_jobs_cache', JSON.stringify({
+      jobs: allJobs,
+      fetchedAt: data.fetchedAt || new Date().toISOString(),
+      cachedAt: new Date().toISOString()
+    }));
+    updateAll();
+    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
+    document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
+    document.getElementById('lastUpdated').textContent = fetchedAt;
+    setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+    try { addLog('ok', `완료: ${allJobs.length}개`); } catch(e) {}
+  } catch(e) {
+    setStatus('error', `❌ 로드 실패: ${e.message}`);
+    try { addLog('err', e.message); } catch(e) {}
+  }
 }
 
 async function fetchAdzunaJobs(force = false) {
