@@ -1353,16 +1353,17 @@ function analyzeJD() {
 
   // 4. 스킬 키워드 추출
   const skillKeywords = [
-    'Python','SQL','Excel','PowerBI','Tableau','R','JavaScript','React','Java','AWS','GCP','Azure',
+    'Python','SQL','Excel','PowerBI','Tableau','JavaScript','React','Java','AWS','GCP','Azure',
     'Salesforce','HubSpot','Google Analytics','SEO','SEM','Meta Ads','Google Ads',
-    'dbt','Airflow','Spark','Kubernetes','Docker','Git',
+    'dbt','Airflow','Spark','Kubernetes','Docker','Git','Snowflake',
     'Workday','SAP','HRIS','ATS','Recruitment','Talent Acquisition',
     'Machine Learning','Deep Learning','NLP','Data Analysis','Statistics',
-    'Project Management','Agile','Scrum','Leadership'
+    'Project Management','Agile','Scrum','Leadership','TIBCO','DevOps','CI/CD'
   ];
-  const foundSkills = skillKeywords.filter(sk =>
-    new RegExp(sk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(jd)
-  );
+  const foundSkills = skillKeywords.filter(sk => {
+    const escaped = sk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('\\b' + escaped + '\\b', 'i').test(jd);
+  });
 
   // 5. 언어 요건 체크
   const requiresLocal = /native|fluent in (german|french|dutch|spanish|italian)/i.test(jd);
