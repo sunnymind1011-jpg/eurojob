@@ -1134,9 +1134,8 @@ function openClaudeCoverLetterFull() {
   const tone = document.getElementById('clTone').value;
   if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
   const prompt = buildCLPrompt(resume, jd, lang, tone);
-  copyToClipboard(prompt);
-  window.open('https://claude.ai', '_blank');
-  showCopiedToast('coverletter');
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
 }
 
 function buildMatchPrompt(resume, jd) {
@@ -1422,9 +1421,8 @@ function openClaudeJD() {
 
 ## 채용공고
 ${jd}`;
-  copyToClipboard(prompt);
-  window.open('https://claude.ai', '_blank');
-  showCopiedToast('match');
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
 }
 
 // ════════════════════════════════════════
