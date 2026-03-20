@@ -1515,10 +1515,10 @@ async function loadAdminStats() {
 
   // 사용자 수 (Supabase)
   try {
-    const { count } = await loadAdminStats .from('users').select('*', { count: 'exact', head: true });
+    const { count } = await supabase.from('users').select('*', { count: 'exact', head: true });
     document.getElementById('stat-users').textContent = count || 0;
 
-    const { data: users } = await loadAdminStats 
+    const { data: users } = await supabase 
       .from('users')
       .select('email, name, last_seen')
       .order('last_seen', { ascending: false })
