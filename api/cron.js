@@ -1,16 +1,5 @@
 // api/cron.js — 매일 자동 실행 (한국시간 오전 9시)
 // vercel.json: "schedule": "0 0 * * *"
-// 1. 필요한 도구들을 맨 위에 불러옵니다.
-const https = require('https'); 
-const { createClient } = require('@supabase/supabase-js');
-
-// 2. Vercel 설정 (기존에 있던 것)
-export const maxDuration = 60;
-
-// 3. 내 정보들 (여기에 Supabase 주소와 키를 꼭 넣으세요!)
-const SUPABASE_URL = 'https://rorckellupiapjrfaqsp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export const maxDuration = 60;
 
@@ -152,23 +141,6 @@ export default async function handler(req, res) {
   res.status(200).json({
     ok: true,
     message: `Cron 완료: ${total}개 수집`,
-    timestamp: new Date().toISOString(),
-  }));
-
-  // ★ 중요: Supabase DB에 저장하는 코드 ★
-  if (allJobs.length > 0) {
-    const { error } = await sb
-      .from('jobs_cache') // Supabase에 jobs_cache라는 테이블이 있어야 합니다.
-      .upsert(allJobs, { onConflict: 'id' });
-    
-    if (error) console.error('DB 저장 중 에러:', error.message);
-    else console.log('✅ DB에 성공적으로 저장되었습니다.');
-  }
-
-  console.log(`⏰ Cron 완료: 총 ${allJobs.length}개 처리됨`);
-  res.status(200).json({
-    ok: true,
-    message: `Cron 완료 및 DB 저장 시도: ${allJobs.length}개`,
     timestamp: new Date().toISOString(),
   });
 }
