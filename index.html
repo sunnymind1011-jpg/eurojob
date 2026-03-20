@@ -796,7 +796,10 @@ async function startJSearch(force = false) {
     const cached = localStorage.getItem('ej_jobs_cache');
     if (cached) {
       try {
-        const { jobs, fetchedAt } = JSON.parse(cached);
+        const { jobs, fetchedAt, cachedAt } = JSON.parse(cached);
+        // 캐시가 6시간 이내면 그냥 사용, 넘으면 새로 불러옴
+        const cacheAge = (Date.now() - new Date(cachedAt)) / 3600000;
+        if (cacheAge > 6) throw new Error('캐시 만료');
         allJobs = jobs;
         updateAll();
         const t = new Date(fetchedAt).toLocaleString('ko-KR');
@@ -823,8 +826,9 @@ async function fetchAdzunaJobs(force = false) {
     allJobs = removeDups(allJobs);
     localStorage.setItem('ej_jobs_cache', JSON.stringify({
       jobs: allJobs,
-      fetchedAt: data.fetchedAt || new Date().toISOString()
-    }));
+      fetchedAt: data.fetchedAt || new Date().toISOString(),
+      cachedAt: new Date().toISOString()  
+}));
     updateAll();
     const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
     document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
