@@ -1373,7 +1373,7 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
