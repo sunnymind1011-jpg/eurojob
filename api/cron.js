@@ -12,9 +12,9 @@ const COUNTRIES = [
 
 const CATEGORIES = [
   'it-jobs',
-  'sales-jobs',
-  'scientific-qa-jobs',
+  'pr-advertising-marketing-jobs',
   'hr-jobs',
+  'scientific-qa-jobs',
 ];
 
 function fetchAdzuna(countryCode, categoryTag) {
@@ -25,7 +25,6 @@ function fetchAdzuna(countryCode, categoryTag) {
       app_key:          ADZUNA_APP_KEY,
       results_per_page: '20',
       max_days_old:     '30',
-      content_type:     'application/json',
     });
 
     const req = https.request({

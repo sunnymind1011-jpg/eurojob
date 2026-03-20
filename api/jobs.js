@@ -19,23 +19,22 @@ const COUNTRIES = [
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
 ];
 
-// 직군 카테고리 (Adzuna 카테고리 태그)
+// 직군 카테고리 (Adzuna 실제 카테고리 태그)
 const CATEGORIES = [
-  { tag: 'it-jobs',                label: 'IT / 개발'       },
-  { tag: 'sales-jobs',             label: '마케팅 / 영업'   },
-  { tag: 'scientific-qa-jobs',     label: '데이터 / 분석'   },
-  { tag: 'hr-jobs',                label: 'HR'              },
+  { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
+  { tag: 'pr-advertising-marketing-jobs', label: '마케팅 / 광고 / PR' },
+  { tag: 'hr-jobs',                       label: 'HR / 채용'          },
+  { tag: 'scientific-qa-jobs',            label: '데이터 / 분석 / 과학' },
 ];
 
 function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
     const https = require('https');
     const params = new URLSearchParams({
-      app_id:         ADZUNA_APP_ID,
-      app_key:        ADZUNA_APP_KEY,
+      app_id:           ADZUNA_APP_ID,
+      app_key:          ADZUNA_APP_KEY,
       results_per_page: '20',
-      max_days_old:   '30',
-      content_type:   'application/json',
+      max_days_old:     '30',
     });
 
     const path = `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`;
