@@ -141,8 +141,26 @@ function removeDups(jobs) {
   });
 }
 
-// 메모리 캐시
+// 메모리 캐시 — Vercel에서 같은 인스턴스 재사용 시 효과 있음
 let cache = { jobs: [], fetchedAt: null };
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+
+  const { refresh } = req.query;
+  const cacheAgeHours = cache.fetchedAt
+    ? (Date.now() - new Date(cache.fetchedAt)) / 3600000
+    : 999;
+
+  // 캐시 유효하면 바로 반환
+  if (cache.jobs.length > 0 && cacheAgeHours < 12 && refresh !== '1') {
+    return res.status(200).json({
+      ok: true, count: cache.jobs.length,
+      fetchedAt: cache.fetchedAt, cached: true, jobs: cache.jobs,
+    });
+  }
 
 
 function fetchAdzunaKeyword(countryCode, keyword) {
