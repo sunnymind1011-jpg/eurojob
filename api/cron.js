@@ -7,6 +7,7 @@ const ADZUNA_APP_ID  = '22308f32';
 const ADZUNA_APP_KEY = '4902733d7210f0c75a0ad5a8d38a3c17';
 
 const COUNTRIES = ['gb','de','es','nl','fr','at','be','it','pl','ch'];
+const MAJOR_COUNTRIES = ['gb','de','es','nl','fr'];
 
 const CATEGORIES = [
   'it-jobs',
@@ -15,6 +16,8 @@ const CATEGORIES = [
   'scientific-qa-jobs',
 ];
 
+const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
+
 function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
     const https = require('https');
@@ -22,9 +25,8 @@ function fetchAdzuna(countryCode, categoryTag) {
       app_id:           ADZUNA_APP_ID,
       app_key:          ADZUNA_APP_KEY,
       results_per_page: '20',
-      max_days_old:     '30',
+      max_days_old:     '21',
     });
-
     const req = https.request({
       hostname: 'api.adzuna.com',
       path:     `/v1/api/jobs/${countryCode}/search/1?${params}&category=${categoryTag}`,
@@ -38,7 +40,35 @@ function fetchAdzuna(countryCode, categoryTag) {
         catch(e) { resolve([]); }
       });
     });
+    req.on('error', () => resolve([]));
+    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
 
+function fetchAdzunaKeyword(countryCode, keyword) {
+  return new Promise((resolve) => {
+    const https = require('https');
+    const params = new URLSearchParams({
+      app_id:           ADZUNA_APP_ID,
+      app_key:          ADZUNA_APP_KEY,
+      results_per_page: '20',
+      max_days_old:     '21',
+      what:             keyword,
+    });
+    const req = https.request({
+      hostname: 'api.adzuna.com',
+      path:     `/v1/api/jobs/${countryCode}/search/1?${params}`,
+      method:   'GET',
+      headers:  { 'Content-Type': 'application/json' },
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data).results || []); }
+        catch(e) { resolve([]); }
+      });
+    });
     req.on('error', () => resolve([]));
     req.setTimeout(10000, () => { req.destroy(); resolve([]); });
     req.end();
@@ -51,7 +81,6 @@ function fetchRemotive() {
     const categories = ['marketing', 'data', 'hr'];
     let allJobs = [];
     let done = 0;
-
     categories.forEach(cat => {
       const req = https.request({
         hostname: 'remotive.com',
@@ -83,12 +112,22 @@ export default async function handler(req, res) {
   console.log('⏰ Cron 시작:', new Date().toISOString());
   let total = 0;
 
-  // Adzuna 수집
+  // Adzuna 카테고리 수집
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
       const jobs = await fetchAdzuna(country, cat);
       total += jobs.length;
       console.log(`  ${country} / ${cat}: ${jobs.length}개`);
+      await new Promise(r => setTimeout(r, 150));
+    }
+  }
+
+  // 데이터 직군 키워드 검색
+  for (const country of MAJOR_COUNTRIES) {
+    for (const kw of DATA_KEYWORDS) {
+      const jobs = await fetchAdzunaKeyword(country, kw);
+      total += jobs.length;
+      console.log(`  ${country} / "${kw}": ${jobs.length}개`);
       await new Promise(r => setTimeout(r, 150));
     }
   }
