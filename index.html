@@ -1054,6 +1054,7 @@ function buildCard(j, showFeat) {
       <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
       <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
       ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
+      ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
       <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
       <span class="badge b-gray">${j.source}</span>
     </div>
@@ -1079,6 +1080,7 @@ function openDrawer(id) {
       <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
       <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
       ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
+      ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
       ${j.languageReqs.map(l=>`<span class="badge b-warn">🌐 ${l}</span>`).join('')}
     </div>
     ${j.salary?`<div class="drawer-section"><h4>급여</h4><div style="font-size:18px;font-weight:700;color:var(--accent3)">${j.salary}</div></div>`:''}
