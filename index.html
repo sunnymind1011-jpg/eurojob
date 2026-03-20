@@ -1404,7 +1404,7 @@ async function onLogin(user) {
   document.getElementById('mainApp').style.display = 'flex';
   document.getElementById('adminDashboard').style.display = 'none';
   try {
-    await sb.from('users').upsert({
+    await supabase.from('users').upsert({
       id: user.id, email: user.email,
       name: user.user_metadata?.full_name || '',
       avatar: user.user_metadata?.avatar_url || '',
@@ -1515,10 +1515,10 @@ async function loadAdminStats() {
 
   // 사용자 수 (Supabase)
   try {
-    const { count } = await sb.from('users').select('*', { count: 'exact', head: true });
+    const { count } = await loadAdminStats .from('users').select('*', { count: 'exact', head: true });
     document.getElementById('stat-users').textContent = count || 0;
 
-    const { data: users } = await sb
+    const { data: users } = await loadAdminStats 
       .from('users')
       .select('email, name, last_seen')
       .order('last_seen', { ascending: false })
