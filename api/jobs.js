@@ -98,7 +98,8 @@ function normalizeAdzuna(raw, countryCode) {
     postedAt:     raw.created || new Date().toISOString(),
     source:       'Adzuna',
     skills:       [],
-    visaSponsored: detectVisa(desc),
+    visaSponsored: false,
+    relocation:   detectRelocation(desc),
     remoteType:   detectRemote(desc),
     languageReqs: detectLangs(desc),
   };
@@ -108,8 +109,8 @@ function companyEmoji(name) {
   const e = ['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];
   return e[(name.charCodeAt(0) || 0) % e.length] || '🏢';
 }
-function detectVisa(d) {
-  return /visa sponsor|work permit|relocation|sponsorship|work authorization/i.test(d);
+function detectRelocation(d) {
+  return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);
 }
 function detectRemote(t) {
   if (/remote/i.test(t)) return 'Remote';
@@ -138,6 +139,59 @@ function removeDups(jobs) {
 
 // 메모리 캐시
 let cache = { jobs: [], fetchedAt: null };
+
+
+function fetchRemotive() {
+  return new Promise((resolve) => {
+    const https = require('https');
+    // 마케팅, 데이터, HR 카테고리
+    const categories = ['marketing', 'data', 'hr'];
+    let allJobs = [];
+    let done = 0;
+
+    categories.forEach(cat => {
+      const req = https.request({
+        hostname: 'remotive.com',
+        path: `/api/remote-jobs?category=${cat}&limit=50`,
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      }, res => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            const jobs = (parsed.jobs || []).map(r => ({
+              id:           String(r.id),
+              title:        r.title || '',
+              company:      r.company_name || '',
+              location:     r.candidate_required_location || 'Remote',
+              country:      'EU',
+              flag:         '🌍',
+              logo:         '🚀',
+              description:  r.description || '',
+              url:          r.url || '#',
+              salary:       r.salary || null,
+              postedAt:     r.publication_date || new Date().toISOString(),
+              source:       'Remotive',
+              skills:       (r.tags || []).slice(0, 6),
+              visaSponsored: false,
+              relocation:   false,
+              remoteType:   'Remote',
+              languageReqs: ['English'],
+            }));
+            allJobs.push(...jobs);
+          } catch(e) {}
+          done++;
+          if (done === categories.length) resolve(allJobs);
+        });
+      });
+      req.on('error', () => { done++; if (done === categories.length) resolve(allJobs); });
+      req.setTimeout(8000, () => { req.destroy(); done++; if (done === categories.length) resolve(allJobs); });
+      req.end();
+    });
+  });
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -168,6 +222,12 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
+
+  // Remotive API 추가 (무료, API Key 불필요)
+  console.log('🔄 Remotive 수집 중...');
+  const remotive = await fetchRemotive();
+  allJobs.push(...remotive);
+  console.log(`Remotive: ${remotive.length}개`);
 
   cache.jobs = removeDups(allJobs);
   cache.fetchedAt = new Date().toISOString();
