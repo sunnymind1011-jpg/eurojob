@@ -664,6 +664,7 @@ textarea::placeholder{color:var(--text3);}
 let allJobs = [];
 let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
 let activeFilters = new Set(['country:ES','country:GB','visa:true']);
+let logs = [];
 // Vercel API URL — 배포 후 자동으로 같은 도메인에서 호출됨
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000'  // 로컬 테스트용
@@ -697,6 +698,7 @@ function setStatus(type, msg, pct) {
 function addLog(type, msg) {
   logs.push({type, msg, t: new Date().toLocaleTimeString('ko-KR')});
   const box = document.getElementById('logBox');
+  if (!box) return;
   const cm = {ok:'var(--accent3)',err:'var(--red)',info:'var(--accent)',warn:'var(--warn)'};
   box.innerHTML = logs.slice(-60).map(l=>`<div><span style="color:var(--text3)">[${l.t}]</span> <span style="color:${cm[l.type]||'var(--text2)'}">${l.msg}</span></div>`).join('');
   box.scrollTop = box.scrollHeight;
@@ -1893,12 +1895,6 @@ textarea::placeholder{color:var(--text3);}
 // ════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════
-let allJobs = [];
-let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
-let activeFilters = new Set(['country:ES','country:GB','visa:true']);
-let jsearchKey = localStorage.getItem('ej_jsearch') || '804d41afa6mshfacd6e6662b519ap1a1554jsn197924664c5f';
-let logs = [];
-
 if (jsearchKey) document.getElementById('jsearchKey').value = jsearchKey;
 
 // ════════════════════════════════════════
@@ -1933,6 +1929,7 @@ function setStatus(type, msg, pct) {
 function addLog(type, msg) {
   logs.push({type, msg, t: new Date().toLocaleTimeString('ko-KR')});
   const box = document.getElementById('logBox');
+  if (!box) return;
   const cm = {ok:'var(--accent3)',err:'var(--red)',info:'var(--accent)',warn:'var(--warn)'};
   box.innerHTML = logs.slice(-60).map(l=>`<div><span style="color:var(--text3)">[${l.t}]</span> <span style="color:${cm[l.type]||'var(--text2)'}">${l.msg}</span></div>`).join('');
   box.scrollTop = box.scrollHeight;
