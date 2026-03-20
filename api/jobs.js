@@ -53,7 +53,21 @@ function detectRemote(t) {
   if (/remote/i.test(t)) return 'Remote';
   if (/hybrid/i.test(t)) return 'Hybrid';
   return 'On-site';
+
 }
+
+function detectLevel(title, desc) {
+  const t = (title + ' ' + desc).toLowerCase();
+  if (/\bdirector\b|\bvp\b|\bvice president\b|\bhead of\b/i.test(t)) return 'Director';
+  if (/\blead\b|\bprincipal\b|\bstaff\b/i.test(t)) return 'Lead';
+  if (/\bsenior\b|\bsr\.\b|\bsr\b/i.test(t)) return 'Senior';
+  if (/\bjunior\b|\bjr\.\b|\bjr\b/i.test(t)) return 'Junior';
+  if (/\bentry.level\b|\bgraduate\b|\binternship\b|\bintern\b|\btraineee?\b/i.test(t)) return 'Entry';
+  if (/\bassociate\b/i.test(t)) return 'Associate';
+  if (/\bmid.level\b|\bmedior\b/i.test(t)) return 'Mid';
+  return '';
+}
+
 function detectLangs(d) {
   const l = [];
   if (/english/i.test(d)) l.push('English');
@@ -84,6 +98,7 @@ function normalizeAdzuna(raw, countryCode) {
   return {
     id:           String(raw.id || Math.random()),
     title:        raw.title || '',
+    level: detectLevel(raw.title || '', desc),
     company:      raw.company?.display_name || '',
     location,
     country:      info.code,
