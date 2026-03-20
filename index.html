@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EuroJob — 유럽 해외취업 플랫폼</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -318,13 +319,88 @@ textarea::placeholder{color:var(--text3);}
   </div>
 </div>
 
-<div class="shell">
+
+<!-- ══ LANDING PAGE (로그인 전) ══════════════════════ -->
+<div id="landingPage" style="display:none;min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="text-align:center;max-width:500px;padding:40px 24px;">
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff;margin:0 auto 24px;">E</div>
+    <h1 style="font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;">EuroJob</h1>
+    <p style="font-size:16px;color:var(--text2);margin-bottom:8px;">유럽 해외취업 플랫폼</p>
+    <p style="font-size:14px;color:var(--text3);margin-bottom:36px;line-height:1.7">스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>구글 계정으로 로그인하고 시작하세요.</p>
+
+    <button onclick="signInWithGoogle()" style="width:100%;max-width:320px;padding:14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 12px;transition:all .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Google 계정으로 시작하기
+    </button>
+
+    <div style="margin-top:28px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;text-align:left">
+      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">무엇을 할 수 있나요?</div>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--text2)">
+        <div>💼 유럽 10개국 채용공고 실시간 수집</div>
+        <div>🔍 국가·직군·근무형태 필터링</div>
+        <div>🤖 AI 이력서 매칭 & 커버레터 생성</div>
+        <div>🔖 관심 공고 저장 & 관리</div>
+        <div>✍️ <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--accent3);text-decoration:none">해외취업 꿀팁 블로그</a> 연동</div>
+      </div>
+    </div>
+
+    <div id="loginError" style="display:none;margin-top:14px;color:var(--red);font-size:13px"></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN DASHBOARD ═══════════════════════════════ -->
+<div id="adminDashboard" style="display:none;min-height:100vh;background:var(--bg);">
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;gap:12px;">
+    <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">E</div>
+    <div style="font-size:16px;font-weight:700;">EuroJob 관리자</div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button onclick="showMain()" style="background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">앱으로 이동</button>
+      <button onclick="signOut()" style="background:transparent;color:var(--text2);border:1px solid var(--border2);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">로그아웃</button>
+    </div>
+  </div>
+  <div style="padding:28px;max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">총 사용자</div>
+        <div style="font-size:26px;font-weight:700;color:var(--accent)" id="stat-users">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">수집된 공고</div>
+        <div style="font-size:26px;font-weight:700;color:var(--accent3)" id="stat-jobs">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">마지막 수집</div>
+        <div style="font-size:14px;font-weight:600;color:var(--warn)" id="stat-lastfetch">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">API 상태</div>
+        <div style="font-size:14px;font-weight:600;color:var(--accent3)">● 정상</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">⚙️ 공고 수집</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="adminFetch()" style="background:var(--accent);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">🔍 지금 수집하기</button>
+          <button onclick="adminFetch(true)" style="background:transparent;color:var(--text);border:1px solid var(--border2);padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">🔄 강제 새로고침</button>
+        </div>
+        <div id="adminFetchLog" style="margin-top:12px;font-size:12px;color:var(--text3);"></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">👥 최근 가입 사용자</div>
+        <div id="adminUsers" style="font-size:13px;color:var(--text2);">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="mainApp" style="display:none">
 
 <!-- ══ SIDEBAR ══════════════════════════════════════════ -->
 <nav class="sidebar">
   <div class="logo-area">
     <div class="logo">
-      <div class="logo-icon" onclick="adminClick()" style="cursor:pointer" title="">E</div>
+      <div class="logo-icon">E</div>
       <div><div class="logo-text">EuroJob</div><div class="logo-sub">유럽 해외취업 플랫폼</div></div>
     </div>
   </div>
@@ -1289,23 +1365,172 @@ function saveAllKeys() {
 }
 
 
-// ════════════════════════════════════════
-//  관리자 모드 (로고 5번 클릭)
-// ════════════════════════════════════════
-let adminClickCount = 0;
-let adminMode = false;
 
-function adminClick() {
-  adminClickCount++;
-  if (adminClickCount >= 5) {
-    adminClickCount = 0;
-    const pw = prompt('관리자 비밀번호:');
-    if (pw === 'eurojob2026') {
-      adminMode = true;
-      document.getElementById('adminBar').style.display = 'flex';
-      startJSearch(); // 관리자만 자동 수집
-      alert('✅ 관리자 모드 활성화');
+// ════════════════════════════════════════
+//  SUPABASE 인증
+// ════════════════════════════════════════
+const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
+const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let isAdmin = false;
+
+async function initAuth() {
+  // 현재 세션 확인
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await onLogin(session.user);
+  } else {
+    showLanding();
+  }
+
+  // 로그인/로그아웃 상태 변경 감지
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await onLogin(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showLanding();
     }
+  });
+}
+
+async function onLogin(user) {
+  currentUser = user;
+  isAdmin = user.email === ADMIN_EMAIL;
+
+  // 사용자 정보를 DB에 기록 (접속 추적)
+  await supabase.from('users').upsert({
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || '',
+    avatar: user.user_metadata?.avatar_url || '',
+    last_seen: new Date().toISOString(),
+  }, { onConflict: 'id' }).select();
+
+  if (isAdmin) {
+    // 관리자 → 관리자 대시보드 표시
+    showAdminDashboard();
+  } else {
+    // 일반 사용자 → 앱 표시
+    showMain();
+  }
+}
+
+async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    }
+  });
+  if (error) {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginError').textContent = '로그인 실패: ' + error.message;
+  }
+}
+
+async function signOut() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  isAdmin = false;
+  showLanding();
+}
+
+function showLanding() {
+  document.getElementById('landingPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'none';
+}
+
+function showMain() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('adminDashboard').style.display = 'none';
+  // 앱 로드 시 공고 수집
+  startJSearch();
+  // 사이드바에 유저 정보 표시
+  if (currentUser) {
+    const name = currentUser.user_metadata?.full_name || currentUser.email;
+    const avatar = currentUser.user_metadata?.avatar_url;
+    const sidebar = document.querySelector('.sidebar-footer');
+    if (sidebar) {
+      sidebar.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;">
+          ${avatar ? `<img src="${avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div class="avatar">${name[0]}</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+            <div style="font-size:11px;color:var(--text3)">일반 사용자</div>
+          </div>
+          <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
+        </div>`;
+    }
+  }
+}
+
+function showAdminDashboard() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'block';
+  loadAdminStats();
+}
+
+async function loadAdminStats() {
+  // 공고 수 표시
+  try {
+    const res = await fetch('/api/jobs');
+    const data = await res.json();
+    document.getElementById('stat-jobs').textContent = data.count || 0;
+    if (data.fetchedAt) {
+      document.getElementById('stat-lastfetch').textContent =
+        new Date(data.fetchedAt).toLocaleString('ko-KR');
+    }
+  } catch(e) {}
+
+  // 사용자 수 (Supabase)
+  try {
+    const { count } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    document.getElementById('stat-users').textContent = count || 0;
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('email, name, last_seen')
+      .order('last_seen', { ascending: false })
+      .limit(5);
+
+    if (users?.length) {
+      document.getElementById('adminUsers').innerHTML = users.map(u => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px;font-weight:500">${u.name || u.email}</div>
+            <div style="font-size:11px;color:var(--text3)">${u.email}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text3)">${new Date(u.last_seen).toLocaleDateString('ko-KR')}</div>
+        </div>`).join('');
+    } else {
+      document.getElementById('adminUsers').textContent = '아직 가입한 사용자가 없어요';
+    }
+  } catch(e) {
+    document.getElementById('adminUsers').textContent = 'DB 연결 후 확인 가능';
+  }
+}
+
+async function adminFetch(force = false) {
+  const log = document.getElementById('adminFetchLog');
+  log.textContent = '수집 중...';
+  try {
+    const res = await fetch(`/api/jobs${force ? '?refresh=1' : ''}`);
+    const data = await res.json();
+    log.style.color = 'var(--accent3)';
+    log.textContent = `✅ ${data.count}개 수집 완료`;
+    document.getElementById('stat-jobs').textContent = data.count;
+    document.getElementById('stat-lastfetch').textContent =
+      new Date(data.fetchedAt).toLocaleString('ko-KR');
+  } catch(e) {
+    log.style.color = 'var(--red)';
+    log.textContent = '❌ 실패: ' + e.message;
   }
 }
 
@@ -1314,7 +1539,7 @@ selectVisa(document.querySelector('.ctab.active'), 'ES');
 closeLogin = () => {};
 
 // 페이지 로드 시 자동으로 채용공고 불러오기
-window.addEventListener('load', () => startJSearch()); // 로그인 모달 제거됨
+window.addEventListener('load', () => initAuth()); // 로그인 모달 제거됨
 
 // 저장된 이력서 복원
 const savedResume = localStorage.getItem('ej_resume');
@@ -1330,6 +1555,7 @@ if (savedResume) document.getElementById('resumeText').value = savedResume;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EuroJob — 유럽 해외취업 플랫폼</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1644,13 +1870,88 @@ textarea::placeholder{color:var(--text3);}
   </div>
 </div>
 
-<div class="shell">
+
+<!-- ══ LANDING PAGE (로그인 전) ══════════════════════ -->
+<div id="landingPage" style="display:none;min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="text-align:center;max-width:500px;padding:40px 24px;">
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff;margin:0 auto 24px;">E</div>
+    <h1 style="font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;">EuroJob</h1>
+    <p style="font-size:16px;color:var(--text2);margin-bottom:8px;">유럽 해외취업 플랫폼</p>
+    <p style="font-size:14px;color:var(--text3);margin-bottom:36px;line-height:1.7">스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>구글 계정으로 로그인하고 시작하세요.</p>
+
+    <button onclick="signInWithGoogle()" style="width:100%;max-width:320px;padding:14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 12px;transition:all .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Google 계정으로 시작하기
+    </button>
+
+    <div style="margin-top:28px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;text-align:left">
+      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">무엇을 할 수 있나요?</div>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--text2)">
+        <div>💼 유럽 10개국 채용공고 실시간 수집</div>
+        <div>🔍 국가·직군·근무형태 필터링</div>
+        <div>🤖 AI 이력서 매칭 & 커버레터 생성</div>
+        <div>🔖 관심 공고 저장 & 관리</div>
+        <div>✍️ <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--accent3);text-decoration:none">해외취업 꿀팁 블로그</a> 연동</div>
+      </div>
+    </div>
+
+    <div id="loginError" style="display:none;margin-top:14px;color:var(--red);font-size:13px"></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN DASHBOARD ═══════════════════════════════ -->
+<div id="adminDashboard" style="display:none;min-height:100vh;background:var(--bg);">
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;gap:12px;">
+    <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">E</div>
+    <div style="font-size:16px;font-weight:700;">EuroJob 관리자</div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button onclick="showMain()" style="background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">앱으로 이동</button>
+      <button onclick="signOut()" style="background:transparent;color:var(--text2);border:1px solid var(--border2);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">로그아웃</button>
+    </div>
+  </div>
+  <div style="padding:28px;max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">총 사용자</div>
+        <div style="font-size:26px;font-weight:700;color:var(--accent)" id="stat-users">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">수집된 공고</div>
+        <div style="font-size:26px;font-weight:700;color:var(--accent3)" id="stat-jobs">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">마지막 수집</div>
+        <div style="font-size:14px;font-weight:600;color:var(--warn)" id="stat-lastfetch">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">API 상태</div>
+        <div style="font-size:14px;font-weight:600;color:var(--accent3)">● 정상</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">⚙️ 공고 수집</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="adminFetch()" style="background:var(--accent);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">🔍 지금 수집하기</button>
+          <button onclick="adminFetch(true)" style="background:transparent;color:var(--text);border:1px solid var(--border2);padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">🔄 강제 새로고침</button>
+        </div>
+        <div id="adminFetchLog" style="margin-top:12px;font-size:12px;color:var(--text3);"></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">👥 최근 가입 사용자</div>
+        <div id="adminUsers" style="font-size:13px;color:var(--text2);">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="mainApp" style="display:none">
 
 <!-- ══ SIDEBAR ══════════════════════════════════════════ -->
 <nav class="sidebar">
   <div class="logo-area">
     <div class="logo">
-      <div class="logo-icon" onclick="adminClick()" style="cursor:pointer" title="">E</div>
+      <div class="logo-icon">E</div>
       <div><div class="logo-text">EuroJob</div><div class="logo-sub">유럽 해외취업 플랫폼</div></div>
     </div>
   </div>
@@ -2702,23 +3003,172 @@ function saveAllKeys() {
 }
 
 
-// ════════════════════════════════════════
-//  관리자 모드 (로고 5번 클릭)
-// ════════════════════════════════════════
-let adminClickCount = 0;
-let adminMode = false;
 
-function adminClick() {
-  adminClickCount++;
-  if (adminClickCount >= 5) {
-    adminClickCount = 0;
-    const pw = prompt('관리자 비밀번호:');
-    if (pw === 'eurojob2026') {
-      adminMode = true;
-      document.getElementById('adminBar').style.display = 'flex';
-      startJSearch(); // 관리자만 자동 수집
-      alert('✅ 관리자 모드 활성화');
+// ════════════════════════════════════════
+//  SUPABASE 인증
+// ════════════════════════════════════════
+const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
+const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let isAdmin = false;
+
+async function initAuth() {
+  // 현재 세션 확인
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await onLogin(session.user);
+  } else {
+    showLanding();
+  }
+
+  // 로그인/로그아웃 상태 변경 감지
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await onLogin(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showLanding();
     }
+  });
+}
+
+async function onLogin(user) {
+  currentUser = user;
+  isAdmin = user.email === ADMIN_EMAIL;
+
+  // 사용자 정보를 DB에 기록 (접속 추적)
+  await supabase.from('users').upsert({
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || '',
+    avatar: user.user_metadata?.avatar_url || '',
+    last_seen: new Date().toISOString(),
+  }, { onConflict: 'id' }).select();
+
+  if (isAdmin) {
+    // 관리자 → 관리자 대시보드 표시
+    showAdminDashboard();
+  } else {
+    // 일반 사용자 → 앱 표시
+    showMain();
+  }
+}
+
+async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    }
+  });
+  if (error) {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginError').textContent = '로그인 실패: ' + error.message;
+  }
+}
+
+async function signOut() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  isAdmin = false;
+  showLanding();
+}
+
+function showLanding() {
+  document.getElementById('landingPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'none';
+}
+
+function showMain() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('adminDashboard').style.display = 'none';
+  // 앱 로드 시 공고 수집
+  startJSearch();
+  // 사이드바에 유저 정보 표시
+  if (currentUser) {
+    const name = currentUser.user_metadata?.full_name || currentUser.email;
+    const avatar = currentUser.user_metadata?.avatar_url;
+    const sidebar = document.querySelector('.sidebar-footer');
+    if (sidebar) {
+      sidebar.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;">
+          ${avatar ? `<img src="${avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div class="avatar">${name[0]}</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+            <div style="font-size:11px;color:var(--text3)">일반 사용자</div>
+          </div>
+          <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
+        </div>`;
+    }
+  }
+}
+
+function showAdminDashboard() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'block';
+  loadAdminStats();
+}
+
+async function loadAdminStats() {
+  // 공고 수 표시
+  try {
+    const res = await fetch('/api/jobs');
+    const data = await res.json();
+    document.getElementById('stat-jobs').textContent = data.count || 0;
+    if (data.fetchedAt) {
+      document.getElementById('stat-lastfetch').textContent =
+        new Date(data.fetchedAt).toLocaleString('ko-KR');
+    }
+  } catch(e) {}
+
+  // 사용자 수 (Supabase)
+  try {
+    const { count } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    document.getElementById('stat-users').textContent = count || 0;
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('email, name, last_seen')
+      .order('last_seen', { ascending: false })
+      .limit(5);
+
+    if (users?.length) {
+      document.getElementById('adminUsers').innerHTML = users.map(u => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px;font-weight:500">${u.name || u.email}</div>
+            <div style="font-size:11px;color:var(--text3)">${u.email}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text3)">${new Date(u.last_seen).toLocaleDateString('ko-KR')}</div>
+        </div>`).join('');
+    } else {
+      document.getElementById('adminUsers').textContent = '아직 가입한 사용자가 없어요';
+    }
+  } catch(e) {
+    document.getElementById('adminUsers').textContent = 'DB 연결 후 확인 가능';
+  }
+}
+
+async function adminFetch(force = false) {
+  const log = document.getElementById('adminFetchLog');
+  log.textContent = '수집 중...';
+  try {
+    const res = await fetch(`/api/jobs${force ? '?refresh=1' : ''}`);
+    const data = await res.json();
+    log.style.color = 'var(--accent3)';
+    log.textContent = `✅ ${data.count}개 수집 완료`;
+    document.getElementById('stat-jobs').textContent = data.count;
+    document.getElementById('stat-lastfetch').textContent =
+      new Date(data.fetchedAt).toLocaleString('ko-KR');
+  } catch(e) {
+    log.style.color = 'var(--red)';
+    log.textContent = '❌ 실패: ' + e.message;
   }
 }
 
@@ -2727,7 +3177,7 @@ selectVisa(document.querySelector('.ctab.active'), 'ES');
 closeLogin = () => {};
 
 // 페이지 로드 시 자동으로 채용공고 불러오기
-window.addEventListener('load', () => startJSearch()); // 로그인 모달 제거됨
+window.addEventListener('load', () => initAuth()); // 로그인 모달 제거됨
 
 // 저장된 이력서 복원
 const savedResume = localStorage.getItem('ej_resume');
