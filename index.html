@@ -1500,8 +1500,8 @@ async function loadAdminStats() {
 
   // 사용자 수 (Supabase)
   try {
-    const { count } = await sb.from('users').select('*', { count: 'exact', head: true });
-    document.getElementById('stat-users').textContent = count || 0;
+    const { data: allUsers } = await sb.from('users').select('id');
+    document.getElementById('stat-users').textContent = allUsers?.length || 0;
 
     const { data: users } = await sb
       .from('users')
