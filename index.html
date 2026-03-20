@@ -431,6 +431,7 @@ textarea::placeholder{color:var(--text3);}
     <div class="nav-section">정보</div>
     <div class="nav-item" onclick="nav('tips',this)"><span class="nav-icon">💡</span>취업 꿀팁</div>
     <div class="nav-item" onclick="nav('visa',this)"><span class="nav-icon">🛂</span>비자 가이드</div>
+    <div class="nav-item" onclick="nav('chat',this)"><span class="nav-icon">☕</span><span class="nav-label">커피챗</span></div>
     <div class="nav-section">설정</div>
     <div class="nav-item" id="nav-settings" onclick="nav('settings',this)" style="display:none"><span class="nav-icon">⚙️</span>API 설정</div>
   </div>
@@ -724,6 +725,73 @@ textarea::placeholder{color:var(--text3);}
       </div>
     </div>
 
+   <!-- ★ COFFEE CHAT ──────────────────────────────────── -->
+    <div class="page" id="page-chat">
+  <div class="sec-hd" style="margin-bottom:24px">
+    <div>
+      <div class="sec-title">☕ 1:1 커피챗</div>
+      <div class="sec-sub">유럽 취업 경험자와 30분 솔직 대화</div>
+    </div>
+  </div>
+
+  <!-- 소개 카드 -->
+  <div class="card" style="margin-bottom:16px;border:1px solid rgba(62,207,160,.25);background:rgba(62,207,160,.05)">
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <div style="font-size:40px">🌍</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text1);margin-bottom:6px">스페인 현지 취업 경험자와 직접 대화하세요</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8">
+          유럽 취업 준비, 막막하죠? 혼자 구글링하며 시간 낭비하지 마세요.<br>
+          실제로 스페인에서 취업해 일하고 있는 사람과 30분 동안 솔직하게 얘기해보세요.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이런 분께 -->
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="margin-bottom:14px">🙋 이런 분께 추천해요</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> 유럽 취업을 꿈꾸지만 어디서 시작해야 할지 모르겠는 분</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> CV, 커버레터, 인터뷰 준비를 현실적으로 점검받고 싶은 분</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> 비자, 정착, 생활비 등 현지 정보가 궁금한 분</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> 스페인 or 유럽 특정 국가로의 이직을 고민 중인 분</div>
+    </div>
+  </div>
+
+  <!-- 진행 방식 -->
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="margin-bottom:14px">📋 진행 방식</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">1</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">신청서 작성</div><div style="font-size:12px;color:var(--text2)">아래 버튼으로 구글폼 작성 — 현재 상황과 궁금한 점을 적어주세요</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">2</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">일정 예약</div><div style="font-size:12px;color:var(--text2)">Calendly를 통해 원하는 날짜와 시간을 선택하세요</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">3</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">결제</div><div style="font-size:12px;color:var(--text2)">무통장 입금 또는 카카오페이로 결제</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">4</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">30분 커피챗 ☕</div><div style="font-size:12px;color:var(--text2)">Zoom 또는 Google Meet으로 진행</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA 버튼 -->
+  <div style="text-align:center;padding:10px 0 20px">
+    <button class="btn btn-primary" style="font-size:15px;padding:14px 40px;border-radius:12px" onclick="window.open('https://forms.gle/AykWCQy4Vr3wtfhr9','_blank')">
+      ☕ 커피챗 신청하기
+    </button>
+    <div style="margin-top:10px;font-size:12px;color:var(--text3)">구글폼 작성 → Calendly 일정 선택 → 결제 순서로 진행됩니다</div>
+  </div>
+</div>
+
+    
     <!-- ★ SETTINGS ──────────────────────────────────── -->
     <div class="page" id="page-settings">
       <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">⚙️ API 설정</div></div>
@@ -773,6 +841,7 @@ textarea::placeholder{color:var(--text3);}
   <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장</button>
   <button class="bn-item" onclick="nav('ai',null);setBottomNav(this)"><span class="bn-icon">🤖</span>AI매칭</button>
   <button class="bn-item" onclick="nav('tips',null);setBottomNav(this)"><span class="bn-icon">💡</span>꿀팁</button>
+  <button class="bn-item" onclick="nav('chat',null);setBottomNav(this)"><span class="bn-icon">☕</span>커피챗</button>
 </div>
   
 </div><!-- /shell -->
