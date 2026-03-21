@@ -2409,7 +2409,7 @@ entries.forEach(([c, n]) => {
 });
 
 // 범례 — 왼쪽 하단
-const bubbleLeg = svg.append('g').attr('transform','translate(106,228)');
+const bubbleLeg = svg.append('g').attr('transform','translate(310,238)');
 bubbleLeg.append('rect').attr('rx',3).attr('width',58).attr('height',15)
   .attr('fill','rgba(0,0,0,0.45)').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.5);
 bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
@@ -2436,15 +2436,7 @@ bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
       .attr('font-weight','600')
       .text(countryFlag(c));
 
-    if (r > 14) {
-      gr.append('text')
-        .attr('x', coord.x).attr('y', coord.y + r - 6)
-        .attr('text-anchor','middle')
-        .attr('fill','rgba(255,255,255,0.55)')
-        .attr('font-size', 8)
-        .attr('font-family',"'Sora',sans-serif")
-        .text(n+'개');
-    }
+    
   });
 
   // 범례
