@@ -1059,17 +1059,16 @@ const COUNTRY_LANG = {
   NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
   PT:'Portuguese', PL:'Polish',
 };
-
 function detectLangs(d, countryCode) {
   const l = [];
-  if (/english/i.test(d)) l.push('English');
-  if (/\bspanish\b|\bespañol\b/i.test(d)) l.push('Spanish');
-  if (/\bgerman\b|\bdeutsch\b/i.test(d)) l.push('German');
-  if (/dutch|nederlands/i.test(d)) l.push('Dutch');
-  if (/french|français/i.test(d)) l.push('French');
-  if (/italian|italiano/i.test(d)) l.push('Italian');
-  if (/portuguese|português/i.test(d)) l.push('Portuguese');
-  if (/korean|한국어/.test(d)) l.push('Korean');
+  // "fluency in X", "X required", "X speaker" 같은 명시적 요구만 감지
+  if (/fluent\s+in\s+english|english\s+(required|fluency|proficiency|speaker)|working\s+language.*english/i.test(d)) l.push('English');
+  if (/fluent\s+in\s+spanish|spanish\s+(required|fluency|proficiency|speaker)|nivel.*español|español.*requerido/i.test(d)) l.push('Spanish');
+  if (/fluent\s+in\s+german|german\s+(required|fluency|proficiency|speaker)|deutsch.*erforderlich/i.test(d)) l.push('German');
+  if (/fluent\s+in\s+dutch|dutch\s+(required|fluency|proficiency)|nederlands.*vereist/i.test(d)) l.push('Dutch');
+  if (/fluent\s+in\s+french|french\s+(required|fluency|proficiency)|français.*requis/i.test(d)) l.push('French');
+  if (/fluent\s+in\s+italian|italian\s+(required|fluency|proficiency)|italiano.*richiesto/i.test(d)) l.push('Italian');
+  if (/korean|한국어/i.test(d)) l.push('Korean');
   return l.length ? l : [COUNTRY_LANG[countryCode] || ''];
 }
 function companyEmoji(n){const e=['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];return e[n.charCodeAt(0)%e.length]||'🏢';}
