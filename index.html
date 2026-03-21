@@ -2387,36 +2387,36 @@ entries.forEach(([c, n]) => {
   const gr = svg.append('g').style('cursor','pointer');
 
   gr.on('mouseover', function(event) {
-  const tip = document.getElementById('bubbleTip');
-  tip.style.display = 'block';
-  tip.style.left = (event.offsetX + 10) + 'px';
-  tip.style.top = (event.offsetY - 10) + 'px';
-  tip.innerHTML = `<strong>${coord.name}</strong><br>${n}개 공고`;
-}).on('mouseout', function() {
-  document.getElementById('bubbleTip').style.display = 'none';
-});
+    const mapBox = document.getElementById('skillMapBubble').getBoundingClientRect();
+    const tip = document.getElementById('bubbleTip');
+    tip.style.display = 'block';
+    tip.style.left = (event.clientX - mapBox.left + 12) + 'px';
+    tip.style.top = (event.clientY - mapBox.top - 36) + 'px';
+    tip.innerHTML = `<strong>${coord.name}</strong><br>${n}개 공고`;
+  }).on('mouseout', function() {
+    document.getElementById('bubbleTip').style.display = 'none';
+  });
 
   gr.append('circle')
     .attr('cx', coord.x).attr('cy', coord.y).attr('r', r)
     .attr('fill', col).attr('fill-opacity', 0.15)
-    .attr('stroke', col).attr('stroke-width', 0.8).attr('stroke-opacity', 0.6);
+    .attr('stroke', col).attr('stroke-width', 0.6).attr('stroke-opacity', 0.5);
 
   gr.append('text')
-    .attr('x', coord.x).attr('y', coord.y + 4)
+    .attr('x', coord.x).attr('y', coord.y + 3)
     .attr('text-anchor','middle')
     .attr('fill', col)
-    .attr('font-size', r > 18 ? 12 : 10)
-    .attr('font-family',"'Sora',sans-serif")
+    .attr('font-size', Math.min(r * 0.45, 9))
+    .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
     .attr('font-weight','600')
     .text(c);
 });
 
-// 범례 — 왼쪽 하단
 const bubbleLeg = svg.append('g').attr('transform','translate(310,238)');
-bubbleLeg.append('rect').attr('rx',3).attr('width',58).attr('height',15)
+bubbleLeg.append('rect').attr('rx',3).attr('width',64).attr('height',16)
   .attr('fill','rgba(0,0,0,0.45)').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.5);
-bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
-  .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
+bubbleLeg.append('text').attr('x',32).attr('y',11).attr('text-anchor','middle')
+  .attr('fill','#8b92a8').attr('font-size',8).attr('font-family',"'Sora','Noto Sans KR',sans-serif")
   .text('버블 크기 = 공고 수');
 
 
