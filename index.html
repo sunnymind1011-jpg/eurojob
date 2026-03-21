@@ -2360,7 +2360,7 @@ function showSkillCat(cat) {
     }
   });
 
-  // 버블 맵
+  // 트리맵
   const countryCounts = {};
   catJobs.forEach(j => { countryCounts[j.country] = (countryCounts[j.country]||0)+1; });
   const mapEl = document.getElementById('skillMapBubble');
@@ -2452,7 +2452,7 @@ function showSkillCat(cat) {
       // 2) 숫자 없이 레이블만
       labels: ['원격', '하이브리드', '출근'],
       // 1) 채도 낮은 색상, 경력 레벨과 다른 계열
-      datasets: [{ data: [remoteC, hybridC, onsiteC], backgroundColor: ['#FF9F43','#00D2D3','#54A0FF'], borderWidth: 0 }]
+      datasets: [{ data: [remoteC, hybridC, onsiteC], backgroundColor: ['#FF9F43','#00D2D3','#54A0FF'], borderColor: '#1A1C23', borderWidth: 1.5 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -2484,7 +2484,7 @@ function showSkillCat(cat) {
     data: {
       // 2) 숫자 없이 레이블만
       labels: levelEntries.map(([l])=>l),
-      datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderWidth: 0 }]
+      datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderColor: '#1A1C23', borderWidth: 1.5 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
