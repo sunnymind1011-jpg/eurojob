@@ -2458,17 +2458,31 @@ function showSkillCat(cat) {
   const levels = {};
   catJobs.forEach(j => { if (j.level) levels[j.level] = (levels[j.level]||0)+1; });
   const levelEntries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const levelColors = ['#7c6af0','#4f8ef7','#3ecfa0','#f5a623','#f06464','#36c5f0'];
+  // 1) 채도 낮은 색상
+  const levelColors = ['#5a4fa8','#2d5a96','#267a5f','#96680f','#964040','#1e7a8a'];
   if (skillCharts.level) skillCharts.level.destroy();
   skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
     type: 'doughnut',
     data: {
-      labels: levelEntries.map(([l,n])=>`${l} ${n}`),
+      // 2) 숫자 없이 레이블만
+      labels: levelEntries.map(([l])=>l),
       datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } } }
+      plugins: {
+        legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } },
+        // 3) 툴팁 Sora 폰트
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.92)',
+          titleColor: '#1a1a2e',
+          bodyColor: '#1a1a2e',
+          titleFont: { size:13, weight:'600', family:"'Sora','Noto Sans KR',sans-serif" },
+          bodyFont: { size:12, family:"'Sora','Noto Sans KR',sans-serif" },
+          padding: 10,
+          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}개` }
+        }
+      }
     }
   });
 
