@@ -2459,7 +2459,7 @@ function showSkillCat(cat) {
   catJobs.forEach(j => { if (j.level) levels[j.level] = (levels[j.level]||0)+1; });
   const levelEntries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   // 1) 채도 낮은 색상
-  const levelColors = ['#6b9fd4','#5bb8a0','#c9944a','#8b7ec8','#c47a7a','#7a8298'];
+  const levelColors = ['#85b8e8','#6ed4b8','#e0aa5a','#a090d8','#d88e8e','#9098b0'];
   if (skillCharts.level) skillCharts.level.destroy();
   skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
     type: 'doughnut',
