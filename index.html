@@ -2409,7 +2409,7 @@ function showSkillCat(cat) {
 
     // 텍스트 — 크기에 따라 조절, 항상 한글
     const fontSize = Math.min(Math.max(w*0.11, 9), 14);
-    if (w>40 && h>28) {
+    if (w>20 && h>16) {
       g.append('text').attr('x',w/2).attr('y',h/2+fontSize*0.35)
         .attr('text-anchor','middle').attr('fill',tc)
         .attr('font-size',fontSize).attr('font-weight','600')
