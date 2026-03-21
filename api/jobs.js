@@ -76,16 +76,34 @@ const COUNTRY_LANG = {
   PT:'Portuguese', PL:'Polish',
 };
 
+function detectWritingLang(d) {
+  // 프랑스어 특징 단어
+  if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) && 
+      (d.match(/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour)\b/gi)||[]).length > 3) return 'French';
+  // 독일어 특징 단어  
+  if (/\b(und|die|der|das|ist|wir|Sie|mit|für|auf|von|als|bei|zur)\b/g.test(d) &&
+      (d.match(/\b(und|die|der|das|ist|wir|Sie|mit|für)\b/g)||[]).length > 3) return 'German';
+  // 스페인어 특징 단어
+  if (/\b(nuestro|nuestros|para|con|los|las|del|una|que|como|más|por)\b/gi.test(d) &&
+      (d.match(/\b(nuestro|para|con|los|las|del|que|como)\b/gi)||[]).length > 3) return 'Spanish';
+  // 이탈리아어 특징 단어
+  if (/\b(della|delle|degli|questo|nostro|siamo|lavoro|azienda|team)\b/gi.test(d) &&
+      (d.match(/\b(della|delle|nostro|siamo|lavoro|azienda)\b/gi)||[]).length > 2) return 'Italian';
+  // 네덜란드어 특징 단어
+  if (/\b(wij|ons|onze|voor|met|een|van|het|zijn|wordt)\b/g.test(d) &&
+      (d.match(/\b(wij|ons|onze|voor|met|een|van)\b/g)||[]).length > 3) return 'Dutch';
+  // 기본값 영어
+  return 'English';
+}
+
 function detectLangs(d, countryCode) {
-  const l = [];
-  if (/english.*(required|must|essential|proficiency|fluent|mandatory)|fluent.*english|must.*english|strong.*english/i.test(d)) l.push('English');
-  if (/spanish.*(required|must|fluent|proficiency)|fluent.*spanish|español.*(requerido|necesario)/i.test(d)) l.push('Spanish');
-  if (/german.*(required|must|fluent|proficiency)|fluent.*german|deutsch.*(erforderlich|notwendig)/i.test(d)) l.push('German');
-  if (/dutch.*(required|must|fluent|proficiency)|fluent.*dutch|nederlands.*(vereist|noodzakelijk)/i.test(d)) l.push('Dutch');
-  if (/french.*(required|must|fluent|proficiency)|fluent.*french|français.*(requis|obligatoire)/i.test(d)) l.push('French');
-  if (/italian.*(required|must|fluent|proficiency)|fluent.*italian/i.test(d)) l.push('Italian');
+  const writingLang = detectWritingLang(d);
+  const l = [writingLang];
+  // 추가 언어 명시된 경우
+  if (writingLang !== 'English' && /english.*(required|must|essential|fluent)|fluent.*english|strong.*english/i.test(d)) l.push('English');
+  if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
   if (/korean|한국어/i.test(d)) l.push('Korean');
-  return l.length ? l : [];
+  return l;
 }
 function removeDups(jobs) {
   const seen = new Set();
