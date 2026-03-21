@@ -1902,6 +1902,8 @@ adminOnlyNavs.forEach(id => {
   if (el) el.style.display = isAdmin ? 'flex' : 'none';
 });
 
+} // ← showMain 닫는 괄호
+
 function showAdminDashboard() {
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('mainApp').style.display = 'none';
