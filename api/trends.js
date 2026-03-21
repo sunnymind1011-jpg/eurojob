@@ -46,7 +46,8 @@ export default async function handler(req, res) {
         const topCats = categories.slice(0, 10); // 15→10으로 줄이기
         
         const catCounts = await Promise.all(
-          topCats.map(async cat => {
+          topCats.map(async (cat, i) => {
+            await new Promise(r => setTimeout(r, i * 100));
             try {
               const countUrl = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&category=${cat.tag}&results_per_page=1`;
               const countData = await fetchJSON(countUrl);
@@ -56,15 +57,14 @@ export default async function handler(req, res) {
             }
           })
         );
-
-        catCounts.sort((a, b) => b.count - a.count);
-        results[country] = {
-          name: COUNTRY_NAMES[country],
-          categories: catCounts
-        };
+catCounts.sort((a, b) => b.count - a.count);
+results[country] = {
+  name: COUNTRY_NAMES[country],
+  categories: catCounts
+};
 
         // API 속도 제한 방지
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1000));
 
       } catch(e) {
         results[country] = { name: COUNTRY_NAMES[country], categories: [], error: e.message };
