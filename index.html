@@ -2391,7 +2391,15 @@ entries.forEach(([c, n]) => {
   const col = BUBBLE_COLORS[c] || '#8b92a8';
   const gr = svg.append('g').style('cursor','pointer');
 
-  gr.append('title').text(`${coord.name}\n${n}개 공고`);
+  gr.on('mouseover', function(event) {
+  const tip = document.getElementById('bubbleTip');
+  tip.style.display = 'block';
+  tip.style.left = (event.offsetX + 10) + 'px';
+  tip.style.top = (event.offsetY - 10) + 'px';
+  tip.innerHTML = `<strong>${coord.name}</strong><br>${n}개 공고`;
+}).on('mouseout', function() {
+  document.getElementById('bubbleTip').style.display = 'none';
+});
 
   gr.append('circle')
     .attr('cx', coord.x).attr('cy', coord.y).attr('r', r)
