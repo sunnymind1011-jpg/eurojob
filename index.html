@@ -2373,7 +2373,7 @@ function showSkillCat(cat) {
   const hierarchy = d3.hierarchy(tmRoot).sum(d=>d.n);
   d3.treemap().size([tmW,tmH]).paddingInner(3).paddingOuter(2).round(true)(hierarchy);
 
-  const colorScale = d3.scaleLinear().domain([0,tmMax]).range(['#0d1f3a','#4f8ef7']);
+  const colorScale = d3.scaleLinear().domain([0,tmMax]).range(['#4f8ef70d1f3a','#0d1f3a']);
   const textScale = d3.scaleLinear().domain([0,tmMax]).range([0.5,1]);
 
   const tmSvg = d3.select(mapEl).append('svg')
@@ -2507,4 +2507,5 @@ function showSkillCat(cat) {
   
 </body>
 </html>  
+
 
