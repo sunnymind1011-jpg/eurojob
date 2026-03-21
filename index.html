@@ -430,6 +430,7 @@ textarea::placeholder{color:var(--text3);}
 <div class="nav-item" id="nav-jdanalysis" style="display:none" onclick="nav('jdanalysis',this)"><span class="nav-icon">🔍</span>JD 분석</div>
 <div class="nav-section" id="nav-section-info" style="display:none">정보</div>
 <div class="nav-item" id="nav-trends" style="display:none" onclick="nav('trends',this)"><span class="nav-icon">📊</span>직종 트렌드</div>
+<div class="nav-item" id="nav-skillmap" style="display:none" onclick="nav('skillmap',this)"><span class="nav-icon">🎯</span>직종별 스킬맵</div>
 <div class="nav-item" id="nav-tips" style="display:none" onclick="nav('tips',this)"><span class="nav-icon">💡</span>취업 꿀팁</div>
 <div class="nav-item" id="nav-visa" style="display:none" onclick="nav('visa',this)"><span class="nav-icon">🛂</span>비자 가이드</div>
 <div class="nav-item" id="nav-chat" style="display:none" onclick="nav('chat',this)"><span class="nav-icon">☕</span><span class="nav-label">커피챗 신청</span></div>
@@ -699,6 +700,45 @@ textarea::placeholder{color:var(--text3);}
   </div>
 </div>
 
+    <!-- ★ SKILL MAP ──────────────────────────────────────── -->
+<div class="page" id="page-skillmap">
+  <div class="sec-hd" style="margin-bottom:8px">
+    <div><div class="sec-title">🎯 직종별 스킬 맵</div><div class="sec-sub">수집된 공고 기반 직종별 요구 스킬 분석</div></div>
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:20px">채용공고에 명시된 스킬을 직종군별로 분석해요. API 추가 호출 없이 수집된 데이터 기반이에요.</div>
+
+  <div class="filter-row" id="skillmap-tabs" style="margin-bottom:20px"></div>
+  <div class="stats4" id="skillmap-stats" style="margin-bottom:20px"></div>
+
+  <div class="two-col" style="margin-bottom:18px">
+    <div class="card">
+      <h3 style="margin-bottom:14px">🎯 스킬 레이더</h3>
+      <div style="position:relative;width:100%;height:300px"><canvas id="chartSkillRadar"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px">🗺️ 국가별 공고 분포</h3>
+      <div id="skillMapBubble" style="width:100%;height:300px;position:relative"></div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-bottom:18px">
+    <div class="card">
+      <h3 style="margin-bottom:14px">🏠 근무 형태</h3>
+      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillRemote"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px">📊 경력 레벨</h3>
+      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillLevel"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:14px">🌐 언어 요건</h3>
+    <div id="skillmap-langs"></div>
+  </div>
+</div>
+    
+
     <!-- ★ TIPS ──────────────────────────────────────── -->
     <div class="page" id="page-tips">
       <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">💡 해외취업 꿀팁</div></div>
@@ -901,7 +941,8 @@ function nav(id, el) {
   if (el) el.classList.add('active');
   if (id==='coverletter') syncResumeToCL();
   if (id==='ai') updatePromptPreview();
-  if (id==='trends') renderTrends(); // ← 이 줄 추가
+  if (id==='trends') renderTrends();
+  if (id==='skillmap') renderSkillMap();
 }
 
 
@@ -1867,7 +1908,7 @@ const adminBarEl = document.getElementById('adminBar');
 if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
 if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
 
-  const adminOnlyIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-tips','nav-visa','nav-chat'];
+  const adminOnlyIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat'];
 adminOnlyIds.forEach(id => {
   const el = document.getElementById(id);
   if (el) el.style.display = isAdmin ? 'block' : 'none';
@@ -2128,7 +2169,309 @@ function showTrendCountry(countryCode, tabEl) {
   });
 }
 
+// ════════════════════════════════════════
+//  SKILL MAP
+// ════════════════════════════════════════
+const SKILL_CATEGORIES = {
+  '데이터': {
+    keywords: ['data','analyst','scientist','analytics','bi','intelligence','sql','databricks','snowflake'],
+    radarLabels: ['SQL / DB','Python / R','시각화 툴','ML / AI','클라우드','통계'],
+    radarSkills: [
+      ['SQL','BigQuery','Snowflake','Databricks'],
+      ['Python','R'],
+      ['Tableau','PowerBI','Looker'],
+      ['Machine Learning','Deep Learning','NLP','LLM'],
+      ['AWS','GCP','Azure'],
+      ['Statistics','A/B Testing','Data Modeling'],
+    ],
+    color: '#4f8ef7'
+  },
+  '마케팅': {
+    keywords: ['marketing','seo','growth','brand','content','campaign','acquisition','crm'],
+    radarLabels: ['SEO / SEM','유료광고','분석툴','CRM','소셜미디어','콘텐츠'],
+    radarSkills: [
+      ['SEO','SEM'],
+      ['Google Ads','Meta Ads'],
+      ['Google Analytics','Amplitude','GTM','Google Tag Manager'],
+      ['Salesforce','HubSpot','Marketo','Braze'],
+      ['Canva','Content Strategy'],
+      ['A/B Testing'],
+    ],
+    color: '#3ecfa0'
+  },
+  '개발': {
+    keywords: ['engineer','developer','backend','frontend','software','fullstack','devops','cloud','architect'],
+    radarLabels: ['백엔드','프론트엔드','클라우드','DevOps','데이터베이스','AI / ML'],
+    radarSkills: [
+      ['Python','Java'],
+      ['JavaScript','React'],
+      ['AWS','GCP','Azure'],
+      ['Docker','Kubernetes','CI/CD','DevOps'],
+      ['SQL'],
+      ['LLM','Machine Learning'],
+    ],
+    color: '#7c6af0'
+  },
+  'HR': {
+    keywords: ['hr','talent','recruitment','people','hris','recruiter','compensation','payroll'],
+    radarLabels: ['채용 시스템','HR 분석','C&B','조직개발','온보딩','HRIS'],
+    radarSkills: [
+      ['ATS','Recruitment','Talent Acquisition'],
+      ['Data Analytics','Statistics'],
+      ['C&B'],
+      ['Leadership'],
+      ['Workday','SuccessFactors'],
+      ['HRIS','SAP'],
+    ],
+    color: '#f5a623'
+  },
+  '영업': {
+    keywords: ['sales','account','business development','commercial','revenue'],
+    radarLabels: ['CRM','데이터분석','마케팅툴','프레젠테이션','협상','영어'],
+    radarSkills: [
+      ['Salesforce','HubSpot'],
+      ['Data Analytics','SQL'],
+      ['Google Analytics','Amplitude'],
+      ['Canva'],
+      ['Leadership'],
+      ['Content Strategy'],
+    ],
+    color: '#36c5f0'
+  },
+  '재무': {
+    keywords: ['finance','accounting','financial','controller','treasury','audit','tax'],
+    radarLabels: ['ERP','엑셀/BI','분석','보고','규정준수','예측'],
+    radarSkills: [
+      ['SAP','Workday'],
+      ['Excel','PowerBI','Tableau'],
+      ['Data Analytics','Statistics'],
+      ['Data Modeling'],
+      ['TIBCO'],
+      ['A/B Testing'],
+    ],
+    color: '#5bb8a0'
+  },
+};
 
+const COUNTRY_COORDS = {
+  GB:{x:195,y:108,name:'영국'}, DE:{x:288,y:128,name:'독일'},
+  NL:{x:258,y:106,name:'네덜란드'}, ES:{x:172,y:192,name:'스페인'},
+  FR:{x:225,y:155,name:'프랑스'}, BE:{x:248,y:118,name:'벨기에'},
+  IE:{x:155,y:106,name:'아일랜드'}, PT:{x:158,y:196,name:'포르투갈'},
+  CH:{x:272,y:158,name:'스위스'}, IT:{x:295,y:178,name:'이탈리아'},
+  AT:{x:310,y:148,name:'오스트리아'}, EU:{x:340,y:130,name:'기타'},
+};
+
+let activeSkillCat = '데이터';
+let skillCharts = {};
+
+function renderSkillMap() {
+  if (!allJobs.length) {
+    document.getElementById('skillmap-stats').innerHTML = '<div style="color:var(--text3);font-size:13px;grid-column:1/-1">공고를 먼저 불러와주세요!</div>';
+    return;
+  }
+  const tabsEl = document.getElementById('skillmap-tabs');
+  tabsEl.innerHTML = Object.keys(SKILL_CATEGORIES).map(cat => {
+    const on = cat === activeSkillCat;
+    const color = SKILL_CATEGORIES[cat].color;
+    return `<div class="chip${on?' on':''}"
+      style="${on?`background:rgba(79,142,247,.1);border-color:${color}33;color:${color}`:''}"
+      onclick="selectSkillCat('${cat}',this)">${cat}</div>`;
+  }).join('');
+  showSkillCat(activeSkillCat);
+}
+
+function selectSkillCat(cat, el) {
+  activeSkillCat = cat;
+  document.querySelectorAll('#skillmap-tabs .chip').forEach(c => {
+    c.classList.remove('on');
+    c.style.cssText = '';
+  });
+  el.classList.add('on');
+  const color = SKILL_CATEGORIES[cat].color;
+  el.style.background = 'rgba(79,142,247,.1)';
+  el.style.borderColor = color + '55';
+  el.style.color = color;
+  showSkillCat(cat);
+}
+
+function showSkillCat(cat) {
+  const { keywords, radarLabels, radarSkills, color } = SKILL_CATEGORIES[cat];
+
+  const catJobs = allJobs.filter(j =>
+    keywords.some(k => j.title.toLowerCase().includes(k))
+  );
+
+  if (!catJobs.length) {
+    document.getElementById('skillmap-stats').innerHTML =
+      `<div style="color:var(--text3);font-size:13px;grid-column:1/-1">${cat} 관련 공고가 없어요</div>`;
+    return;
+  }
+
+  // stats
+  const reloc = catJobs.filter(j=>j.relocation).length;
+  const remote = catJobs.filter(j=>j.remoteType==='Remote').length;
+  const countryCount = new Set(catJobs.map(j=>j.country)).size;
+  document.getElementById('skillmap-stats').innerHTML = `
+    <div class="stat"><div class="stat-lbl">관련 공고</div><div class="stat-val" style="color:${color}">${catJobs.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Relocation</div><div class="stat-val c-green">${reloc}</div></div>
+    <div class="stat"><div class="stat-lbl">원격 가능</div><div class="stat-val c-blue">${remote}</div></div>
+    <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple">${countryCount}</div></div>`;
+
+  // 레이더 데이터 계산
+  const radarData = radarSkills.map(skillGroup => {
+    let count = 0;
+    catJobs.forEach(j => {
+      const text = (j.description||'') + ' ' + (j.title||'');
+      if (skillGroup.some(s => new RegExp('\\b'+s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(text))) count++;
+    });
+    return Math.round(count / catJobs.length * 100);
+  });
+
+  if (skillCharts.radar) skillCharts.radar.destroy();
+  skillCharts.radar = new Chart(document.getElementById('chartSkillRadar'), {
+    type: 'radar',
+    data: {
+      labels: radarLabels,
+      datasets: [{
+        label: cat,
+        data: radarData,
+        borderColor: color,
+        backgroundColor: color + '22',
+        pointBackgroundColor: color,
+        pointBorderColor: color,
+        borderWidth: 2,
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { stepSize: 25, color: '#555e75', font: { size: 9 }, backdropColor: 'transparent' },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: '#8b92a8', font: { size: 11, family: "'Sora','Noto Sans KR',sans-serif" } },
+          angleLines: { color: 'rgba(255,255,255,0.06)' }
+        }
+      }
+    }
+  });
+
+  // 버블 맵
+  const countryCounts = {};
+  catJobs.forEach(j => { countryCounts[j.country] = (countryCounts[j.country]||0)+1; });
+  const maxCount = Math.max(...Object.values(countryCounts));
+
+  const mapEl = document.getElementById('skillMapBubble');
+  mapEl.innerHTML = '';
+  const svg = d3.select('#skillMapBubble').append('svg')
+    .attr('width','100%').attr('height','100%')
+    .attr('viewBox','100 80 280 170');
+
+  svg.append('rect').attr('width','100%').attr('height','100%').attr('fill','transparent');
+
+  // 연결선 (배경)
+  Object.entries(countryCounts).forEach(([c, n]) => {
+    const coord = COUNTRY_COORDS[c];
+    if (!coord) return;
+    svg.append('circle')
+      .attr('cx', coord.x).attr('cy', coord.y)
+      .attr('r', Math.max(6, Math.round(Math.sqrt(n/maxCount)*38)))
+      .attr('fill', color).attr('fill-opacity', 0.06)
+      .attr('stroke', color).attr('stroke-width', 0.5).attr('stroke-opacity', 0.2);
+  });
+
+  Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).forEach(([c, n]) => {
+    const coord = COUNTRY_COORDS[c];
+    if (!coord) return;
+    const r = Math.max(8, Math.round(Math.sqrt(n/maxCount)*38));
+    const gr = svg.append('g').style('cursor','pointer');
+
+    gr.append('circle')
+      .attr('cx', coord.x).attr('cy', coord.y).attr('r', r)
+      .attr('fill', color).attr('fill-opacity', 0.18)
+      .attr('stroke', color).attr('stroke-width', 1.5).attr('stroke-opacity', 0.8);
+
+    gr.append('text')
+      .attr('x', coord.x).attr('y', coord.y - (r>16?4:2))
+      .attr('text-anchor','middle')
+      .attr('fill', color)
+      .attr('font-size', r>16 ? 11 : 9)
+      .attr('font-family',"'Sora',sans-serif")
+      .attr('font-weight','600')
+      .text(countryFlag(c));
+
+    if (r > 14) {
+      gr.append('text')
+        .attr('x', coord.x).attr('y', coord.y + r - 6)
+        .attr('text-anchor','middle')
+        .attr('fill','rgba(255,255,255,0.55)')
+        .attr('font-size', 8)
+        .attr('font-family',"'Sora',sans-serif")
+        .text(n+'개');
+    }
+  });
+
+  // 범례
+  const leg = svg.append('g').attr('transform','translate(106,84)');
+  leg.append('rect').attr('rx',3).attr('width',52).attr('height',15)
+    .attr('fill','rgba(0,0,0,0.5)').attr('stroke','rgba(255,255,255,0.08)').attr('stroke-width',0.5);
+  leg.append('text').attr('x',26).attr('y',10).attr('text-anchor','middle')
+    .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
+    .text('크기 = 공고 수');
+
+  // 근무 형태
+  const remoteC = catJobs.filter(j=>j.remoteType==='Remote').length;
+  const hybridC = catJobs.filter(j=>j.remoteType==='Hybrid').length;
+  const onsiteC = catJobs.filter(j=>j.remoteType==='On-site').length;
+  if (skillCharts.remote) skillCharts.remote.destroy();
+  skillCharts.remote = new Chart(document.getElementById('chartSkillRemote'), {
+    type: 'doughnut',
+    data: {
+      labels: [`원격 ${remoteC}`, `하이브리드 ${hybridC}`, `출근 ${onsiteC}`],
+      datasets: [{ data: [remoteC, hybridC, onsiteC], backgroundColor: ['#3ecfa0','#4f8ef7','#f5a623'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } } }
+    }
+  });
+
+  // 경력 레벨
+  const levels = {};
+  catJobs.forEach(j => { if (j.level) levels[j.level] = (levels[j.level]||0)+1; });
+  const levelEntries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const levelColors = ['#7c6af0','#4f8ef7','#3ecfa0','#f5a623','#f06464','#36c5f0'];
+  if (skillCharts.level) skillCharts.level.destroy();
+  skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
+    type: 'doughnut',
+    data: {
+      labels: levelEntries.map(([l,n])=>`${l} ${n}`),
+      datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } } }
+    }
+  });
+
+  // 언어
+  const langCounts = {};
+  catJobs.forEach(j => { (j.languageReqs||[]).forEach(l => { langCounts[l]=(langCounts[l]||0)+1; }); });
+  const topLangs = Object.entries(langCounts).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('skillmap-langs').innerHTML = topLangs.length
+    ? `<div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${topLangs.map(([l,n])=>`
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 18px;text-align:center">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${l}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">${n}개 · ${Math.round(n/catJobs.length*100)}%</div>
+          </div>`).join('')}
+      </div>`
+    : '<div style="color:var(--text3);font-size:13px">언어 데이터 없음</div>';
+}
+  
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
