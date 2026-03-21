@@ -2439,13 +2439,6 @@ bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
     
   });
 
-  // 범례
-  const leg = svg.append('g').attr('transform','translate(106,84)');
-  leg.append('rect').attr('rx',3).attr('width',52).attr('height',15)
-    .attr('fill','rgba(0,0,0,0.5)').attr('stroke','rgba(255,255,255,0.08)').attr('stroke-width',0.5);
-  leg.append('text').attr('x',26).attr('y',10).attr('text-anchor','middle')
-    .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
-    .text('크기 = 공고 수');
 
   // 근무 형태
   const remoteC = catJobs.filter(j=>j.remoteType==='Remote').length;
