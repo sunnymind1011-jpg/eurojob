@@ -1074,7 +1074,7 @@ function detectCountry(l) {
   if (/portugal|lisbon|porto|pt$/.test(l)) return 'PT';
   return 'EU';
 }
-function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺'}[c]||'🌍';}
+function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭'}[c]||'🌍';}
 function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽'}[c]||c;}
 function detectRelocation(d){return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);}
 function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
@@ -2035,32 +2035,94 @@ function showTrendCountry(countryCode, tabEl) {
 
   const cats = data.categories;
 
+  // 카테고리별 컬러 맵
+  const COLORS = [
+    '#4f8ef7','#3ecfa0','#f5a623','#7c6af0','#f06464',
+    '#36c5f0','#2eb67d','#e01e5a','#ff9500','#8b92a8'
+  ];
+
+  // 하단 리스트
   document.getElementById('trendJobList').innerHTML = cats.length
     ? cats.map(({ label, count }, i) => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:12px;color:var(--text3);width:20px">${i+1}</span>
+        <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i]||'#8b92a8'};flex-shrink:0"></span>
         <span style="flex:1;font-size:13px">${label}</span>
         <div style="width:100px;height:5px;background:var(--bg3);border-radius:3px">
-          <div style="height:100%;background:var(--accent);border-radius:3px;width:${Math.round(count/cats[0].count*100)}%"></div>
+          <div style="height:100%;background:${COLORS[i]||'#8b92a8'};border-radius:3px;width:${Math.round(count/cats[0].count*100)}%"></div>
         </div>
         <span style="font-size:12px;color:var(--text2);width:55px;text-align:right">${count.toLocaleString()}</span>
       </div>`).join('')
     : '<div style="color:var(--text3);font-size:13px;padding:10px 0">데이터 없음</div>';
 
-  const labels = cats.slice(0,10).map(c => c.label.length > 20 ? c.label.slice(0,18)+'...' : c.label);
+  const labels = cats.slice(0,10).map(c => c.label);
   const counts = cats.slice(0,10).map(c => c.count);
+  const colors = cats.slice(0,10).map((_, i) => COLORS[i] || '#8b92a8');
+
+  // 추세선 데이터
+  const trendLine = counts.map((_, i) => counts[i]);
 
   if (trendCharts.country) trendCharts.country.destroy();
   trendCharts.country = new Chart(document.getElementById('chartCountry'), {
     type: 'bar',
-    data: { labels, datasets: [{ data: counts, backgroundColor: '#4f8ef7', borderRadius: 6 }] },
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          data: counts,
+          backgroundColor: colors,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          type: 'line',
+          data: trendLine,
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1.5,
+          pointRadius: 3,
+          pointBackgroundColor: 'rgba(255,255,255,0.4)',
+          fill: false,
+          tension: 0.3,
+          yAxisID: 'y',
+        }
+      ]
+    },
     options: {
       indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.92)',
+          titleColor: '#1a1a2e',
+          bodyColor: '#1a1a2e',
+          titleFont: { size: 13, weight: '600' },
+          bodyFont: { size: 12 },
+          padding: 10,
+          borderColor: 'rgba(0,0,0,0.08)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ctx.datasetIndex === 0
+              ? ` ${ctx.parsed.x.toLocaleString()}개 공고`
+              : null
+          }
+        }
+      },
       scales: {
-        x: { ticks: { color: '#8b92a8', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-        y: { ticks: { color: '#8b92a8', font: { size: 11 } }, grid: { display: false } }
+        x: {
+          ticks: { color: '#8b92a8', font: { size: 11 } },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        y: {
+          ticks: {
+            color: '#c0c4d0',
+            font: { size: 11 },
+            maxTicksLimit: 10,
+          },
+          grid: { display: false }
+        }
       }
     }
   });
