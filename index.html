@@ -2452,39 +2452,36 @@ function showSkillCat(cat) {
 
   // 근무 형태
   const remoteC = catJobs.filter(j=>j.remoteType==='Remote').length;
-  const hybridC = catJobs.filter(j=>j.remoteType==='Hybrid').length;
-  const onsiteC = catJobs.filter(j=>j.remoteType==='On-site').length;
-  if (skillCharts.remote) skillCharts.remote.destroy();
-  skillCharts.remote = new Chart(document.getElementById('chartSkillRemote'), {
-    type: 'doughnut',
-    data: {
-      // 2) 숫자 없이 레이블만
-      const remoteData = [
-        { label:'원격', value:remoteC, color:'#4b5563' },
-        { label:'하이브리드', value:hybridC, color:'#60a5fa' },
-        { label:'출근', value:onsiteC, color:'#94a3b8' },
-      ].sort((a,b)=>b.value-a.value);
-      return {
-        labels: remoteData.map(d=>d.label),
-        datasets: [{ data: remoteData.map(d=>d.value), backgroundColor: remoteData.map(d=>d.color), borderColor: '#1A1C23', borderWidth: 1.2, spacing: 2 }]
-    };
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } },
-        // 3) 툴팁 Sora 폰트
-        tooltip: {
-          backgroundColor: 'rgba(255,255,255,0.92)',
-          titleColor: '#1a1a2e',
-          bodyColor: '#1a1a2e',
-          titleFont: { size:13, weight:'600', family:"'Sora','Noto Sans KR',sans-serif" },
-          bodyFont: { size:12, family:"'Sora','Noto Sans KR',sans-serif" },
-          padding: 10,
-          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}개` }
-        }
+const hybridC = catJobs.filter(j=>j.remoteType==='Hybrid').length;
+const onsiteC = catJobs.filter(j=>j.remoteType==='On-site').length;
+const remoteData = [
+  { label:'원격', value:remoteC, color:'#4b5563' },
+  { label:'하이브리드', value:hybridC, color:'#60a5fa' },
+  { label:'출근', value:onsiteC, color:'#94a3b8' },
+].sort((a,b)=>b.value-a.value);
+if (skillCharts.remote) skillCharts.remote.destroy();
+skillCharts.remote = new Chart(document.getElementById('chartSkillRemote'), {
+  type: 'doughnut',
+  data: {
+    labels: remoteData.map(d=>d.label),
+    datasets: [{ data: remoteData.map(d=>d.value), backgroundColor: remoteData.map(d=>d.color), borderColor: '#1A1C23', borderWidth: 1.2, spacing: 2 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } },
+      tooltip: {
+        backgroundColor: 'rgba(255,255,255,0.92)',
+        titleColor: '#1a1a2e',
+        bodyColor: '#1a1a2e',
+        titleFont: { size:13, weight:'600', family:"'Sora','Noto Sans KR',sans-serif" },
+        bodyFont: { size:12, family:"'Sora','Noto Sans KR',sans-serif" },
+        padding: 10,
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}개` }
       }
     }
-  });
+  }
+});
 
   // 경력 레벨
   const levels = {};
