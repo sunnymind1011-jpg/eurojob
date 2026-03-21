@@ -700,46 +700,6 @@ textarea::placeholder{color:var(--text3);}
   </div>
 </div>
 
-    <!-- ★ SKILL MAP ──────────────────────────────────────── -->
-<div class="page" id="page-skillmap">
-  <div class="sec-hd" style="margin-bottom:8px">
-    <div><div class="sec-title">🎯 직종별 스킬맵</div><div class="sec-sub">수집된 공고 기반 직종별 요구 스킬 분석</div></div>
-  </div>
-  <div style="font-size:12px;color:var(--text3);margin-bottom:20px">채용공고에 명시된 스킬을 직종군별로 분석합니다.</div>
-
-  <div class="filter-row" id="skillmap-tabs" style="margin-bottom:20px"></div>
-  <div class="stats4" id="skillmap-stats" style="margin-bottom:20px"></div>
-
-  <div class="two-col" style="margin-bottom:18px">
-    <div class="card">
-      <h3 style="margin-bottom:14px">🎯 스킬 레이더</h3>
-      <div style="position:relative;width:100%;height:300px"><canvas id="chartSkillRadar"></canvas></div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:14px">🗺️ 국가별 공고 분포</h3>
-      <div id="skillMapBubble" style="width:100%;height:300px;position:relative">
-  <div id="bubbleTip" style="display:none;position:absolute;background:rgba(255,255,255,0.92);color:#1a1a2e;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;pointer-events:none;z-index:10;font-family:'Sora',sans-serif;line-height:1.6"></div>
-</div>
-  </div>
-
-  <div class="two-col" style="margin-bottom:18px">
-    <div class="card">
-      <h3 style="margin-bottom:14px">🏠 근무 형태</h3>
-      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillRemote"></canvas></div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:14px">📊 경력 레벨</h3>
-      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillLevel"></canvas></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-bottom:14px">🌐 언어 요건</h3>
-    <div id="skillmap-langs"></div>
-  </div>
-</div>
-    
-
     <!-- ★ TIPS ──────────────────────────────────────── -->
     <div class="page" id="page-tips">
       <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">💡 해외취업 꿀팁</div></div>
@@ -901,6 +861,47 @@ textarea::placeholder{color:var(--text3);}
         <div class="log-box" id="logBox"><span style="color:var(--text3)">로그가 여기에 표시됩니다...</span></div>
       </div>
     </div>
+
+    <!-- ★ SKILL MAP ──────────────────────────────────────── -->
+<div class="page" id="page-skillmap">
+  <div class="sec-hd" style="margin-bottom:8px">
+    <div><div class="sec-title">🎯 직종별 스킬맵</div><div class="sec-sub">수집된 공고 기반 직종별 요구 스킬 분석</div></div>
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:20px">채용공고에 명시된 스킬을 직종군별로 분석합니다.</div>
+
+  <div class="filter-row" id="skillmap-tabs" style="margin-bottom:20px"></div>
+  <div class="stats4" id="skillmap-stats" style="margin-bottom:20px"></div>
+
+  <div class="two-col" style="margin-bottom:18px">
+    <div class="card">
+      <h3 style="margin-bottom:14px">🎯 스킬 레이더</h3>
+      <div style="position:relative;width:100%;height:300px"><canvas id="chartSkillRadar"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px">🗺️ 국가별 공고 분포</h3>
+      <div id="skillMapBubble" style="width:100%;height:300px;position:relative">
+        <div id="bubbleTip" style="display:none;position:absolute;background:rgba(255,255,255,0.92);color:#1a1a2e;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;pointer-events:none;z-index:10;font-family:'Sora',sans-serif;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-bottom:18px">
+    <div class="card">
+      <h3 style="margin-bottom:14px">🏠 근무 형태</h3>
+      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillRemote"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px">📊 경력 레벨</h3>
+      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillLevel"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:14px">🌐 언어 요건</h3>
+    <div id="skillmap-langs"></div>
+  </div>
+</div>
+    
 
 
   </div><!-- /content -->
