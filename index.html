@@ -2367,23 +2367,54 @@ function showSkillCat(cat) {
   const maxCount = Math.max(...Object.values(countryCounts));
 
   const mapEl = document.getElementById('skillMapBubble');
-  mapEl.innerHTML = '';
-  const svg = d3.select('#skillMapBubble').append('svg')
-    .attr('width','100%').attr('height','100%')
-    .attr('viewBox','100 80 280 170');
+mapEl.innerHTML = '';
 
-  svg.append('rect').attr('width','100%').attr('height','100%').attr('fill','transparent');
+const BUBBLE_COLORS = {
+  GB:'#4f8ef7', DE:'#3ecfa0', NL:'#7c6af0', ES:'#f5a623',
+  FR:'#f06464', BE:'#36c5f0', IE:'#5bb8a0', PT:'#c9944a',
+  CH:'#8b7ec8', IT:'#c47a7a', AT:'#6b9fd4', EU:'#8b92a8'
+};
 
-  // 연결선 (배경)
-  Object.entries(countryCounts).forEach(([c, n]) => {
-    const coord = COUNTRY_COORDS[c];
-    if (!coord) return;
-    svg.append('circle')
-      .attr('cx', coord.x).attr('cy', coord.y)
-      .attr('r', Math.max(6, Math.round(Math.sqrt(n/maxCount)*38)))
-      .attr('fill', color).attr('fill-opacity', 0.06)
-      .attr('stroke', color).attr('stroke-width', 0.5).attr('stroke-opacity', 0.2);
-  });
+const svg = d3.select('#skillMapBubble').append('svg')
+  .attr('width','100%').attr('height','100%')
+  .attr('viewBox','100 80 280 170');
+
+svg.append('rect').attr('width','100%').attr('height','100%').attr('fill','transparent');
+
+const entries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]);
+const maxCount = entries[0]?.[1] || 1;
+
+entries.forEach(([c, n]) => {
+  const coord = COUNTRY_COORDS[c];
+  if (!coord) return;
+  const r = Math.max(8, Math.round(Math.sqrt(n/maxCount)*40));
+  const col = BUBBLE_COLORS[c] || '#8b92a8';
+  const gr = svg.append('g').style('cursor','pointer');
+
+  gr.append('title').text(`${coord.name}\n${n}개 공고`);
+
+  gr.append('circle')
+    .attr('cx', coord.x).attr('cy', coord.y).attr('r', r)
+    .attr('fill', col).attr('fill-opacity', 0.15)
+    .attr('stroke', col).attr('stroke-width', 0.8).attr('stroke-opacity', 0.6);
+
+  gr.append('text')
+    .attr('x', coord.x).attr('y', coord.y + 4)
+    .attr('text-anchor','middle')
+    .attr('fill', col)
+    .attr('font-size', r > 18 ? 12 : 10)
+    .attr('font-family',"'Sora',sans-serif")
+    .attr('font-weight','600')
+    .text(c);
+});
+
+// 범례 — 왼쪽 하단
+const leg = svg.append('g').attr('transform','translate(106,228)');
+leg.append('rect').attr('rx',3).attr('width',58).attr('height',15)
+  .attr('fill','rgba(0,0,0,0.45)').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.5);
+leg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
+  .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
+  .text('버블 크기 = 공고 수');
 
   Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).forEach(([c, n]) => {
     const coord = COUNTRY_COORDS[c];
