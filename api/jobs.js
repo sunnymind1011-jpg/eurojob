@@ -41,7 +41,7 @@ const COUNTRY_INFO = {
   it: { name: 'Italy',          flag: '🇮🇹', code: 'IT' },
   pl: { name: 'Poland',         flag: '🇵🇱', code: 'PL' },
   ch: { name: 'Switzerland',    flag: '🇨🇭', code: 'CH' },
-  ie: { name: 'Ireland', flag: '🇮🇪', code: 'IE' },
+  ie: { name: 'Ireland',        flag: '🇮🇪', code: 'IE' },
 };
 
 function companyEmoji(name) {
