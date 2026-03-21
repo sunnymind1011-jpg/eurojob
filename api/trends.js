@@ -43,20 +43,19 @@ export default async function handler(req, res) {
         
         // 각 카테고리별 공고 수 조회
         const categories = data.results || [];
-        const topCats = categories.slice(0, 15); // 상위 15개만
+        const topCats = categories.slice(0, 10); // 15→10으로 줄이기
         
-        const catCounts = [];
-        for (const cat of topCats) {
-          try {
-            const countUrl = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&category=${cat.tag}&results_per_page=1`;
-            const countData = await fetchJSON(countUrl);
-            catCounts.push({
-              label: cat.label,
-              tag: cat.tag,
-              count: countData.count || 0
-            });
-          } catch(e) {}
-        }
+        const catCounts = await Promise.all(
+          topCats.map(async cat => {
+            try {
+              const countUrl = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&category=${cat.tag}&results_per_page=1`;
+              const countData = await fetchJSON(countUrl);
+              return { label: cat.label, tag: cat.tag, count: countData.count || 0 };
+            } catch(e) {
+              return { label: cat.label, tag: cat.tag, count: 0 };
+            }
+          })
+        );
 
         catCounts.sort((a, b) => b.count - a.count);
         results[country] = {
@@ -65,7 +64,7 @@ export default async function handler(req, res) {
         };
 
         // API 속도 제한 방지
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 500));
 
       } catch(e) {
         results[country] = { name: COUNTRY_NAMES[country], categories: [], error: e.message };
