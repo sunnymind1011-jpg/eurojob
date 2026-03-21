@@ -2413,10 +2413,25 @@ entries.forEach(([c, n]) => {
 });
 
 const bubbleLeg = svg.append('g').attr('transform','translate(310,238)');
-bubbleLeg.append('rect').attr('rx',3).attr('width',64).attr('height',16)
-  .attr('fill','rgba(0,0,0,0.45)').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.5);
-bubbleLeg.append('text').attr('x',32).attr('y',11).attr('text-anchor','middle')
-  .attr('fill','#8b92a8').attr('font-size',7).attr('font-family',"'Sora','Noto Sans KR',sans-serif")
+
+// 배경 박스
+bubbleLeg.append('rect')
+  .attr('rx', 3)
+  .attr('width', 64)
+  .attr('height', 16)
+  .attr('fill', 'rgba(0,0,0,0.45)')
+  .attr('stroke', 'rgba(255,255,255,0.06)')
+  .attr('stroke-width', 0.5);
+
+// 텍스트 수정 부분
+bubbleLeg.append('text')
+  .attr('x', 32)                // 가로 중앙 (64 / 2)
+  .attr('y', 8)                 // 세로 중앙 (16 / 2)
+  .attr('text-anchor', 'middle') // 가로 중앙 정렬
+  .attr('dominant-baseline', 'central') // 세로 중앙 정렬 (핵심!)
+  .attr('fill', '#8b92a8')
+  .attr('font-size', 7)
+  .attr('font-family', "'Sora','Noto Sans KR',sans-serif")
   .text('버블 크기 = 공고 수');
 
 
