@@ -2365,8 +2365,6 @@ function showSkillCat(cat) {
   // 버블 맵
   const countryCounts = {};
   catJobs.forEach(j => { countryCounts[j.country] = (countryCounts[j.country]||0)+1; });
-  const maxCount = Math.max(...Object.values(countryCounts));
-
   const mapEl = document.getElementById('skillMapBubble');
 mapEl.innerHTML = '';
 
@@ -2425,28 +2423,7 @@ bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
   .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
   .text('버블 크기 = 공고 수');
 
-  Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).forEach(([c, n]) => {
-    const coord = COUNTRY_COORDS[c];
-    if (!coord) return;
-    const r = Math.max(8, Math.round(Math.sqrt(n/maxCount)*38));
-    const gr = svg.append('g').style('cursor','pointer');
 
-    gr.append('circle')
-      .attr('cx', coord.x).attr('cy', coord.y).attr('r', r)
-      .attr('fill', color).attr('fill-opacity', 0.18)
-      .attr('stroke', color).attr('stroke-width', 1.5).attr('stroke-opacity', 0.8);
-
-    gr.append('text')
-      .attr('x', coord.x).attr('y', coord.y - (r>16?4:2))
-      .attr('text-anchor','middle')
-      .attr('fill', color)
-      .attr('font-size', r>16 ? 11 : 9)
-      .attr('font-family',"'Sora',sans-serif")
-      .attr('font-weight','600')
-      .text(countryFlag(c));
-
-    
-  });
 
 
   // 근무 형태
