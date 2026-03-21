@@ -2037,8 +2037,8 @@ function showTrendCountry(countryCode, tabEl) {
 
   // 카테고리별 컬러 맵
   const COLORS = [
-    '#4f8ef7','#3ecfa0','#f5a623','#7c6af0','#f06464',
-    '#36c5f0','#2eb67d','#e01e5a','#ff9500','#8b92a8'
+  '#6b9fd4','#5bb8a0','#c9944a','#8b7ec8','#c47a7a',
+  '#5aaec4','#4a9e7a','#b85a7a','#c49060','#7a8298'
   ];
 
   // 하단 리스트
@@ -2112,16 +2112,16 @@ function showTrendCountry(countryCode, tabEl) {
       },
       scales: {
         x: {
-          ticks: { color: '#8b92a8', font: { size: 11 } },
+          ticks: { color: '#8b92a8', font: { size: 11, family: "'Sora', 'Noto Sans KR', sans-serif" } },
           grid: { color: 'rgba(255,255,255,0.05)' }
         },
         y: {
           ticks: {
-            color: '#c0c4d0',
-            font: { size: 11 },
-            maxTicksLimit: 10,
-          },
-          grid: { display: false }
+          color: '#8b92a8',
+          font: { size: 11, family: "'Sora', 'Noto Sans KR', sans-serif" },
+          maxTicksLimit: 10,
+        },
+        grid: { display: false }
         }
       }
     }
