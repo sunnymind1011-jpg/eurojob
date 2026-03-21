@@ -1068,7 +1068,7 @@ function detectLangs(d, countryCode) {
   if (/french.*(required|must|fluent|proficiency)|fluent.*french|français.*(requis|obligatoire)/i.test(d)) l.push('French');
   if (/italian.*(required|must|fluent|proficiency)|fluent.*italian/i.test(d)) l.push('Italian');
   if (/korean|한국어/i.test(d)) l.push('Korean');
-  return l.length ? l : [COUNTRY_LANG[countryCode] || ''];
+  return l.length ? l : [];
 }
 function companyEmoji(n){const e=['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];return e[n.charCodeAt(0)%e.length]||'🏢';}
 function removeDups(jobs){const seen=new Set();return jobs.filter(j=>{const k=`${j.title}__${j.company}`.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});}
