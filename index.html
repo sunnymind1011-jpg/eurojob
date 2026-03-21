@@ -2317,13 +2317,22 @@ function showSkillCat(cat) {
 
   // 레이더 데이터 계산
   const radarData = radarSkills.map(skillGroup => {
-    let count = 0;
-    catJobs.forEach(j => {
-      const text = (j.description||'') + ' ' + (j.title||'');
-      if (skillGroup.some(s => new RegExp('\\b'+s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(text))) count++;
+  let count = 0;
+  catJobs.forEach(j => {
+    const text = (j.description||'') + ' ' + (j.title||'');
+    const found = skillGroup.some(s => {
+      // skillKeywords에서 해당 스킬의 variants 찾기
+      const sk = skillKeywords.find(k => k.en.toLowerCase() === s.toLowerCase());
+      const allVariants = sk ? [sk.en, ...(sk.variants||[])] : [s];
+      return allVariants.some(v => {
+        const escaped = v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        return new RegExp('\\b'+escaped+'\\b','i').test(text);
+      });
     });
-    return count;
+    if (found) count++;
   });
+  return count;
+});
 
   if (skillCharts.radar) skillCharts.radar.destroy();
   skillCharts.radar = new Chart(document.getElementById('chartSkillRadar'), {
