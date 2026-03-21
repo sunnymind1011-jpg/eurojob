@@ -2409,10 +2409,10 @@ entries.forEach(([c, n]) => {
 });
 
 // 범례 — 왼쪽 하단
-const leg = svg.append('g').attr('transform','translate(106,228)');
-leg.append('rect').attr('rx',3).attr('width',58).attr('height',15)
+const bubbleLeg = svg.append('g').attr('transform','translate(106,228)');
+bubbleLeg.append('rect').attr('rx',3).attr('width',58).attr('height',15)
   .attr('fill','rgba(0,0,0,0.45)').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.5);
-leg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
+bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
   .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
   .text('버블 크기 = 공고 수');
 
