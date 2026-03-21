@@ -2448,7 +2448,7 @@ function showSkillCat(cat) {
       // 2) 숫자 없이 레이블만
       labels: ['원격', '하이브리드', '출근'],
       // 1) 채도 낮은 색상, 경력 레벨과 다른 계열
-      datasets: [{ data: [remoteC, hybridC, onsiteC], backgroundColor: ['#4a8a6a','#4a6a8a','#8a7a4a'], borderWidth: 0 }]
+      datasets: [{ data: [remoteC, hybridC, onsiteC], backgroundColor: ['#E7C160','#D87B4B','#A12638'], borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -2473,7 +2473,7 @@ function showSkillCat(cat) {
   catJobs.forEach(j => { if (j.level) levels[j.level] = (levels[j.level]||0)+1; });
   const levelEntries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   // 1) 채도 낮은 색상
-  const levelColors = ['#2E8B57','#3CB371','#66CDAA','#AFEEEE','#FFFFE0','#8FBC8F'];
+  const levelColors = ['#66CDAA','#3CB371','#2E8B57','#AFEEEE','#FFFFE0','#8FBC8F'];
   if (skillCharts.level) skillCharts.level.destroy();
   skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
     type: 'doughnut',
