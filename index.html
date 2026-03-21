@@ -1562,8 +1562,8 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
   { en: 'PowerBI', variants: ['power bi', 'power-bi'] },
   { en: 'Tableau', variants: ['tableaux', 'tableau de bord'] },
   { en: 'Google Analytics', variants: ['google analytics', 'analytics google'] },
-  { en: 'Google Ads', variants: ['google ads', 'google adwords', 'annonces google'] },
-  { en: 'Meta Ads', variants: ['meta ads', 'facebook ads', 'publicités meta'] },
+  { en: 'Google Ads', variants: ['google ads','google adwords','adwords','annonces google','ppc','paid search'] },
+  { en: 'Meta Ads', variants: ['meta ads','facebook ads','fb ads','paid social','publicités meta','instagram ads'] },
   { en: 'Google Tag Manager', variants: ['google tag manager', 'gestionnaire de balises'] },
   { en: 'GTM', variants: ['gtm'] },
 
@@ -2190,7 +2190,7 @@ const SKILL_CATEGORIES = {
       ['SEO','SEM','Google Analytics','GTM','Google Tag Manager','Amplitude'],
       ['SQL','Data Analytics','A/B Testing','Statistics','Excel','PowerBI','Tableau'],
       ['Salesforce','HubSpot','Marketo','Braze'],
-      ['Google Ads','Meta Ads'],
+      ['Google Ads','Meta Ads','AdWords','PPC','Paid Search','Paid Media','Performance Marketing','paid campaigns','paid social','Facebook Ads','Instagram Ads'],
       ['Canva','Content Strategy','Figma'],
       ['Project Management','Agile','Jira','Notion'],
     ],
@@ -2459,10 +2459,15 @@ function showSkillCat(cat) {
     type: 'doughnut',
     data: {
       // 2) 숫자 없이 레이블만
-      labels: ['원격', '하이브리드', '출근'],
-      // 1) 채도 낮은 색상, 경력 레벨과 다른 계열
-      datasets: [{ data: [remoteC, hybridC, onsiteC], backgroundColor: ['#4b5563','#60a5fa','#94a3b8'], borderColor: '#1A1C23', borderWidth: 1.2,spacing: 3 }]
-    },
+      const remoteData = [
+        { label:'원격', value:remoteC, color:'#4b5563' },
+        { label:'하이브리드', value:hybridC, color:'#60a5fa' },
+        { label:'출근', value:onsiteC, color:'#94a3b8' },
+      ].sort((a,b)=>b.value-a.value);
+      return {
+        labels: remoteData.map(d=>d.label),
+        datasets: [{ data: remoteData.map(d=>d.value), backgroundColor: remoteData.map(d=>d.color), borderColor: '#1A1C23', borderWidth: 1.2, spacing: 2 }]
+    };
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
@@ -2493,7 +2498,7 @@ function showSkillCat(cat) {
     data: {
       // 2) 숫자 없이 레이블만
       labels: levelEntries.map(([l])=>l),
-      datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderColor: '#1A1C23', borderWidth: 1.2, spacing: 3 }]
+      datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderColor: '#1A1C23', borderWidth: 1.2, spacing: 2 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
