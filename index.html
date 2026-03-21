@@ -1059,16 +1059,34 @@ const COUNTRY_LANG = {
   NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
   PT:'Portuguese', PL:'Polish',
 };
+function detectWritingLang(d) {
+  // 프랑스어 특징 단어
+  if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) && 
+      (d.match(/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour)\b/gi)||[]).length > 3) return 'French';
+  // 독일어 특징 단어  
+  if (/\b(und|die|der|das|ist|wir|Sie|mit|für|auf|von|als|bei|zur)\b/g.test(d) &&
+      (d.match(/\b(und|die|der|das|ist|wir|Sie|mit|für)\b/g)||[]).length > 3) return 'German';
+  // 스페인어 특징 단어
+  if (/\b(nuestro|nuestros|para|con|los|las|del|una|que|como|más|por)\b/gi.test(d) &&
+      (d.match(/\b(nuestro|para|con|los|las|del|que|como)\b/gi)||[]).length > 3) return 'Spanish';
+  // 이탈리아어 특징 단어
+  if (/\b(della|delle|degli|questo|nostro|siamo|lavoro|azienda|team)\b/gi.test(d) &&
+      (d.match(/\b(della|delle|nostro|siamo|lavoro|azienda)\b/gi)||[]).length > 2) return 'Italian';
+  // 네덜란드어 특징 단어
+  if (/\b(wij|ons|onze|voor|met|een|van|het|zijn|wordt)\b/g.test(d) &&
+      (d.match(/\b(wij|ons|onze|voor|met|een|van)\b/g)||[]).length > 3) return 'Dutch';
+  // 기본값 영어
+  return 'English';
+}
+
 function detectLangs(d, countryCode) {
-  const l = [];
-  if (/english.*(required|must|essential|proficiency|fluent|mandatory)|fluent.*english|must.*english|strong.*english/i.test(d)) l.push('English');
-  if (/spanish.*(required|must|fluent|proficiency)|fluent.*spanish|español.*(requerido|necesario)/i.test(d)) l.push('Spanish');
-  if (/german.*(required|must|fluent|proficiency)|fluent.*german|deutsch.*(erforderlich|notwendig)/i.test(d)) l.push('German');
-  if (/dutch.*(required|must|fluent|proficiency)|fluent.*dutch|nederlands.*(vereist|noodzakelijk)/i.test(d)) l.push('Dutch');
-  if (/french.*(required|must|fluent|proficiency)|fluent.*french|français.*(requis|obligatoire)/i.test(d)) l.push('French');
-  if (/italian.*(required|must|fluent|proficiency)|fluent.*italian/i.test(d)) l.push('Italian');
+  const writingLang = detectWritingLang(d);
+  const l = [writingLang];
+  // 추가 언어 명시된 경우
+  if (writingLang !== 'English' && /english.*(required|must|essential|fluent)|fluent.*english|strong.*english/i.test(d)) l.push('English');
+  if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
   if (/korean|한국어/i.test(d)) l.push('Korean');
-  return l.length ? l : [];
+  return l;
 }
 function companyEmoji(n){const e=['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];return e[n.charCodeAt(0)%e.length]||'🏢';}
 function removeDups(jobs){const seen=new Set();return jobs.filter(j=>{const k=`${j.title}__${j.company}`.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});}
@@ -1457,17 +1475,92 @@ function analyzeJD() {
 
   // 4. 스킬 키워드 추출
   const skillKeywords = [
-    'Python','SQL','Excel','PowerBI','Tableau','JavaScript','React','Java','AWS','GCP','Azure','Kanban','Amplitude','Business Intelligence',
-    'Salesforce','HubSpot','Google Analytics','SEO','SEM','Meta Ads','Google Ads','BigQuery','Jira','Notion','A/B Testing',
-    'dbt','Airflow','Spark','Kubernetes','Docker','Git','Snowflake','Databricks','Looker','ETL','LLM','Data Modeling',
-    'Workday','SAP','HRIS','ATS','Recruitment','Talent Acquisition','Qlik','Braze','GTM','Google Tag Manager','Data Analytics',
-    'Machine Learning','Deep Learning','NLP','Data Analysis','Statistics','Canva','Pigma','C&B','Content Strategy',
-    'Project Management','Agile','Scrum','Leadership','TIBCO','DevOps','CI/CD','SuccessFactors','Marketo','Data Warehouse'
-  ];
-  const foundSkills = skillKeywords.filter(sk => {
-    const escaped = sk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // ── 프로그래밍 / 기술 (고유명사 — 변형 없음)
+  { en: 'Python' },
+  { en: 'SQL' },
+  { en: 'JavaScript' },
+  { en: 'React' },
+  { en: 'Java' },
+  { en: 'AWS' },
+  { en: 'GCP' },
+  { en: 'Azure' },
+  { en: 'BigQuery' },
+  { en: 'dbt' },
+  { en: 'Airflow' },
+  { en: 'Spark' },
+  { en: 'Kubernetes' },
+  { en: 'Docker' },
+  { en: 'Git' },
+  { en: 'Snowflake' },
+  { en: 'Databricks' },
+  { en: 'Looker' },
+  { en: 'ETL' },
+  { en: 'LLM' },
+  { en: 'TIBCO' },
+  { en: 'CI/CD' },
+  { en: 'Salesforce' },
+  { en: 'HubSpot' },
+  { en: 'Amplitude' },
+  { en: 'Qlik' },
+  { en: 'Braze' },
+  { en: 'Workday' },
+  { en: 'SAP' },
+  { en: 'SuccessFactors' },
+  { en: 'Marketo' },
+  { en: 'Jira' },
+  { en: 'Notion' },
+  { en: 'Canva' },
+  { en: 'Figma', variants: ['figma', 'pigma'] },
+
+  // ── 툴 (다국어 변형 있음)
+  { en: 'Excel', variants: ['excel', 'tableur'] },
+  { en: 'PowerBI', variants: ['power bi', 'power-bi'] },
+  { en: 'Tableau', variants: ['tableaux', 'tableau de bord'] },
+  { en: 'Google Analytics', variants: ['google analytics', 'analytics google'] },
+  { en: 'Google Ads', variants: ['google ads', 'google adwords', 'annonces google'] },
+  { en: 'Meta Ads', variants: ['meta ads', 'facebook ads', 'publicités meta'] },
+  { en: 'Google Tag Manager', variants: ['google tag manager', 'gestionnaire de balises'] },
+  { en: 'GTM', variants: ['gtm'] },
+
+  // ── 방법론 / 개념
+  { en: 'Machine Learning', variants: ['apprentissage automatique', 'aprendizaje automático', 'maschinelles lernen', 'machine learning', 'leren van machines', 'apprendimento automatico', 'aprendizagem automática'] },
+  { en: 'Deep Learning', variants: ['apprentissage profond', 'aprendizaje profundo', 'tiefes lernen', 'deep learning'] },
+  { en: 'NLP', variants: ['traitement du langage naturel', 'procesamiento del lenguaje natural', 'natural language processing', 'verarbeitung natürlicher sprache'] },
+  { en: 'Data Analysis', variants: ['analyse de données', 'análisis de datos', 'datenanalyse', 'data-analyse', 'analisi dei dati', 'análise de dados', 'analyse des données'] },
+  { en: 'Data Analytics', variants: ['analytique de données', 'analítica de datos', 'datenanalytics', 'data-analyse', 'data analytics'] },
+  { en: 'Data Modeling', variants: ['modélisation de données', 'modelado de datos', 'datenmodellierung', 'datamodellering', 'modellazione dei dati'] },
+  { en: 'Data Warehouse', variants: ['entrepôt de données', 'almacén de datos', 'data-warehouse', 'datawarehouse', 'magazzino dati'] },
+  { en: 'Business Intelligence', variants: ['intelligence économique', 'inteligencia de negocios', 'business intelligence', 'bedrijfsinformatie', 'inteligência empresarial'] },
+  { en: 'Statistics', variants: ['statistiques', 'estadísticas', 'statistiken', 'statistieken', 'statistiche', 'estatísticas'] },
+  { en: 'A/B Testing', variants: ['test a/b', 'prueba a/b', 'a/b-test', 'test a-b', 'testing a/b'] },
+  { en: 'SEO', variants: ['seo', 'référencement naturel', 'posicionamiento web', 'suchmaschinenoptimierung'] },
+  { en: 'SEM', variants: ['sem', 'référencement payant', 'marketing de moteurs de recherche'] },
+  { en: 'ETL', variants: ['etl', 'extraction transformation chargement', 'extracción transformación carga'] },
+  { en: 'DevOps', variants: ['devops', 'développement opérations', 'desarrollo operaciones'] },
+  { en: 'Kanban', variants: ['kanban'] },
+
+  // ── HR / 조직
+  { en: 'Recruitment', variants: ['recrutement', 'reclutamiento', 'rekrutierung', 'werving', 'reclutamento', 'recrutamento', 'recruitement'] },
+  { en: 'Talent Acquisition', variants: ['acquisition de talents', 'adquisición de talento', 'talentakquise', 'talentwerving', 'acquisizione di talenti'] },
+  { en: 'HRIS', variants: ['hris', 'système d\'information rh', 'sistema de información de rrhh'] },
+  { en: 'ATS', variants: ['ats', 'système de suivi des candidats', 'sistema de seguimiento de candidatos'] },
+  { en: 'C&B', variants: ['compensation', 'rémunération', 'compensación', 'vergütung', 'beloning'] },
+
+  // ── 프로젝트 / 방법론
+  { en: 'Project Management', variants: ['gestion de projet', 'gestión de proyectos', 'projektmanagement', 'projectmanagement', 'gestione del progetto', 'gestão de projetos'] },
+  { en: 'Agile', variants: ['agile', 'agilité', 'agilidad', 'agilität'] },
+  { en: 'Scrum', variants: ['scrum'] },
+  { en: 'Leadership', variants: ['leadership', 'führung', 'liderança', 'liderazgo', 'leiderschap', 'leadership'] },
+  { en: 'Content Strategy', variants: ['stratégie de contenu', 'estrategia de contenido', 'content-strategie', 'contentstrategie', 'strategia dei contenuti'] },
+];
+
+const foundSkills = skillKeywords.filter(sk => {
+  const allVariants = [sk.en, ...(sk.variants || [])];
+  return allVariants.some(v => {
+    const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp('\\b' + escaped + '\\b', 'i').test(jd);
   });
+}).map(sk => sk.en);
 
   // 5. 언어 요건 체크
   const requiresLocal = /native|fluent in (german|french|dutch|spanish|italian)/i.test(jd);
