@@ -1913,7 +1913,7 @@ if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
   const adminOnlyIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat'];
 adminOnlyIds.forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.style.display = isAdmin ? 'block' : 'none';
+  if (el) el.style.display = isAdmin ? 'flex' : 'none';
 });
 // 관리자 외 숨김 처리
 const adminOnlyNavs = ['nav-ai','nav-coverletter','nav-jdanalysis','nav-tips','nav-visa','nav-chat','nav-trends'];
