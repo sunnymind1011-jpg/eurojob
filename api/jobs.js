@@ -79,7 +79,7 @@ const COUNTRY_LANG = {
 function detectLangs(d, countryCode) {
   const l = [];
   if (/english/i.test(d)) l.push('English');
-  if (/spanish|español/i.test(d)) l.push('Spanish');
+  if (/\bspanish\b|\bespañol\b/i.test(d)) l.push('Spanish');
   if (/\bgerman\b|\bdeutsch\b/i.test(d)) l.push('German');
   if (/dutch|nederlands/i.test(d)) l.push('Dutch');
   if (/french|français/i.test(d)) l.push('French');
