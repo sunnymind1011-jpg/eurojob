@@ -915,7 +915,7 @@ async function startJSearch(force = false) {
         if (cacheAge < 12) {
           allJobs = jobs;
           updateAll();
-          const t = new Date(fetchedAt).toLocaleString('ko-KR');
+          const t = new Date(fetchedAt).toLocaleString('ko-KR', { timeZone: 'Europe/Madrid' });
           document.getElementById('fetchedAt').textContent = `수집: ${t}`;
           document.getElementById('lastUpdated').textContent = t;
           setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
