@@ -2382,12 +2382,12 @@ const svg = d3.select('#skillMapBubble').append('svg')
 svg.append('rect').attr('width','100%').attr('height','100%').attr('fill','transparent');
 
 const entries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]);
-const maxCount = entries[0]?.[1] || 1;
+const bubbleMax = entries[0]?.[1] || 1;
 
 entries.forEach(([c, n]) => {
   const coord = COUNTRY_COORDS[c];
   if (!coord) return;
-  const r = Math.max(8, Math.round(Math.sqrt(n/maxCount)*40));
+  const r = Math.max(8, Math.round(Math.sqrt(n/bubbleMax)*40));
   const col = BUBBLE_COLORS[c] || '#8b92a8';
   const gr = svg.append('g').style('cursor','pointer');
 
