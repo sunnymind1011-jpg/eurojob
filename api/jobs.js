@@ -78,13 +78,12 @@ const COUNTRY_LANG = {
 
 function detectLangs(d, countryCode) {
   const l = [];
-  // "fluency in X", "X required", "X speaker" 같은 명시적 요구만 감지
-  if (/fluent\s+in\s+english|english\s+(required|fluency|proficiency|speaker)|working\s+language.*english/i.test(d)) l.push('English');
-  if (/fluent\s+in\s+spanish|spanish\s+(required|fluency|proficiency|speaker)|nivel.*español|español.*requerido/i.test(d)) l.push('Spanish');
-  if (/fluent\s+in\s+german|german\s+(required|fluency|proficiency|speaker)|deutsch.*erforderlich/i.test(d)) l.push('German');
-  if (/fluent\s+in\s+dutch|dutch\s+(required|fluency|proficiency)|nederlands.*vereist/i.test(d)) l.push('Dutch');
-  if (/fluent\s+in\s+french|french\s+(required|fluency|proficiency)|français.*requis/i.test(d)) l.push('French');
-  if (/fluent\s+in\s+italian|italian\s+(required|fluency|proficiency)|italiano.*richiesto/i.test(d)) l.push('Italian');
+  if (/english.*(required|must|essential|proficiency|fluent|mandatory)|fluent.*english|must.*english|strong.*english/i.test(d)) l.push('English');
+  if (/spanish.*(required|must|fluent|proficiency)|fluent.*spanish|español.*(requerido|necesario)/i.test(d)) l.push('Spanish');
+  if (/german.*(required|must|fluent|proficiency)|fluent.*german|deutsch.*(erforderlich|notwendig)/i.test(d)) l.push('German');
+  if (/dutch.*(required|must|fluent|proficiency)|fluent.*dutch|nederlands.*(vereist|noodzakelijk)/i.test(d)) l.push('Dutch');
+  if (/french.*(required|must|fluent|proficiency)|fluent.*french|français.*(requis|obligatoire)/i.test(d)) l.push('French');
+  if (/italian.*(required|must|fluent|proficiency)|fluent.*italian/i.test(d)) l.push('Italian');
   if (/korean|한국어/i.test(d)) l.push('Korean');
   return l.length ? l : [COUNTRY_LANG[countryCode] || ''];
 }
