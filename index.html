@@ -700,46 +700,6 @@ textarea::placeholder{color:var(--text3);}
   </div>
 </div>
 
-    <!-- ★ SKILL MAP ──────────────────────────────────────── -->
-<div class="page" id="page-skillmap">
-  <div class="sec-hd" style="margin-bottom:8px">
-    <div><div class="sec-title">🎯 직종별 스킬맵</div><div class="sec-sub">수집된 공고 기반 직종별 요구 스킬 분석</div></div>
-  </div>
-  <div style="font-size:12px;color:var(--text3);margin-bottom:20px">채용공고에 명시된 스킬을 직종군별로 분석합니다.</div>
-
-  <div class="filter-row" id="skillmap-tabs" style="margin-bottom:20px"></div>
-  <div class="stats4" id="skillmap-stats" style="margin-bottom:20px"></div>
-
-  <div class="two-col" style="margin-bottom:18px">
-    <div class="card">
-      <h3 style="margin-bottom:14px">🎯 스킬 레이더</h3>
-      <div style="position:relative;width:100%;height:300px"><canvas id="chartSkillRadar"></canvas></div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:14px">🗺️ 국가별 공고 분포</h3>
-      <div id="skillMapBubble" style="width:100%;height:300px;position:relative">
-  <div id="bubbleTip" style="display:none;position:absolute;background:rgba(255,255,255,0.92);color:#1a1a2e;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;pointer-events:none;z-index:10;font-family:'Sora',sans-serif;line-height:1.6"></div>
-</div>
-  </div>
-
-  <div class="two-col" style="margin-bottom:18px">
-    <div class="card">
-      <h3 style="margin-bottom:14px">🏠 근무 형태</h3>
-      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillRemote"></canvas></div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:14px">📊 경력 레벨</h3>
-      <div style="position:relative;width:100%;height:200px"><canvas id="chartSkillLevel"></canvas></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-bottom:14px">🌐 언어 요건</h3>
-    <div id="skillmap-langs"></div>
-  </div>
-</div>
-    
-
     <!-- ★ TIPS ──────────────────────────────────────── -->
     <div class="page" id="page-tips">
       <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">💡 해외취업 꿀팁</div></div>
@@ -901,6 +861,45 @@ textarea::placeholder{color:var(--text3);}
         <div class="log-box" id="logBox"><span style="color:var(--text3)">로그가 여기에 표시됩니다...</span></div>
       </div>
     </div>
+
+    <!-- ★ SKILL MAP ──────────────────────────────────────── -->
+<div class="page" id="page-skillmap">
+  <div class="sec-hd" style="margin-bottom:8px">
+    <div><div class="sec-title">🎯 직종별 스킬맵</div><div class="sec-sub">수집된 공고 기반 직종별 요구 스킬 분석</div></div>
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:20px">채용공고에 명시된 스킬을 직종군별로 분석합니다.</div>
+
+  <div class="filter-row" id="skillmap-tabs" style="margin-bottom:20px"></div>
+  <div class="stats4" id="skillmap-stats" style="margin-bottom:20px"></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card" style="min-height:380px">
+      <h3 style="margin-bottom:14px">🎯 스킬 레이더</h3>
+      <div style="position:relative;width:100%;height:320px"><canvas id="chartSkillRadar"></canvas></div>
+    </div>
+    <div class="card" style="min-height:380px">
+      <h3 style="margin-bottom:14px">🗺️ 국가별 공고 분포</h3>
+      <div id="skillMapBubble" style="width:100%;height:300px;position:relative"></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card" style="min-height:280px">
+      <h3 style="margin-bottom:14px">🏠 근무 형태</h3>
+      <div style="position:relative;width:100%;height:220px"><canvas id="chartSkillRemote"></canvas></div>
+    </div>
+    <div class="card" style="min-height:280px">
+      <h3 style="margin-bottom:14px">📊 경력 레벨</h3>
+      <div style="position:relative;width:100%;height:220px"><canvas id="chartSkillLevel"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:14px">🌐 언어 요건</h3>
+    <div id="skillmap-langs"></div>
+  </div>
+</div>
+    
 
 
   </div><!-- /content -->
@@ -1116,8 +1115,8 @@ function detectCountry(l) {
   if (/portugal|lisbon|porto|pt$/.test(l)) return 'PT';
   return 'EU';
 }
-function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭'}[c]||'🌍';}
-function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽'}[c]||c;}
+function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱'}[c]||'🌍';}
+function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드'}[c]||c;}
 function detectRelocation(d){return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);}
 function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
 const COUNTRY_LANG = {
@@ -2361,62 +2360,79 @@ function showSkillCat(cat) {
   const countryCounts = {};
   catJobs.forEach(j => { countryCounts[j.country] = (countryCounts[j.country]||0)+1; });
   const mapEl = document.getElementById('skillMapBubble');
-mapEl.innerHTML = '';
+  if (skillCharts.bubble) { skillCharts.bubble.destroy(); skillCharts.bubble = null; }
+  mapEl.innerHTML = '';
 
-const BUBBLE_COLORS = {
-  GB:'#4f8ef7', DE:'#3ecfa0', NL:'#7c6af0', ES:'#f5a623',
-  FR:'#f06464', BE:'#36c5f0', IE:'#5bb8a0', PT:'#c9944a',
-  CH:'#8b7ec8', IT:'#c47a7a', AT:'#6b9fd4', EU:'#8b92a8'
-};
+  const tmEntries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]);
+  const tmMax = tmEntries[0]?.[1] || 1;
+  const tmMin = tmEntries[tmEntries.length-1]?.[1] || 0;
 
-const svg = d3.select('#skillMapBubble').append('svg')
-  .attr('width','100%').attr('height','100%')
-  .attr('viewBox','100 80 280 170');
+  // 2) 반응형 — getBoundingClientRect로 정확한 너비
+  const tmW = mapEl.getBoundingClientRect().width || mapEl.offsetWidth || 500;
+  const tmH = 300;
 
-svg.append('rect').attr('width','100%').attr('height','100%').attr('fill','transparent');
+  // 3) sort로 왼쪽 상단 큰 것부터
+  const tmRoot = {children: tmEntries.map(([c,n])=>({c,n,name:countryName(c),flag:countryFlag(c)}))};
+  const hierarchy = d3.hierarchy(tmRoot).sum(d=>d.n).sort((a,b)=>b.value-a.value);
+  d3.treemap().size([tmW,tmH]).paddingInner(4).paddingOuter(2).round(true)(hierarchy);
 
-const entries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]);
-const bubbleMax = entries[0]?.[1] || 1;
+  // 1) 많을수록 어둡게, 적을수록 밝게
+  const colorScale = d3.scaleLinear().domain([tmMin,tmMax]).range(['#4f8ef7','#0d2040']);
+  const textBright = d3.scaleLinear().domain([tmMin,tmMax]).range([1,0.55]);
 
-entries.forEach(([c, n]) => {
-  const coord = COUNTRY_COORDS[c];
-  if (!coord) return;
-  const r = Math.max(8, Math.round(Math.sqrt(n/bubbleMax)*40));
-  const col = BUBBLE_COLORS[c] || '#8b92a8';
-  const gr = svg.append('g').style('cursor','pointer');
+  // 2) viewBox로 반응형 SVG
+  const tmSvg = d3.select(mapEl).append('svg')
+    .attr('width','100%').attr('height',tmH)
+    .attr('viewBox',`0 0 ${tmW} ${tmH}`)
+    .attr('preserveAspectRatio','xMidYMid meet');
 
-  gr.on('mouseover', function(event) {
-  const tip = document.getElementById('bubbleTip');
-  tip.style.display = 'block';
-  tip.style.left = (event.offsetX + 10) + 'px';
-  tip.style.top = (event.offsetY - 10) + 'px';
-  tip.innerHTML = `<strong>${coord.name}</strong><br>${n}개 공고`;
-}).on('mouseout', function() {
-  document.getElementById('bubbleTip').style.display = 'none';
-});
+  const tmLeaf = tmSvg.selectAll('g')
+    .data(hierarchy.leaves())
+    .join('g')
+    .attr('transform', d=>`translate(${d.x0},${d.y0})`);
 
-  gr.append('circle')
-    .attr('cx', coord.x).attr('cy', coord.y).attr('r', r)
-    .attr('fill', col).attr('fill-opacity', 0.15)
-    .attr('stroke', col).attr('stroke-width', 0.8).attr('stroke-opacity', 0.6);
+  tmLeaf.append('rect')
+    .attr('width', d=>Math.max(0,d.x1-d.x0))
+    .attr('height', d=>Math.max(0,d.y1-d.y0))
+    .attr('rx', 6)
+    .attr('fill', d=>colorScale(d.data.n))
+    // 4) 경계선 두껍게
+    .attr('stroke','rgba(255,255,255,0.15)')
+    .attr('stroke-width', 1.5);
 
-  gr.append('text')
-    .attr('x', coord.x).attr('y', coord.y + 4)
-    .attr('text-anchor','middle')
-    .attr('fill', col)
-    .attr('font-size', r > 18 ? 12 : 10)
-    .attr('font-family',"'Sora',sans-serif")
-    .attr('font-weight','600')
-    .text(c);
-});
+  tmLeaf.each(function(d) {
+    const w = d.x1-d.x0;
+    const h = d.y1-d.y0;
+    const g = d3.select(this);
+    const bright = textBright(d.data.n);
+    const tc = `rgba(${Math.round(bright*200+55)},${Math.round(bright*180+75)},255,0.95)`;
 
-// 범례 — 왼쪽 하단
-const bubbleLeg = svg.append('g').attr('transform','translate(310,238)');
-bubbleLeg.append('rect').attr('rx',3).attr('width',58).attr('height',15)
-  .attr('fill','rgba(0,0,0,0.45)').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.5);
-bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
-  .attr('fill','#555e75').attr('font-size',7).attr('font-family',"'Sora',sans-serif")
-  .text('버블 크기 = 공고 수');
+    // 텍스트 — 너비/높이 중 작은 값 기준으로 폰트 크기
+    const minDim = Math.min(w, h);
+    const fontSize = Math.min(Math.max(minDim*0.18, 8), 14);
+    if (w>20 && h>16) {
+      g.append('text').attr('x',w/2).attr('y',h/2+fontSize*0.35)
+        .attr('text-anchor','middle').attr('fill',tc)
+        .attr('font-size',fontSize).attr('font-weight','600')
+        .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
+        .text(d.data.name);
+    }
+  });
+
+  const tmTip = d3.select(mapEl).append('div')
+    .style('display','none').style('position','absolute')
+    .style('background','rgba(255,255,255,0.95)').style('color','#1a1a2e')
+    .style('padding','8px 12px').style('border-radius','8px')
+    .style('font-size','12px').style('font-weight','500')
+    .style('font-family',"'Sora',sans-serif").style('pointer-events','none')
+    .style('line-height','1.6').style('z-index','10');
+
+  tmLeaf.on('mousemove', function(event, d) {
+    const [px,py] = d3.pointer(event, mapEl);
+    tmTip.style('display','block')
+      .style('left',(px+12)+'px').style('top',(py-50)+'px')
+      .html(`<strong>${d.data.flag} ${d.data.name}</strong><br>${d.data.n}개 공고`);
+  }).on('mouseout', ()=>tmTip.style('display','none'));
 
 
 
@@ -2442,31 +2458,17 @@ bubbleLeg.append('text').attr('x',29).attr('y',10).attr('text-anchor','middle')
   const levels = {};
   catJobs.forEach(j => { if (j.level) levels[j.level] = (levels[j.level]||0)+1; });
   const levelEntries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  // 1) 채도 낮은 색상
-  const levelColors = ['#6b5fc2','#3d6db8','#2d8f72','#b87820','#b85050','#2a8fa8'];
+  const levelColors = ['#7c6af0','#4f8ef7','#3ecfa0','#f5a623','#f06464','#36c5f0'];
   if (skillCharts.level) skillCharts.level.destroy();
   skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
     type: 'doughnut',
     data: {
-      // 2) 숫자 없이 레이블만
-      labels: levelEntries.map(([l])=>l),
+      labels: levelEntries.map(([l,n])=>`${l} ${n}`),
       datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors, borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } },
-        // 3) 툴팁 Sora 폰트
-        tooltip: {
-          backgroundColor: 'rgba(255,255,255,0.92)',
-          titleColor: '#1a1a2e',
-          bodyColor: '#1a1a2e',
-          titleFont: { size:13, weight:'600', family:"'Sora','Noto Sans KR',sans-serif" },
-          bodyFont: { size:12, family:"'Sora','Noto Sans KR',sans-serif" },
-          padding: 10,
-          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}개` }
-        }
-      }
+      plugins: { legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:10, boxWidth:10 } } }
     }
   });
 
