@@ -1518,27 +1518,8 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
 // ════════════════════════════════════════
 //  JD ANALYSIS (Claude.ai 연동)
 // ════════════════════════════════════════
-function analyzeJD() {
-  const jd = document.getElementById('jdAnalIn').value.trim();
-  if (!jd) { alert('채용공고를 입력해주세요.'); return; }
 
-  const btn = document.getElementById('jdBtn');
-  btn.textContent = '분석 중...'; btn.disabled = true;
-
-  // 1. 기본 정보 추출
-  const remote = detectRemote(jd);
-  const langs = detectLangs(jd);
-  const relocation = detectRelocation ? detectRelocation(jd) : false;
-
-  // 2. 제목/회사/위치 추출
-  const lines = jd.split('\n').filter(l => l.trim()).slice(0, 5);
-  const titleLine = lines[0] || '';
-
-  // 3. 급여 추출
-  const salaryMatch = jd.match(/[€£$][\d,.]+-?[\d,.]*[k]?(?:\s*(?:per|\/)\s*(?:year|yr|month|annum))?/i);
-  const salary = salaryMatch ? salaryMatch[0] : '미공개';
-
-  // 4. 스킬 키워드 추출
+// 4. 스킬 키워드 추출
   const skillKeywords = [
   // ── 프로그래밍 / 기술 (고유명사 — 변형 없음)
   { en: 'Python' },
@@ -1618,6 +1599,28 @@ function analyzeJD() {
   { en: 'Leadership', variants: ['leadership', 'führung', 'liderança', 'liderazgo', 'leiderschap', 'leadership'] },
   { en: 'Content Strategy', variants: ['stratégie de contenu', 'estrategia de contenido', 'content-strategie', 'contentstrategie', 'strategia dei contenuti'] },
 ];
+  
+function analyzeJD() {
+  const jd = document.getElementById('jdAnalIn').value.trim();
+  if (!jd) { alert('채용공고를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('jdBtn');
+  btn.textContent = '분석 중...'; btn.disabled = true;
+
+  // 1. 기본 정보 추출
+  const remote = detectRemote(jd);
+  const langs = detectLangs(jd);
+  const relocation = detectRelocation ? detectRelocation(jd) : false;
+
+  // 2. 제목/회사/위치 추출
+  const lines = jd.split('\n').filter(l => l.trim()).slice(0, 5);
+  const titleLine = lines[0] || '';
+
+  // 3. 급여 추출
+  const salaryMatch = jd.match(/[€£$][\d,.]+-?[\d,.]*[k]?(?:\s*(?:per|\/)\s*(?:year|yr|month|annum))?/i);
+  const salary = salaryMatch ? salaryMatch[0] : '미공개';
+
+  
 
 const foundSkills = skillKeywords.filter(sk => {
   const allVariants = [sk.en, ...(sk.variants || [])];
