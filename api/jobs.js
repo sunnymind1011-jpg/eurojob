@@ -70,15 +70,23 @@ function detectLevel(title, desc) {
   return '';
 }
 
-function detectLangs(d) {
+const COUNTRY_LANG = {
+  GB:'English', IE:'English', DE:'German', AT:'German', CH:'German',
+  NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
+  PT:'Portuguese', PL:'Polish',
+};
+
+function detectLangs(d, countryCode) {
   const l = [];
   if (/english/i.test(d)) l.push('English');
   if (/spanish|español/i.test(d)) l.push('Spanish');
   if (/german|deutsch/i.test(d)) l.push('German');
   if (/dutch|nederlands/i.test(d)) l.push('Dutch');
   if (/french|français/i.test(d)) l.push('French');
+  if (/italian|italiano/i.test(d)) l.push('Italian');
+  if (/portuguese|português/i.test(d)) l.push('Portuguese');
   if (/korean|한국어/.test(d)) l.push('Korean');
-  return l.length ? l : ['English'];
+  return l.length ? l : [COUNTRY_LANG[countryCode] || 'English'];
 }
 function removeDups(jobs) {
   const seen = new Set();
@@ -115,7 +123,7 @@ function normalizeAdzuna(raw, countryCode) {
     visaSponsored: false,
     relocation:   detectRelocation(desc),
     remoteType:   detectRemote(desc),
-    languageReqs: detectLangs(desc),
+    languageReqs: detectLangs(desc, info.code),
   };
 }
 
