@@ -1963,13 +1963,47 @@ let trendCharts = {};
 
 async function renderTrends() {
   const statsEl = document.getElementById('trend-stats');
-  statsEl.innerHTML = '<div style="color:var(--text3);font-size:13px;grid-column:1/-1">📡 Adzuna에서 국가별 직종 데이터 불러오는 중...</div>';
 
+  // 캐시 확인 (24시간)
+  const cached = localStorage.getItem('ej_trends_cache');
+  if (cached) {
+    try {
+      const { data, cachedAt } = JSON.parse(cached);
+      const age = (Date.now() - new Date(cachedAt)) / 3600000;
+      if (age < 24) {
+        const results = data.results;
+        const countries = Object.keys(results);
+        const tabsEl = document.getElementById('trend-country-tabs');
+        if (tabsEl) {
+          tabsEl.innerHTML = countries.map((c, i) => `
+            <div class="ctab${i===0?' active':''}" onclick="showTrendCountry('${c}',this)">
+              ${countryFlag(c.toUpperCase())} ${results[c].name}
+            </div>`).join('');
+        }
+        window._trendData = results;
+        showTrendCountry(countries[0], document.querySelector('#trend-country-tabs .ctab'));
+        statsEl.innerHTML = `
+          <div class="stat"><div class="stat-lbl">조회 국가</div><div class="stat-val c-blue">${countries.length}</div></div>
+          <div class="stat"><div class="stat-lbl">데이터 기준</div><div class="stat-val c-green" style="font-size:14px">Adzuna</div></div>
+          <div class="stat"><div class="stat-lbl">업데이트</div><div class="stat-val c-warn" style="font-size:13px">24h캐시</div></div>
+          <div class="stat"><div class="stat-lbl">분석 카테고리</div><div class="stat-val c-purple">15개/국</div></div>`;
+        return;
+      }
+    } catch(e) {}
+  }
+
+  statsEl.innerHTML = '<div style="color:var(--text3);font-size:13px;grid-column:1/-1">📡 Adzuna에서 국가별 직종 데이터 불러오는 중...</div>';
   try {
     const res = await fetch('/api/trends');
     const data = await res.json();
-    const results = data.results;
 
+    // 캐시 저장
+    localStorage.setItem('ej_trends_cache', JSON.stringify({
+      data,
+      cachedAt: new Date().toISOString()
+    }));
+
+    const results = data.results;
     const countries = Object.keys(results);
     const tabsEl = document.getElementById('trend-country-tabs');
     if (tabsEl) {
@@ -1978,16 +2012,13 @@ async function renderTrends() {
           ${countryFlag(c.toUpperCase())} ${results[c].name}
         </div>`).join('');
     }
-
     window._trendData = results;
     showTrendCountry(countries[0], document.querySelector('#trend-country-tabs .ctab'));
-
     statsEl.innerHTML = `
       <div class="stat"><div class="stat-lbl">조회 국가</div><div class="stat-val c-blue">${countries.length}</div></div>
       <div class="stat"><div class="stat-lbl">데이터 기준</div><div class="stat-val c-green" style="font-size:14px">Adzuna</div></div>
       <div class="stat"><div class="stat-lbl">업데이트</div><div class="stat-val c-warn" style="font-size:13px">24h캐시</div></div>
       <div class="stat"><div class="stat-lbl">분석 카테고리</div><div class="stat-val c-purple">15개/국</div></div>`;
-
   } catch(e) {
     statsEl.innerHTML = `<div style="color:var(--red);font-size:13px;grid-column:1/-1">❌ 데이터 로드 실패: ${e.message}</div>`;
   }
