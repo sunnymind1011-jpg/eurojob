@@ -85,7 +85,7 @@ function detectLangs(d, countryCode) {
   if (/french.*(required|must|fluent|proficiency)|fluent.*french|français.*(requis|obligatoire)/i.test(d)) l.push('French');
   if (/italian.*(required|must|fluent|proficiency)|fluent.*italian/i.test(d)) l.push('Italian');
   if (/korean|한국어/i.test(d)) l.push('Korean');
-  return l.length ? l : [COUNTRY_LANG[countryCode] || ''];
+  return l.length ? l : [];
 }
 function removeDups(jobs) {
   const seen = new Set();
