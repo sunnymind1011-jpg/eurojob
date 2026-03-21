@@ -2365,19 +2365,26 @@ function showSkillCat(cat) {
 
   const tmEntries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]);
   const tmMax = tmEntries[0]?.[1] || 1;
+  const tmMin = tmEntries[tmEntries.length-1]?.[1] || 0;
 
-  const tmW = mapEl.offsetWidth || 500;
+  // 2) 반응형 — getBoundingClientRect로 정확한 너비
+  const tmW = mapEl.getBoundingClientRect().width || mapEl.offsetWidth || 500;
   const tmH = 300;
 
+  // 3) sort로 왼쪽 상단 큰 것부터
   const tmRoot = {children: tmEntries.map(([c,n])=>({c,n,name:countryName(c),flag:countryFlag(c)}))};
-  const hierarchy = d3.hierarchy(tmRoot).sum(d=>d.n);
-  d3.treemap().size([tmW,tmH]).paddingInner(3).paddingOuter(2).round(true)(hierarchy);
+  const hierarchy = d3.hierarchy(tmRoot).sum(d=>d.n).sort((a,b)=>b.value-a.value);
+  d3.treemap().size([tmW,tmH]).paddingInner(4).paddingOuter(2).round(true)(hierarchy);
 
-  const colorScale = d3.scaleLinear().domain([0,tmMax]).range(['#4f8ef7','#0d1f3a']);
-  const textScale = d3.scaleLinear().domain([0,tmMax]).range([0.5,1]);
+  // 1) 많을수록 어둡게, 적을수록 밝게
+  const colorScale = d3.scaleLinear().domain([tmMin,tmMax]).range(['#4f8ef7','#0d2040']);
+  const textBright = d3.scaleLinear().domain([tmMin,tmMax]).range([1,0.55]);
 
+  // 2) viewBox로 반응형 SVG
   const tmSvg = d3.select(mapEl).append('svg')
-    .attr('width',tmW).attr('height',tmH);
+    .attr('width','100%').attr('height',tmH)
+    .attr('viewBox',`0 0 ${tmW} ${tmH}`)
+    .attr('preserveAspectRatio','xMidYMid meet');
 
   const tmLeaf = tmSvg.selectAll('g')
     .data(hierarchy.leaves())
@@ -2385,47 +2392,32 @@ function showSkillCat(cat) {
     .attr('transform', d=>`translate(${d.x0},${d.y0})`);
 
   tmLeaf.append('rect')
-    .attr('width', d=>d.x1-d.x0)
-    .attr('height', d=>d.y1-d.y0)
-    .attr('rx', 7)
+    .attr('width', d=>Math.max(0,d.x1-d.x0))
+    .attr('height', d=>Math.max(0,d.y1-d.y0))
+    .attr('rx', 6)
     .attr('fill', d=>colorScale(d.data.n))
-    .attr('stroke','rgba(79,142,247,0.25)')
-    .attr('stroke-width', 0.5);
+    // 4) 경계선 두껍게
+    .attr('stroke','rgba(13,15,20,0.9)')
+    .attr('stroke-width', 2);
 
   tmLeaf.each(function(d) {
     const w = d.x1-d.x0;
     const h = d.y1-d.y0;
     const g = d3.select(this);
-    const op = textScale(d.data.n);
-    const tc = `rgba(${Math.round(160+(255-160)*(d.data.n/tmMax))},${Math.round(200+(255-200)*(d.data.n/tmMax))},255,0.95)`;
+    const bright = textBright(d.data.n);
+    const tc = `rgba(${Math.round(bright*200+55)},${Math.round(bright*180+75)},255,0.95)`;
 
-    if (w>80 && h>60) {
-      g.append('text').attr('x',w/2).attr('y',h/2-18)
-        .attr('text-anchor','middle').attr('font-size',Math.min(w*0.12,22))
-        .attr('opacity',op).text(d.data.flag);
-      g.append('text').attr('x',w/2).attr('y',h/2+2)
+    // 5) 이모지 제거, 한글 국가명만
+    if (w>70 && h>40) {
+      g.append('text').attr('x',w/2).attr('y',h/2+5)
         .attr('text-anchor','middle').attr('fill',tc)
-        .attr('font-size',Math.min(w*0.09,13)).attr('font-weight','600')
+        .attr('font-size',Math.min(w*0.1,14)).attr('font-weight','600')
         .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
         .text(d.data.name);
-      g.append('text').attr('x',w/2).attr('y',h/2+17)
-        .attr('text-anchor','middle').attr('fill',tc).attr('fill-opacity',0.65)
-        .attr('font-size',Math.min(w*0.075,11))
-        .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
-        .text(d.data.n+'개');
-    } else if (w>36 && h>28) {
-      g.append('text').attr('x',w/2).attr('y',h/2-5)
-        .attr('text-anchor','middle').attr('font-size',Math.min(w*0.2,14))
-        .attr('opacity',op).text(d.data.flag);
-      g.append('text').attr('x',w/2).attr('y',h/2+9)
-        .attr('text-anchor','middle').attr('fill',tc)
-        .attr('font-size',Math.min(w*0.16,9)).attr('font-weight','600')
-        .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
-        .text(d.data.c);
-    } else {
+    } else if (w>30 && h>22) {
       g.append('text').attr('x',w/2).attr('y',h/2+4)
         .attr('text-anchor','middle').attr('fill',tc)
-        .attr('font-size',Math.min(w*0.3,9))
+        .attr('font-size',Math.min(w*0.18,10)).attr('font-weight','600')
         .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
         .text(d.data.c);
     }
