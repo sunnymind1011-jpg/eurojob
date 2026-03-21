@@ -1115,7 +1115,7 @@ function detectCountry(l) {
   if (/portugal|lisbon|porto|pt$/.test(l)) return 'PT';
   return 'EU';
 }
-function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭'}[c]||'🌍';}
+function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱,IE:'🇮🇪'}[c]||'🌍';}
 function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽'}[c]||c;}
 function detectRelocation(d){return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);}
 function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
