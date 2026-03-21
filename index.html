@@ -2407,8 +2407,9 @@ function showSkillCat(cat) {
     const bright = textBright(d.data.n);
     const tc = `rgba(${Math.round(bright*200+55)},${Math.round(bright*180+75)},255,0.95)`;
 
-    // 텍스트 — 크기에 따라 조절, 항상 한글
-    const fontSize = Math.min(Math.max(w*0.11, 9), 14);
+    // 텍스트 — 너비/높이 중 작은 값 기준으로 폰트 크기
+    const minDim = Math.min(w, h);
+    const fontSize = Math.min(Math.max(minDim*0.18, 8), 14);
     if (w>20 && h>16) {
       g.append('text').attr('x',w/2).attr('y',h/2+fontSize*0.35)
         .attr('text-anchor','middle').attr('fill',tc)
