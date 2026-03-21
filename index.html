@@ -2455,9 +2455,9 @@ function showSkillCat(cat) {
 const hybridC = catJobs.filter(j=>j.remoteType==='Hybrid').length;
 const onsiteC = catJobs.filter(j=>j.remoteType==='On-site').length;
 const remoteData = [
-  { label:'원격', value:remoteC, color:'#4b5563' },
-  { label:'하이브리드', value:hybridC, color:'#60a5fa' },
-  { label:'출근', value:onsiteC, color:'#94a3b8' },
+  { label:'원격', value:remoteC, color:'#60a5fa' },
+  { label:'하이브리드', value:hybridC, color:'#94a3b8' },
+  { label:'출근', value:onsiteC, color:'#4b5563' },
 ].sort((a,b)=>b.value-a.value);
 if (skillCharts.remote) skillCharts.remote.destroy();
 skillCharts.remote = new Chart(document.getElementById('chartSkillRemote'), {
