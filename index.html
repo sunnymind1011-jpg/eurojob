@@ -939,7 +939,7 @@ async function startJSearch(force = false) {
       cachedAt: new Date().toISOString()
     }));
     updateAll();
-    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
+    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR', { timeZone: 'Europe/Madrid' }) : '';
     document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
     document.getElementById('lastUpdated').textContent = fetchedAt;
     setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
