@@ -424,15 +424,15 @@ textarea::placeholder{color:var(--text3);}
     <div class="nav-item active" onclick="nav('home',this)"><span class="nav-icon">🏠</span>홈</div>
     <div class="nav-item" onclick="nav('jobs',this)"><span class="nav-icon">💼</span>채용공고<span class="nav-badge" id="nb-jobs">0</span></div>
     <div class="nav-item" onclick="nav('saved',this)"><span class="nav-icon">🔖</span>저장목록<span class="nav-badge warn" id="nb-saved">0</span></div>
-    <div class="nav-section">AI 도구</div>
-    <div class="nav-item" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>AI 이력서 매칭</div>
-    <div class="nav-item" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>커버레터 생성</div>
-    <div class="nav-item" onclick="nav('jdanalysis',this)"><span class="nav-icon">🔍</span>JD 분석</div>
-    <div class="nav-section">정보</div>
-    <div class="nav-item" onclick="nav('trends',this)"><span class="nav-icon">📊</span>직종 트렌드</div>
-    <div class="nav-item" onclick="nav('tips',this)"><span class="nav-icon">💡</span>취업 꿀팁</div>
-    <div class="nav-item" onclick="nav('visa',this)"><span class="nav-icon">🛂</span>비자 가이드</div>
-    <div class="nav-item" onclick="nav('chat',this)"><span class="nav-icon">☕</span><span class="nav-label">커피챗 신청</span></div>
+    <div class="nav-section" id="nav-section-ai" style="display:none">AI 도구</div>
+<div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>AI 이력서 매칭</div>
+<div class="nav-item" id="nav-coverletter" style="display:none" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>커버레터 생성</div>
+<div class="nav-item" id="nav-jdanalysis" style="display:none" onclick="nav('jdanalysis',this)"><span class="nav-icon">🔍</span>JD 분석</div>
+<div class="nav-section" id="nav-section-info" style="display:none">정보</div>
+<div class="nav-item" id="nav-trends" style="display:none" onclick="nav('trends',this)"><span class="nav-icon">📊</span>직종 트렌드</div>
+<div class="nav-item" id="nav-tips" style="display:none" onclick="nav('tips',this)"><span class="nav-icon">💡</span>취업 꿀팁</div>
+<div class="nav-item" id="nav-visa" style="display:none" onclick="nav('visa',this)"><span class="nav-icon">🛂</span>비자 가이드</div>
+<div class="nav-item" id="nav-chat" style="display:none" onclick="nav('chat',this)"><span class="nav-icon">☕</span><span class="nav-label">커피챗 신청</span></div>
     <div class="nav-section">설정</div>
     <div class="nav-item" id="nav-settings" onclick="nav('settings',this)" style="display:none"><span class="nav-icon">⚙️</span>API 설정</div>
   </div>
@@ -1886,10 +1886,21 @@ function showMain() {
 
   // 관리자 전용 메뉴 표시/숨김
   const settingsNav = document.getElementById('nav-settings');
-  const adminBarEl = document.getElementById('adminBar');
-  if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
-  if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
-}
+const adminBarEl = document.getElementById('adminBar');
+if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
+if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
+
+  const adminOnlyIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-tips','nav-visa','nav-chat'];
+adminOnlyIds.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.style.display = isAdmin ? 'block' : 'none';
+});
+// 관리자 외 숨김 처리
+const adminOnlyNavs = ['nav-ai','nav-coverletter','nav-jdanalysis','nav-tips','nav-visa','nav-chat','nav-trends'];
+adminOnlyNavs.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.style.display = isAdmin ? 'flex' : 'none';
+});
 
 function showAdminDashboard() {
   document.getElementById('landingPage').style.display = 'none';
