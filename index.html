@@ -926,7 +926,7 @@ textarea::placeholder{color:var(--text3);}
   <div class="card" style="min-height:300px">
     <h3 style="margin-bottom:4px">🔥 스킬 트렌드 워드클라우드</h3>
     <div style="font-size:11px;color:var(--text3);margin-bottom:14px">스킬을 클릭하면 상세 정보를 볼 수 있어요</div>
-    <div id="skillWordCloudContainer" style="width:100%; height:260px; position:relative;">
+    <div id="skillWordCloudContainer" style="width:100%; height:300px; position:relative;">
       <canvas id="skillWordCloud" style="width:100%; height:100%;"></canvas>
     </div>
   </div>
@@ -2539,7 +2539,7 @@ function showSkillCat(cat) {
            onmouseover="this.style.borderColor='${color}55'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
         <div style="min-width:20px;height:20px;border-radius:50%;background:${i<3?color:'var(--bg2)'};border:1.5px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${i<3?'#fff':color}">${i+1}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.skill}${item.hot?'<span style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(240,100,100,.12);color:#f06464;border:1px solid rgba(240,100,100,.2)">🔥HOT</span>':''}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.skill}${item.hot?'<span style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(240,100,100,.12);color:#f06464;border:1px solid rgba(240,100,100,.2)">🔥 핫</span>':''}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:1px">${item.note}</div>
         </div>
         <div style="flex-shrink:0;text-align:right">
@@ -2742,30 +2742,28 @@ function showSkillCat(cat) {
   if (skillFreq.length > 0 && typeof WordCloud !== 'undefined') {
     const canvas = document.getElementById('skillWordCloud');
     canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = 260;
-    // 크기 범위를 제한 — 최대 40, 최소 10으로 정규화해서 한 단어가 화면 가득 차는 현상 방지
+    canvas.height = 300;
     skillFreq.sort((a,b) => b[1]-a[1]);
     const palette = [color, '#f5a623', '#3ecfa0', '#f06464', '#a78bfa', '#60c9f8'];
     const maxWeight = skillFreq[0]?.[1] || 1;
-    const normalizedList = skillFreq.map(([w, v]) => [w, 10 + Math.round((v / maxWeight) * 30)]);
+    // 10~22 범위로 정규화 — 크기 차이를 줄여서 더 많은 단어가 들어가게
+    const normalizedList = skillFreq.map(([w, v]) => [w, 10 + Math.round((v / maxWeight) * 12)]);
     WordCloud(canvas, {
       list: normalizedList,
       fontFamily: "'Sora', 'Noto Sans KR', sans-serif",
-      fontWeight: '700',
+      fontWeight: '600',
       color: (word) => {
         const rank = normalizedList.findIndex(([w])=>w===word);
         return palette[rank % palette.length];
       },
-      rotateRatio: 0,
+      rotateRatio: 0.2,
       backgroundColor: 'transparent',
-      gridSize: 8,
-      weightFactor: sz => sz * (canvas.width / 280),
-      minSize: 10,
+      gridSize: 4,
+      weightFactor: sz => sz * 2.2,
+      minSize: 8,
       cursor: 'pointer',
       click: item => openSkillDrawer(item[0], cat),
-      hover: (item, dim, event) => {
-        canvas.style.cursor = item ? 'pointer' : 'default';
-      }
+      hover: (item) => { canvas.style.cursor = item ? 'pointer' : 'default'; }
     });
   } else {
     document.getElementById('skillWordCloudContainer').innerHTML =
