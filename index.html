@@ -924,7 +924,7 @@ textarea::placeholder{color:var(--text3);}
   </div>
 
   <div class="card" style="min-height:300px">
-    <h3 style="margin-bottom:4px">☁️ 스킬 트렌드 워드클라우드</h3>
+    <h3 style="margin-bottom:4px">🔥 스킬 트렌드 워드클라우드</h3>
     <div style="font-size:11px;color:var(--text3);margin-bottom:14px">스킬을 클릭하면 상세 정보를 볼 수 있어요</div>
     <div id="skillWordCloudContainer" style="width:100%; height:260px; position:relative;">
       <canvas id="skillWordCloud" style="width:100%; height:100%;"></canvas>
@@ -2430,22 +2430,20 @@ function showSkillCat(cat) {
     </div>`).join('');
 
   // ── 레이더 데이터: 베이스라인 + 실제 데이터 혼합
-  // 공고 수에 따라 실제 데이터 가중치 증가 (0개=0%, 50개=50%, 200개+=90%)
-  const liveWeight = hasJobs ? Math.min(0.9, jobCount / 220) : 0;
+  // 공고 수에 따라 실제 데이터 가중치 증가
+  // 300개여도 베이스라인 40%는 항상 유지 — 실제 데이터가 너무 낮을 때 보정
+  const liveWeight = hasJobs ? Math.min(0.6, jobCount / 500) : 0;
   const baseWeight = 1 - liveWeight;
 
   const liveData = radarSkills.map(skillGroup => {
     if (!hasJobs) return 0;
     let count = 0;
     catJobs.forEach(j => {
-      const text = (j.description||'') + ' ' + (j.title||'');
-      const found = skillGroup.some(s => {
-        const escaped = s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-        return new RegExp('\\b'+escaped+'\\b','i').test(text);
-      });
+      const text = ((j.description||'') + ' ' + (j.title||'')).toLowerCase();
+      // includes 방식 — "Python/R", "SQL Server" 등 변형도 잡음
+      const found = skillGroup.some(s => text.includes(s.toLowerCase()));
       if (found) count++;
     });
-    // 공고 수 대비 비율을 100점 만점으로 변환
     return Math.round((count / jobCount) * 100);
   });
 
@@ -2695,8 +2693,8 @@ function showSkillCat(cat) {
   if (!levelEntries || levelEntries.length === 0) {
     levelEntries = (BASE_LEVELS[cat] || BASE_LEVELS['데이터']).map(([l,v])=>[l,v]);
   }
-  // 다크 테마에서 잘 보이는 밝은 색상 팔레트
-  const levelColors = [color, '#f5a623', '#3ecfa0', '#7c6af0', '#f06464', '#4f8ef7'];
+  // 다크 테마 고정 6색 — 어떤 직종이든 서로 충분히 구분됨
+  const levelColors = ['#4f8ef7', '#f5a623', '#3ecfa0', '#f06464', '#7c6af0', '#a78bfa'];
   if (skillCharts.level) skillCharts.level.destroy();
   skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
     type: 'doughnut',
@@ -2745,23 +2743,27 @@ function showSkillCat(cat) {
     const canvas = document.getElementById('skillWordCloud');
     canvas.width = canvas.parentElement.offsetWidth;
     canvas.height = 260;
-    const colors = [color, color+'cc', color+'99', '#ffffff44', '#ffffff66'];
+    // 정렬해서 상위 스킬 순서 고정
+    skillFreq.sort((a,b) => b[1]-a[1]);
+    const palette = [color, '#f5a623', '#3ecfa0', '#f06464', '#a78bfa', '#60c9f8'];
     WordCloud(canvas, {
       list: skillFreq,
       fontFamily: "'Sora', 'Noto Sans KR', sans-serif",
-      fontWeight: '600',
-      color: (word, weight) => {
+      fontWeight: '700',
+      color: (word) => {
         const rank = skillFreq.findIndex(([w])=>w===word);
-        if (rank < 3) return color;
-        if (rank < 7) return color + 'cc';
-        return color + '88';
+        return palette[rank % palette.length];
       },
-      rotateRatio: 0.15,
+      rotateRatio: 0,          // 가로만 — 읽기 쉬움
       backgroundColor: 'transparent',
-      gridSize: 10,
-      weightFactor: sz => (sz * canvas.width) / 600,
+      gridSize: 12,
+      weightFactor: sz => Math.max(10, (sz / skillFreq[0]?.[1] || 1) * (canvas.width / 9)),
+      minSize: 10,
       cursor: 'pointer',
-      click: item => openSkillDrawer(item[0], cat)
+      click: item => openSkillDrawer(item[0], cat),
+      hover: (item, dim, event) => {
+        canvas.style.cursor = item ? 'pointer' : 'default';
+      }
     });
   } else {
     document.getElementById('skillWordCloudContainer').innerHTML =
