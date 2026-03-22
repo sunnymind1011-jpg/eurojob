@@ -29,8 +29,8 @@ body{font-family:'Sora','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .logo-text{font-size:18px;font-weight:700;letter-spacing:-.3px;}
 .logo-sub{font-size:10px;color:var(--text3);margin-top:1px;}
 .nav{flex:1;padding:10px 0;overflow-y:auto;}
-.nav-section{padding:12px 20px 5px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;border-left:2px solid transparent;user-select:none;}
+.nav-section{padding:8px 20px 3px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 20px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;border-left:2px solid transparent;user-select:none;}
 .nav-item:hover{background:var(--bg3);color:var(--text);}
 .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,142,247,.07);font-weight:500;}
 .nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
@@ -2556,7 +2556,7 @@ function showSkillCat(cat) {
            onmouseover="this.style.borderColor='${color}55'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
         <div style="min-width:20px;height:20px;border-radius:50%;background:${i<3?color:'var(--bg2)'};border:1.5px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${i<3?'#fff':color}">${i+1}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.skill}${item.hot?'<span style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(240,100,100,.12);color:#f06464;border:1px solid rgba(240,100,100,.2)">🔥HOT</span>':''}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.skill}${item.hot?'<span style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(240,100,100,.12);color:#f06464;border:1px solid rgba(240,100,100,.2)">🔥 HOT</span>':''}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:1px">${item.note}</div>
         </div>
         <div style="flex-shrink:0;text-align:right">
