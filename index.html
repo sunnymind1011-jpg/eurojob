@@ -894,11 +894,13 @@ textarea::placeholder{color:var(--text3);}
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="margin-bottom:14px">🌐 언어 요건</h3>
-    <div id="skillmap-langs"></div>
+  <div class="card" style="min-height:300px">
+    <h3 style="margin-bottom:14px">☁️ 주요 스킬 트렌드 (Word Cloud)</h3>
+    <div id="skillWordCloudContainer" style="width:100%; height:250px; position:relative;">
+      <canvas id="skillWordCloud" style="width:100%; height:100%;"></canvas>
+    </div>
   </div>
-</div>
+</div> <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
     
 
 
@@ -2428,7 +2430,7 @@ function showSkillCat(cat) {
 
 
   // 근무 형태
-  const remoteC = catJobs.filter(j=>j.remoteType==='Remote').length;
+const remoteC = catJobs.filter(j=>j.remoteType==='Remote').length;
 const hybridC = catJobs.filter(j=>j.remoteType==='Hybrid').length;
 const onsiteC = catJobs.filter(j=>j.remoteType==='On-site').length;
 const remoteData = [
@@ -2492,19 +2494,53 @@ skillCharts.remote = new Chart(document.getElementById('chartSkillRemote'), {
     }
   });
 
-  // 언어
-  const langCounts = {};
-  catJobs.forEach(j => { (j.languageReqs||[]).forEach(l => { langCounts[l]=(langCounts[l]||0)+1; }); });
-  const topLangs = Object.entries(langCounts).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('skillmap-langs').innerHTML = topLangs.length
-    ? `<div style="display:flex;flex-wrap:wrap;gap:10px">
-        ${topLangs.map(([l,n])=>`
-          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 18px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${l}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">${n}개 · ${Math.round(n/catJobs.length*100)}%</div>
-          </div>`).join('')}
-      </div>`
-    : '<div style="color:var(--text3);font-size:13px">언어 데이터 없음</div>';
+  // 워드클라우드용 데이터 준비
+  const skillFreq = [];
+  radarSkills.flat().forEach(skill => {
+    let count = 0;
+    catJobs.forEach(j => {
+      const text = ((j.description || '') + ' ' + (j.title || '')).toLowerCase();
+      // 단어 단위로 정확히 일치하는지 확인
+      if (new RegExp('\\b' + skill.toLowerCase() + '\\b', 'i').test(text)) {
+        count++;
+      }
+    });
+    if (count > 0) {
+      // [단어, 가중치] 형태로 저장 (최소 크기 10 보정)
+      skillFreq.push([skill, count + 10]);
+    }
+  });
+
+  // 워드클라우드 실행
+  if (skillFreq.length > 0 && typeof WordCloud !== 'undefined') {
+    const canvas = document.getElementById('skillWordCloud');
+    // 캔버스 크기를 부모 크기에 맞춤
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = canvas.parentElement.offsetHeight;
+
+    WordCloud(canvas, {
+      list: skillFreq,
+      fontFamily: "'Sora', 'Noto Sans KR', sans-serif",
+      fontWeight: '600',
+      color: (word, weight) => {
+        // 빈도가 높으면 진하게, 낮으면 흐리게 (투명도 조절)
+        const opacity = Math.min(1, weight / 30 + 0.3);
+        return color + Math.floor(opacity * 255).toString(16).padStart(2, '0');
+      },
+      rotateRatio: 0.2, // 가끔 세로 단어 섞기
+      backgroundColor: 'transparent',
+      gridSize: 8,
+      weightFactor: function (size) {
+        return (size * canvas.width) / 500; // 화면 크기에 맞게 글자 크기 조절
+      },
+      click: function(item) {
+        alert(item[0] + ' 스킬이 언급된 공고가 ' + (item[1]-10) + '개 있습니다.');
+      }
+    });
+  } else {
+    document.getElementById('skillWordCloudContainer').innerHTML = 
+      '<div style="color:var(--text3);font-size:13px;padding:20px">분석된 스킬 데이터가 부족합니다.</div>';
+  }
 }
   
 </script>
