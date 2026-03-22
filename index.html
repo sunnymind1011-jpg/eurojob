@@ -2743,21 +2743,23 @@ function showSkillCat(cat) {
     const canvas = document.getElementById('skillWordCloud');
     canvas.width = canvas.parentElement.offsetWidth;
     canvas.height = 260;
-    // 정렬해서 상위 스킬 순서 고정
+    // 크기 범위를 제한 — 최대 40, 최소 10으로 정규화해서 한 단어가 화면 가득 차는 현상 방지
     skillFreq.sort((a,b) => b[1]-a[1]);
     const palette = [color, '#f5a623', '#3ecfa0', '#f06464', '#a78bfa', '#60c9f8'];
+    const maxWeight = skillFreq[0]?.[1] || 1;
+    const normalizedList = skillFreq.map(([w, v]) => [w, 10 + Math.round((v / maxWeight) * 30)]);
     WordCloud(canvas, {
-      list: skillFreq,
+      list: normalizedList,
       fontFamily: "'Sora', 'Noto Sans KR', sans-serif",
       fontWeight: '700',
       color: (word) => {
-        const rank = skillFreq.findIndex(([w])=>w===word);
+        const rank = normalizedList.findIndex(([w])=>w===word);
         return palette[rank % palette.length];
       },
-      rotateRatio: 0,          // 가로만 — 읽기 쉬움
+      rotateRatio: 0,
       backgroundColor: 'transparent',
-      gridSize: 12,
-      weightFactor: sz => Math.max(10, (sz / skillFreq[0]?.[1] || 1) * (canvas.width / 9)),
+      gridSize: 8,
+      weightFactor: sz => sz * (canvas.width / 280),
       minSize: 10,
       cursor: 'pointer',
       click: item => openSkillDrawer(item[0], cat),
