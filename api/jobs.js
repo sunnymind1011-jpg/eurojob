@@ -272,7 +272,7 @@ const SUPABASE_KEY = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 async function fetchVisaSponsorFromSupabase() {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/visa_jobs?select=*&order=posted_at.desc&limit=500`,
+      `${SUPABASE_URL}/rest/v1/visa_jobs?select=*&order=posted_at.desc&limit=1000`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
