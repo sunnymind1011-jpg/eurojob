@@ -1363,25 +1363,24 @@ async function fetchRedditPosts(company, jobId) {
   const container = document.getElementById(`reddit-posts-${jobId}`);
   if (!container) return;
 
-  // 검색 쿼리 — 회사명 + 면접/근무 관련
+  // 취업 특화 서브레딧으로만 제한
+  const jobSubreddits = 'cscareerquestions+recruitinghell+europeanjobs+jobs+careers+jobsearchhacks+digitalnomad+ExpatFrance+Netherlands+germany+spain+ITCareerQuestions+datascience+marketing';
+
+  // 취업 관련 키워드만 사용
   const queries = [
-    `${company} interview`,
-    `${company} work experience`,
+    `"${company}" hiring OR "job offer" OR "got hired" OR "got the job"`,
+    `"${company}" recruiter OR "work culture" OR "work experience" OR salary`,
   ];
 
-  const subreddits = 'cscareerquestions+recruitinghell+europeanjobs+jobs+careers+ExpatFrance+netherlands+germany+spain';
-
   try {
-    // 두 쿼리 병렬 요청
     const results = await Promise.allSettled(
       queries.map(q =>
-        fetch(`https://www.reddit.com/search.json?q=${encodeURIComponent(q)}&restrict_sr=false&sort=relevance&limit=8&t=all`,
+        fetch(`https://www.reddit.com/r/${jobSubreddits}/search.json?q=${encodeURIComponent(q)}&restrict_sr=true&sort=relevance&limit=8&t=all`,
           { headers: { 'Accept': 'application/json' } }
         ).then(r => r.json())
       )
     );
 
-    // 결과 합치기 + 중복 제거
     const seen = new Set();
     const posts = [];
     for (const r of results) {
@@ -1389,9 +1388,13 @@ async function fetchRedditPosts(company, jobId) {
       for (const post of (r.value?.data?.children || [])) {
         const d = post.data;
         if (seen.has(d.id)) continue;
-        // 회사명 실제 언급 여부 필터
-        const text = (d.title + ' ' + (d.selftext||'')).toLowerCase();
-        if (!text.includes(company.toLowerCase().split(' ')[0])) continue;
+        // 회사명 첫 단어가 제목에 실제로 있어야 함
+        const titleLower = d.title.toLowerCase();
+        const companyFirst = company.toLowerCase().split(' ')[0];
+        if (!titleLower.includes(companyFirst) && !(d.selftext||'').toLowerCase().includes(companyFirst)) continue;
+        // 취업 무관 키워드 필터 (게임, 스포츠, 음악 등)
+        const irrelevant = /gaming|esport|cs2|csgo|valorant|match|tournament|player|athlete|sport|music|album|song|movie|film/i;
+        if (irrelevant.test(d.title)) continue;
         seen.add(d.id);
         posts.push(d);
       }
@@ -1400,8 +1403,8 @@ async function fetchRedditPosts(company, jobId) {
     if (!posts.length) {
       container.innerHTML = `
         <div style="padding:14px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text3);text-align:center;line-height:1.7">
-          😶 Reddit에서 <strong style="color:var(--text2)">${company}</strong> 관련 후기를 찾지 못했어요.<br>
-          <a href="https://www.reddit.com/search/?q=${encodeURIComponent(company + ' interview')}" target="_blank"
+          😶 취업 관련 Reddit 후기를 찾지 못했어요.<br>
+          <a href="https://www.reddit.com/r/${jobSubreddits}/search/?q=${encodeURIComponent(company + ' job')}&restrict_sr=true" target="_blank"
              style="color:#ff4500;text-decoration:none;font-weight:600">직접 검색해보기 →</a>
         </div>`;
       return;
@@ -1435,7 +1438,7 @@ async function fetchRedditPosts(company, jobId) {
   } catch(e) {
     container.innerHTML = `
       <div style="padding:12px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text3)">
-        Reddit 로드 실패 — <a href="https://www.reddit.com/search/?q=${encodeURIComponent(company)}" target="_blank" style="color:#ff4500">직접 검색 →</a>
+        Reddit 로드 실패 — <a href="https://www.reddit.com/search/?q=${encodeURIComponent(company + ' job')}" target="_blank" style="color:#ff4500">직접 검색 →</a>
       </div>`;
   }
 }
