@@ -1,4 +1,4 @@
-// api/jobs.js — Adzuna API 기반 유럽 채용공고 수집
+// api/jobs.js — Adzuna + Remotive + visasponsor.jobs 유럽 채용공고 수집
 import https from 'https';
 
 export const maxDuration = 60;
@@ -17,7 +17,7 @@ const COUNTRIES = [
   { code: 'it', name: 'Italy',          flag: '🇮🇹' },
   { code: 'pl', name: 'Poland',         flag: '🇵🇱' },
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
-  { code: 'ie', name: 'Ireland',        flag: '🇮🇪' }, 
+  { code: 'ie', name: 'Ireland',        flag: '🇮🇪' },
 ];
 
 const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
@@ -44,18 +44,44 @@ const COUNTRY_INFO = {
   ie: { name: 'Ireland',        flag: '🇮🇪', code: 'IE' },
 };
 
+// visasponsor.jobs 지원 국가 → Adzuna 국가코드 매핑
+const VISA_SPONSOR_COUNTRIES = [
+  { vsName: 'Germany',         code: 'DE', flag: '🇩🇪' },
+  { vsName: 'Netherlands',     code: 'NL', flag: '🇳🇱' },
+  { vsName: 'Ireland',         code: 'IE', flag: '🇮🇪' },
+  { vsName: 'United-Kingdom',  code: 'GB', flag: '🇬🇧' },
+  { vsName: 'Portugal',        code: 'PT', flag: '🇵🇹' },
+];
+
 function companyEmoji(name) {
   const e = ['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];
   return e[(name.charCodeAt(0) || 0) % e.length] || '🏢';
 }
-function detectRelocation(d) {
-  return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);
+
+// ── 개선된 감지 함수들 ──────────────────────────────────────
+
+function detectVisaSponsorship(d) {
+  if (!d) return false;
+  const text = d.toLowerCase();
+  // 부정 표현 먼저 차단
+  const noSponsor = /no visa sponsorship|not able to sponsor|unable to (provide|offer|support) (visa|sponsorship)|visa sponsorship (is not|not) (available|provided|offered)|we do not sponsor|cannot sponsor|won't sponsor|does not (offer|provide) (visa|work permit)|must (already |)(have|hold|possess) (the |)(right to work|valid visa|work authorization)|only (candidates|applicants).{0,40}(right to work|eu|eligible to work)/i;
+  const negPattern = /\b(no|not|without|unable to|cannot|can't|won't|do not|don't|never|unfortunately)\b.{0,60}(visa|sponsor|work permit|right to work)/i;
+  if (noSponsor.test(text) || negPattern.test(text)) return false;
+  // 긍정 표현
+  return /visa sponsorship (available|provided|offered|supported|possible|considered)|we (will|can|do) sponsor|sponsor(ing|ed|ship for) (non-eu|non eu|international|overseas|foreign|candidates|applicants)|skilled worker visa|work permit (provided|supported|assistance|included)|right to work (provided|sponsored|supported)|eu blue card|tier 2 (visa|sponsor)|sponsorship (available|provided|offered)|open to sponsoring|happy to sponsor|able to sponsor|(visa|sponsorship|work permit).{0,50}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,50}(visa|sponsorship|work permit)/i.test(text);
 }
+
+function detectRelocation(d) {
+  if (!d) return false;
+  const text = d.toLowerCase();
+  if (/no relocation|relocation (not|is not) (provided|offered|available|supported)/i.test(text)) return false;
+  return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)|(relocation|moving).{0,40}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,40}(relocation|moving)|(package|support|assistance).{0,30}relocation|relo (package|support|benefit)/i.test(text);
+}
+
 function detectRemote(t) {
   if (/remote/i.test(t)) return 'Remote';
   if (/hybrid/i.test(t)) return 'Hybrid';
   return 'On-site';
-
 }
 
 function detectLevel(title, desc) {
@@ -70,41 +96,29 @@ function detectLevel(title, desc) {
   return '';
 }
 
-const COUNTRY_LANG = {
-  GB:'English', IE:'English', DE:'German', AT:'German', CH:'German',
-  NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
-  PT:'Portuguese', PL:'Polish',
-};
-
 function detectWritingLang(d) {
-  // 프랑스어 특징 단어
-  if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) && 
+  if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) &&
       (d.match(/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour)\b/gi)||[]).length > 3) return 'French';
-  // 독일어 특징 단어  
   if (/\b(und|die|der|das|ist|wir|Sie|mit|für|auf|von|als|bei|zur)\b/g.test(d) &&
       (d.match(/\b(und|die|der|das|ist|wir|Sie|mit|für)\b/g)||[]).length > 3) return 'German';
-  // 스페인어 특징 단어
   if (/\b(nuestro|nuestros|para|con|los|las|del|una|que|como|más|por)\b/gi.test(d) &&
       (d.match(/\b(nuestro|para|con|los|las|del|que|como)\b/gi)||[]).length > 3) return 'Spanish';
-  // 이탈리아어 특징 단어
   if (/\b(della|delle|degli|questo|nostro|siamo|lavoro|azienda|team)\b/gi.test(d) &&
       (d.match(/\b(della|delle|nostro|siamo|lavoro|azienda)\b/gi)||[]).length > 2) return 'Italian';
-  // 네덜란드어 특징 단어
   if (/\b(wij|ons|onze|voor|met|een|van|het|zijn|wordt)\b/g.test(d) &&
       (d.match(/\b(wij|ons|onze|voor|met|een|van)\b/g)||[]).length > 3) return 'Dutch';
-  // 기본값 영어
   return 'English';
 }
 
-function detectLangs(d, countryCode) {
+function detectLangs(d) {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
-  // 추가 언어 명시된 경우
-  if (writingLang !== 'English' && /english.*(required|must|essential|fluent)|fluent.*english|strong.*english/i.test(d)) l.push('English');
+  if (writingLang !== 'English' && /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english|(cv|resume|application|cover letter).{0,20}(in english|english only|written in english)|english.*(cv|resume)|please (apply|send|submit).{0,30}english|(working|business|professional).{0,10}english/i.test(d)) l.push('English');
   if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
   if (/korean|한국어/i.test(d)) l.push('Korean');
   return l;
 }
+
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
@@ -114,6 +128,8 @@ function removeDups(jobs) {
     return true;
   });
 }
+
+// ── Adzuna ────────────────────────────────────────────────
 
 function normalizeAdzuna(raw, countryCode) {
   const info = COUNTRY_INFO[countryCode] || { name: countryCode, flag: '🌍', code: countryCode.toUpperCase() };
@@ -125,7 +141,7 @@ function normalizeAdzuna(raw, countryCode) {
   return {
     id:           String(raw.id || Math.random()),
     title:        raw.title || '',
-    level: detectLevel(raw.title || '', desc),
+    level:        detectLevel(raw.title || '', desc),
     company:      raw.company?.display_name || '',
     location,
     country:      info.code,
@@ -137,10 +153,10 @@ function normalizeAdzuna(raw, countryCode) {
     postedAt:     raw.created || new Date().toISOString(),
     source:       'Adzuna',
     skills:       [],
-    visaSponsored: false,
+    visaSponsored: detectVisaSponsorship(desc),
     relocation:   detectRelocation(desc),
     remoteType:   detectRemote(desc),
-    languageReqs: detectLangs(desc, info.code),
+    languageReqs: detectLangs(desc),
   };
 }
 
@@ -200,6 +216,8 @@ function fetchAdzunaKeyword(countryCode, keyword) {
   });
 }
 
+// ── Remotive ──────────────────────────────────────────────
+
 function fetchRemotive() {
   return new Promise((resolve) => {
     const categories = ['marketing', 'data', 'hr'];
@@ -216,9 +234,11 @@ function fetchRemotive() {
         res.on('data', c => data += c);
         res.on('end', () => {
           try {
+            const desc = '';
             const jobs = (JSON.parse(data).jobs || []).map(r => ({
               id:           String(r.id),
               title:        r.title || '',
+              level:        detectLevel(r.title || '', r.description || ''),
               company:      r.company_name || '',
               location:     r.candidate_required_location || 'Remote',
               country:      'EU',
@@ -248,7 +268,125 @@ function fetchRemotive() {
   });
 }
 
-// 메모리 캐시 (같은 Vercel 인스턴스 재사용 시 유효)
+// ── visasponsor.jobs ──────────────────────────────────────
+// HTML 페이지를 파싱해서 확정 비자스폰서 공고 수집
+
+function fetchVisaSponsorPage(countryInfo) {
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'visasponsor.jobs',
+      path:     `/api/jobs?country=${countryInfo.vsName}`,
+      method:   'GET',
+      headers:  {
+        'User-Agent': 'Mozilla/5.0 (compatible; EuroJobBot/1.0)',
+        'Accept':     'text/html',
+      },
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const jobs = parseVisaSponsorHTML(data, countryInfo);
+          resolve(jobs);
+        } catch(e) {
+          console.log(`visasponsor parse error (${countryInfo.vsName}):`, e.message);
+          resolve([]);
+        }
+      });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(12000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
+
+function parseVisaSponsorHTML(html, countryInfo) {
+  const jobs = [];
+  // 공고 링크 패턴: /api/jobs/[id]/[title]
+  const linkRegex = /href="(https:\/\/visasponsor\.jobs\/api\/jobs\/([a-f0-9]+)\/([^"]+))"/g;
+  // 회사명, 위치, 비자타입 추출
+  const seen = new Set();
+  let match;
+
+  while ((match = linkRegex.exec(html)) !== null) {
+    const url = match[1];
+    const id  = match[2];
+    const slug = match[3];
+
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    // slug에서 제목 복원 (하이픈 → 공백)
+    const title = decodeURIComponent(slug.replace(/-/g, ' ')).replace(/\(.*?\)/g, '').trim();
+
+    // 해당 공고 블록에서 추가 정보 추출 (href 앞뒤 500자)
+    const pos = html.indexOf(`href="${url}"`);
+    const block = html.slice(Math.max(0, pos - 100), pos + 600);
+
+    // 회사명 추출
+    const companyMatch = block.match(/alt="([^"]+?)"\s*\/?>\s*\n?\s*([A-Z][^\n<]{2,60}?)\s*\n?\s*---/);
+    const company = companyMatch ? companyMatch[2].trim() : '';
+
+    // 위치 추출
+    const locationMatch = block.match(/([A-Z][a-zA-Z\s]+),\s*\n?\s*([A-Z][a-zA-Z\s]+),\s*\n?\s*([A-Z][a-zA-Z\s]+)/);
+    const location = locationMatch ? `${locationMatch[1].trim()}, ${countryInfo.vsName.replace(/-/g,' ')}` : countryInfo.vsName.replace(/-/g,' ');
+
+    // 비자 타입 추출
+    const visaMatch = block.match(/(Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Health and Care Worker|All other\/unspecified)/i);
+    const visaType = visaMatch ? visaMatch[1] : 'Sponsored';
+
+    // 날짜 추출
+    const dateMatch = block.match(/Publish date\s+(\d{2}-\d{2}-\d{4})/);
+    let postedAt = new Date().toISOString();
+    if (dateMatch) {
+      const [d, m, y] = dateMatch[1].split('-');
+      postedAt = new Date(`${y}-${m}-${d}`).toISOString();
+    }
+
+    if (!title || title.length < 3) continue;
+
+    jobs.push({
+      id:           `vs_${id}`,
+      title:        title.slice(0, 100),
+      level:        detectLevel(title, ''),
+      company:      company || 'Unknown',
+      location,
+      country:      countryInfo.code,
+      flag:         countryInfo.flag,
+      logo:         companyEmoji(company || 'V'),
+      description:  `Visa sponsorship confirmed: ${visaType}. This position offers visa sponsorship for eligible candidates. Apply via the original listing for full job details.`,
+      url,
+      salary:       null,
+      postedAt,
+      source:       'VisaSponsor',
+      skills:       [],
+      visaSponsored: true,   // 이 소스는 100% 비자스폰서 확정
+      relocation:   false,
+      remoteType:   'On-site',
+      languageReqs: ['English'],
+      visaType,              // 비자 종류 추가 필드
+    });
+  }
+
+  return jobs;
+}
+
+async function fetchAllVisaSponsor() {
+  const results = await Promise.allSettled(
+    VISA_SPONSOR_COUNTRIES.map(c => fetchVisaSponsorPage(c))
+  );
+  const jobs = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
+      console.log(`  visasponsor ${VISA_SPONSOR_COUNTRIES[i].vsName}: ${r.value.length}개`);
+      jobs.push(...r.value);
+    }
+  });
+  return jobs;
+}
+
+// ── 메모리 캐시 ───────────────────────────────────────────
+
 let cache = { jobs: [], fetchedAt: null };
 
 export default async function handler(req, res) {
@@ -268,9 +406,10 @@ export default async function handler(req, res) {
     });
   }
 
-  console.log('🔄 Adzuna 수집 시작...');
+  console.log('🔄 수집 시작 (Adzuna + Remotive + VisaSponsor)...');
   let allJobs = [];
 
+  // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
       const jobs = await fetchAdzuna(country.code, cat.tag);
@@ -279,6 +418,7 @@ export default async function handler(req, res) {
     }
   }
 
+  // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
       allJobs.push(...await fetchAdzunaKeyword(country, kw));
@@ -286,11 +426,16 @@ export default async function handler(req, res) {
     }
   }
 
+  // Remotive 수집
   allJobs.push(...await fetchRemotive());
+
+  // visasponsor.jobs 수집 (비자스폰서 확정 공고)
+  console.log('🛂 visasponsor.jobs 수집 시작...');
+  allJobs.push(...await fetchAllVisaSponsor());
 
   cache.jobs = removeDups(allJobs);
   cache.fetchedAt = new Date().toISOString();
-  console.log(`✅ 완료: ${cache.jobs.length}개`);
+  console.log(`✅ 완료: ${cache.jobs.length}개 (비자스폰서 확정: ${cache.jobs.filter(j=>j.visaSponsored).length}개)`);
 
   res.status(200).json({
     ok: true, count: cache.jobs.length,
