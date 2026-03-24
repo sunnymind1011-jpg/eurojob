@@ -273,10 +273,19 @@ const VISA_SPONSOR_COUNTRIES = [
 async function getBrowser() {
   const chromium = (await import('@sparticuz/chromium')).default;
   const puppeteer = (await import('puppeteer-core')).default;
+
+  chromium.setGraphicsMode = false; // 그래픽 모드 끄기 (성능 향상)
+
+  const executablePath = await chromium.executablePath();
+
+  // libnss3.so 라이브러리 경로 설정 — Vercel에서 필수
+  const { dirname } = await import('path');
+  process.env.LD_LIBRARY_PATH = dirname(executablePath);
+
   return puppeteer.launch({
     args: chromium.args,
     defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(),
+    executablePath,
     headless: chromium.headless,
     ignoreHTTPSErrors: true,
   });
