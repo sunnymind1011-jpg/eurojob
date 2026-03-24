@@ -136,7 +136,6 @@ async function main() {
           country:    country.code,
           visa_type:  j.visa_type,
           url:        j.url,
-          posted_at:  j.date_str ? new Date(j.date_str).toISOString() : new Date().toISOString(),
           scraped_at: new Date().toISOString(),
         });
         countryTotal++;
@@ -155,8 +154,7 @@ async function main() {
   }
 
   // 기존 데이터 전체 삭제 후 새로 삽입
-  const { error: delErr } = await sb.from('visa_jobs').delete().neq('id', '00000000');
-  if (delErr) console.log('삭제 오류:', delErr.message);
+ 
 
   // 100개씩 upsert
   const CHUNK = 100;
