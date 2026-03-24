@@ -1217,7 +1217,7 @@ function detectLangs(d, countryCode) {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
   // 추가 언어 명시된 경우
-  if (writingLang !== 'English' && /english.*(required|must|essential|fluent)|fluent.*english|strong.*english/i.test(d)) l.push('English');
+  if (writingLang !== 'English' && /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english|(cv|resume|application|cover letter).{0,20}(in english|english only|written in english)|english.*(cv|resume)|please (apply|send|submit).{0,30}english|(working|business|professional).{0,10}english/i.test(d)) l.push('English');
   if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
   if (/korean|한국어/i.test(d)) l.push('Korean');
   return l;
