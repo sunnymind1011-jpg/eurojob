@@ -191,12 +191,26 @@ function fetchRemotive() {
 
 // ── visasponsor.jobs ──────────────────────────────────────
 
-function fetchVisaSponsorPage(countryInfo) {
+async function fetchVisaSponsorPage(countryInfo) {
+  const allJobs = [];
+  for (let page = 0; page <= 2; page++) {
+    const pageJobs = await fetchVisaSponsorSinglePage(countryInfo, page);
+    allJobs.push(...pageJobs);
+    if (pageJobs.length === 0) break;
+    await new Promise(r => setTimeout(r, 300));
+  }
+  return allJobs;
+}
+
+function fetchVisaSponsorSinglePage(countryInfo, page = 0) {
   return new Promise((resolve) => {
     const https = require('https');
+    const path = page === 0
+      ? `/api/jobs?country=${countryInfo.vsName}`
+      : `/api/jobs?country=${countryInfo.vsName}&page=${page}`;
     const req = https.request({
       hostname: 'visasponsor.jobs',
-      path:     `/api/jobs?country=${countryInfo.vsName}`,
+      path,
       method:   'GET',
       headers:  {
         'User-Agent': 'Mozilla/5.0 (compatible; EuroJobBot/1.0)',
