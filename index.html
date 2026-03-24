@@ -548,6 +548,15 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="lang:English" onclick="toggleChip(this)">🌐 영어 OK</div>
         <div class="chip" data-f="lang:Korean" onclick="toggleChip(this)">🇰🇷 한국어</div>
       </div>
+      <div class="filter-row">
+        <span class="f-lbl">💼</span>
+        <div class="chip" data-f="cat:data" onclick="toggleChip(this)">📊 데이터</div>
+        <div class="chip" data-f="cat:marketing" onclick="toggleChip(this)">📣 마케팅</div>
+        <div class="chip" data-f="cat:dev" onclick="toggleChip(this)">💻 개발</div>
+        <div class="chip" data-f="cat:hr" onclick="toggleChip(this)">🤝 HR</div>
+        <div class="chip" data-f="cat:finance" onclick="toggleChip(this)">💰 금융</div>
+        <div class="chip" data-f="cat:management" onclick="toggleChip(this)">🏢 경영/전략</div>
+      </div>
       <div class="job-grid" id="jobGrid">
         <div class="empty" style="grid-column:1/-1">
           <div class="empty-icon">💼</div>
@@ -1250,20 +1259,42 @@ function updateHomeStats() {
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💼</div><div class="empty-title">공고를 수집하거나 샘플 데이터를 불러오세요</div></div>';
 }
 
+// 직종 키워드 매핑
+const CAT_KEYWORDS = {
+  data:       ['data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst','ml engineer','machine learning','データ'],
+  marketing:  ['marketing','seo','sem','growth','brand','content','campaign','digital marketing','performance marketing','crm'],
+  dev:        ['engineer','developer','backend','frontend','software','fullstack','devops','cloud','architect','programmer','coding'],
+  hr:         ['hr','human resources','talent','recruitment','recruiter','people','hris','payroll','compensation'],
+  finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','analyst','risk','compliance'],
+  management: ['manager','director','strategy','operations','product manager','project manager','consulting','business analyst','chief'],
+};
+
 function filterJobs() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const sort = document.getElementById('sortBy').value;
   const selectedCountries = [...activeFilters]
     .filter(f => f.startsWith('country:'))
     .map(f => f.split(':')[1]);
+  const selectedCats = [...activeFilters]
+    .filter(f => f.startsWith('cat:'))
+    .map(f => f.split(':')[1]);
+
   let jobs = allJobs.filter(j=>{
     if (q && !`${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase().includes(q)) return false;
     // 국가 OR 조건
     if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
+    // 직종 OR 조건
+    if (selectedCats.length > 0) {
+      const titleLower = (j.title||'').toLowerCase();
+      const matched = selectedCats.some(cat =>
+        (CAT_KEYWORDS[cat]||[]).some(kw => titleLower.includes(kw))
+      );
+      if (!matched) return false;
+    }
     // 나머지 AND 조건
     for (const f of activeFilters) {
       const [k,v] = f.split(':');
-      if (k==='country') continue;
+      if (k==='country' || k==='cat') continue;
       if (k==='visa' && !j.visaSponsored) return false;
       if (k==='relocation' && !j.relocation) return false;
       if (k==='remote' && j.remoteType!==v) return false;
