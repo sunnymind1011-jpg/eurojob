@@ -271,11 +271,26 @@ function fetchRemotive() {
 // ── visasponsor.jobs ──────────────────────────────────────
 // HTML 페이지를 파싱해서 확정 비자스폰서 공고 수집
 
-function fetchVisaSponsorPage(countryInfo) {
+async function fetchVisaSponsorPage(countryInfo) {
+  const allJobs = [];
+  // 1~3페이지 수집 (페이지당 약 20~25개)
+  for (let page = 0; page <= 2; page++) {
+    const pageJobs = await fetchVisaSponsorSinglePage(countryInfo, page);
+    allJobs.push(...pageJobs);
+    if (pageJobs.length === 0) break; // 결과 없으면 중단
+    await new Promise(r => setTimeout(r, 300)); // 요청 간격
+  }
+  return allJobs;
+}
+
+function fetchVisaSponsorSinglePage(countryInfo, page = 0) {
   return new Promise((resolve) => {
+    const path = page === 0
+      ? `/api/jobs?country=${countryInfo.vsName}`
+      : `/api/jobs?country=${countryInfo.vsName}&page=${page}`;
     const req = https.request({
       hostname: 'visasponsor.jobs',
-      path:     `/api/jobs?country=${countryInfo.vsName}`,
+      path,
       method:   'GET',
       headers:  {
         'User-Agent': 'Mozilla/5.0 (compatible; EuroJobBot/1.0)',
@@ -285,13 +300,8 @@ function fetchVisaSponsorPage(countryInfo) {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
-        try {
-          const jobs = parseVisaSponsorHTML(data, countryInfo);
-          resolve(jobs);
-        } catch(e) {
-          console.log(`visasponsor parse error (${countryInfo.vsName}):`, e.message);
-          resolve([]);
-        }
+        try { resolve(parseVisaSponsorHTML(data, countryInfo)); }
+        catch(e) { resolve([]); }
       });
     });
     req.on('error', () => resolve([]));
