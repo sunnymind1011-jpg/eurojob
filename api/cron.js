@@ -1,5 +1,6 @@
 // api/cron.js — 매일 자동 실행 (한국시간 오전 9시)
 // vercel.json: "schedule": "0 0 * * *"
+import https from 'https';
 
 export const maxDuration = 60;
 
@@ -104,7 +105,6 @@ function removeDups(jobs) {
 
 function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
-    const https = require('https');
     const params = new URLSearchParams({
       app_id:           ADZUNA_APP_ID,
       app_key:          ADZUNA_APP_KEY,
@@ -132,7 +132,6 @@ function fetchAdzuna(countryCode, categoryTag) {
 
 function fetchAdzunaKeyword(countryCode, keyword) {
   return new Promise((resolve) => {
-    const https = require('https');
     const params = new URLSearchParams({
       app_id:           ADZUNA_APP_ID,
       app_key:          ADZUNA_APP_KEY,
@@ -163,7 +162,6 @@ function fetchAdzunaKeyword(countryCode, keyword) {
 
 function fetchRemotive() {
   return new Promise((resolve) => {
-    const https = require('https');
     const categories = ['marketing', 'data', 'hr'];
     let allJobs = [];
     let done = 0;
@@ -204,7 +202,6 @@ async function fetchVisaSponsorPage(countryInfo) {
 
 function fetchVisaSponsorSinglePage(countryInfo, page = 0) {
   return new Promise((resolve) => {
-    const https = require('https');
     const path = page === 0
       ? `/api/jobs?country=${countryInfo.vsName}`
       : `/api/jobs?country=${countryInfo.vsName}&page=${page}`;
