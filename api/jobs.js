@@ -44,15 +44,6 @@ const COUNTRY_INFO = {
   ie: { name: 'Ireland',        flag: '🇮🇪', code: 'IE' },
 };
 
-// visasponsor.jobs 지원 국가 → Adzuna 국가코드 매핑
-const VISA_SPONSOR_COUNTRIES = [
-  { vsName: 'Germany',         code: 'DE', flag: '🇩🇪' },
-  { vsName: 'Netherlands',     code: 'NL', flag: '🇳🇱' },
-  { vsName: 'Ireland',         code: 'IE', flag: '🇮🇪' },
-  { vsName: 'United-Kingdom',  code: 'GB', flag: '🇬🇧' },
-  { vsName: 'Portugal',        code: 'PT', flag: '🇵🇹' },
-];
-
 function companyEmoji(name) {
   const e = ['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];
   return e[(name.charCodeAt(0) || 0) % e.length] || '🏢';
@@ -269,140 +260,25 @@ function fetchRemotive() {
 }
 
 // ── visasponsor.jobs ──────────────────────────────────────
-// HTML 페이지를 파싱해서 확정 비자스폰서 공고 수집
-
-async function fetchVisaSponsorPage(countryInfo) {
-  const allJobs = [];
-  // 1~3페이지 수집 (페이지당 약 20~25개)
-  for (let page = 0; page <= 2; page++) {
-    const pageJobs = await fetchVisaSponsorSinglePage(countryInfo, page);
-    allJobs.push(...pageJobs);
-    if (pageJobs.length === 0) break; // 결과 없으면 중단
-    await new Promise(r => setTimeout(r, 300)); // 요청 간격
-  }
-  return allJobs;
-}
-
-function fetchVisaSponsorSinglePage(countryInfo, page = 0) {
-  return new Promise((resolve) => {
-    const path = page === 0
-      ? `/api/jobs?country=${countryInfo.vsName}`
-      : `/api/jobs?country=${countryInfo.vsName}&page=${page}`;
-    const req = https.request({
-      hostname: 'visasponsor.jobs',
-      path,
-      method:   'GET',
-      headers:  {
-        'User-Agent': 'Mozilla/5.0 (compatible; EuroJobBot/1.0)',
-        'Accept':     'text/html',
-      },
-    }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve(parseVisaSponsorHTML(data, countryInfo)); }
-        catch(e) { resolve([]); }
-      });
-    });
-    req.on('error', () => resolve([]));
-    req.setTimeout(12000, () => { req.destroy(); resolve([]); });
-    req.end();
-  });
-}
-
-function parseVisaSponsorHTML(html, countryInfo) {
-  const jobs = [];
-  const seen = new Set();
-  const COUNTRY_FLAGS = { DE:'🇩🇪', NL:'🇳🇱', IE:'🇮🇪', GB:'🇬🇧', PT:'🇵🇹' };
-
-  // 공고 ID + 슬러그 추출 (32자 hex ID)
-  const linkRegex = /href="https:\/\/visasponsor\.jobs\/api\/jobs\/([a-f0-9]{32})\/([^"]+)"/g;
-  let match;
-
-  while ((match = linkRegex.exec(html)) !== null) {
-    const id   = match[1];
-    const slug = match[2];
-
-    if (seen.has(id)) continue;
-    seen.add(id);
-
-    const url = `https://visasponsor.jobs/api/jobs/${id}/${slug}`;
-
-    // 슬러그에서 제목 복원
-    const title = decodeURIComponent(slug)
-      .replace(/-/g, ' ')
-      .replace(/[()]/g, '')
-      .trim();
-
-    if (!title || title.length < 3) continue;
-
-    // 해당 공고 블록 (링크 뒤 800자)
-    const pos = match.index;
-    const block = html.slice(pos, pos + 900);
-
-    // 회사명: "---" 구분자 사이에 있는 텍스트
-    const companyMatch = block.match(/---\s*\n\s*([\s\S]{2,80}?)\s*\n\s*---/);
-    let company = '';
-    if (companyMatch) {
-      company = companyMatch[1].replace(/<[^>]*>/g, '').trim().split('\n')[0].trim();
-    }
-
-    // 위치: 도시, 지역, 국가 패턴
-    const locationMatch = block.match(/\n([A-Z][a-zA-Z\s\-]+),\s*\n([A-Za-z][a-zA-Z\s]+),\s*\n([A-Za-z][a-zA-Z\s]+)/);
-    const location = locationMatch
-      ? `${locationMatch[1].trim()}, ${countryInfo.vsName.replace(/-/g,' ')}`
-      : countryInfo.vsName.replace(/-/g,' ');
-
-    // 비자 타입
-    const visaMatch = block.match(/(Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Health and Care Worker)/i);
-    const visaType = visaMatch ? visaMatch[1] : 'Sponsored';
-
-    // 날짜: "Publish date DD-MM-YYYY"
-    const dateMatch = block.match(/Publish date\s+(\d{2})-(\d{2})-(\d{4})/);
-    let postedAt = new Date().toISOString();
-    if (dateMatch) {
-      postedAt = new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`).toISOString();
-    }
-
-    jobs.push({
-      id:           `vs_${id}`,
-      title:        title.slice(0, 120),
-      level:        detectLevel(title, ''),
-      company:      company || 'Unknown',
-      location,
-      country:      countryInfo.code,
-      flag:         COUNTRY_FLAGS[countryInfo.code] || '🌍',
-      logo:         companyEmoji(company || 'V'),
-      description:  `[비자 스폰서 확정 - ${visaType}] 이 공고는 visasponsor.jobs에서 검증된 비자 스폰서 공고입니다. 지원하기 버튼을 눌러 원문에서 상세 내용을 확인하세요.`,
-      url,
-      salary:       null,
-      postedAt,
-      source:       'VisaSponsor',
-      skills:       [],
-      visaSponsored: true,
-      relocation:   false,
-      remoteType:   'On-site',
-      languageReqs: ['English'],
-      visaType,
-    });
-  }
-
-  console.log(`  [${countryInfo.vsName}] 파싱: ${jobs.length}개 (HTML: ${Math.round(html.length/1000)}KB)`);
-  return jobs;
-}
+// Puppeteer 스크래퍼(/api/visaspot)를 호출해서 결과 가져오기
 
 async function fetchAllVisaSponsor() {
-  const results = await Promise.allSettled(
-    VISA_SPONSOR_COUNTRIES.map(c => fetchVisaSponsorPage(c))
-  );
-  const jobs = [];
-  results.forEach((r, i) => {
-    if (r.status === 'fulfilled') {
-      console.log(`  visasponsor ${VISA_SPONSOR_COUNTRIES[i].vsName}: ${r.value.length}개`);
-      jobs.push(...r.value);
-    }
-  });
-  return jobs;
+  try {
+    // 같은 Vercel 인스턴스의 /api/visaspot 호출
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+
+    const res = await fetch(`${baseUrl}/api/visaspot`);
+    if (!res.ok) throw new Error(`visaspot HTTP ${res.status}`);
+    const data = await res.json();
+    const jobs = data.jobs || [];
+    console.log(`  visasponsor.jobs (Puppeteer): ${jobs.length}개`);
+    return jobs;
+  } catch(e) {
+    console.log(`  visasponsor.jobs 실패: ${e.message}`);
+    return [];
+  }
 }
 
 // ── 메모리 캐시 ───────────────────────────────────────────
