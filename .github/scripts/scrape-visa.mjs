@@ -64,7 +64,7 @@ async function scrapePage(page, url) {
           url: link.href,
           visa_type: fullText.includes('Skilled Worker') ? 'Skilled Worker' : 
                      fullText.includes('EU Blue Card') ? 'EU Blue Card' : 'Visa Sponsored',
-          date_str: new Date().toISOString()
+          date_str: dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : null,
         });
       });
       return results;
