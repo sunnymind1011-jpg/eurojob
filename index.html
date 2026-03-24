@@ -1316,6 +1316,7 @@ function buildCard(j, showFeat) {
       <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
       <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
       ${j.visaSponsored?'<span class="badge b-blue">🛂 비자 스폰서</span>':''}
+      ${j.source==='VisaSponsor'&&j.visaType?`<span class="badge" style="background:rgba(255,69,0,.1);color:#ff6b35;border:1px solid rgba(255,69,0,.25)">✅ ${j.visaType}</span>`:''}
       ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
       ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
       <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
@@ -1346,6 +1347,14 @@ function openDrawer(id) {
       ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
       ${j.languageReqs.map(l=>`<span class="badge b-warn">🌐 ${l}</span>`).join('')}
     </div>
+    ${j.source==='VisaSponsor'?`
+    <div style="margin-bottom:16px;padding:12px 16px;background:rgba(255,69,0,.06);border:1px solid rgba(255,69,0,.2);border-radius:10px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">✅</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#ff6b35;margin-bottom:2px">비자 스폰서 확정 공고 — ${j.visaType||'Sponsored'}</div>
+        <div style="font-size:11px;color:var(--text2)">visasponsor.jobs에서 검증된 공고예요. 지원 전 원문에서 상세 조건을 반드시 확인하세요.</div>
+      </div>
+    </div>`:''}
     ${j.salary?`<div class="drawer-section"><h4>급여</h4><div style="font-size:18px;font-weight:700;color:var(--accent3)">${j.salary}</div></div>`:''}
     <div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc">${j.description||'상세 없음'}</div></div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
