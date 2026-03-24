@@ -7,8 +7,7 @@
     }
   ],
   "functions": {
-    "api/jobs.js":     { "maxDuration": 60 },
-    "api/trends.js":   { "maxDuration": 60 },
-    "api/visaspot.js": { "maxDuration": 60, "memory": 1024 }
+    "api/jobs.js":   { "maxDuration": 60 },
+    "api/trends.js": { "maxDuration": 60 }
   }
 }
