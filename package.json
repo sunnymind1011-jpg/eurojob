@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "@sparticuz/chromium": "^131.0.1",
+    "puppeteer-core": "^23.0.0"
   },
   "engines": {
     "node": "24.x"
