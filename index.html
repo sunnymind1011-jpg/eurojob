@@ -491,7 +491,7 @@ textarea::placeholder{color:var(--text3);}
       </div>
       <div class="stats4">
         <div class="stat"><div class="stat-lbl">총 채용공고</div><div class="stat-val c-blue" id="hs-total">0</div><div class="stat-note">오늘 신규 확인 중</div></div>
-        <div class="stat"><div class="stat-lbl">비자스폰서</div><div class="stat-val c-green" id="hs-visa">0</div><div class="stat-note">리로케이션 포함</div></div>
+        <div class="stat"><div class="stat-lbl">비자 스폰서</div><div class="stat-val c-green" id="hs-visa">0</div><div class="stat-note">리로케이션 포함</div></div>
         <div class="stat"><div class="stat-lbl">원격/하이브리드</div><div class="stat-val c-warn" id="hs-remote">0</div><div class="stat-note">재택 가능 공고</div></div>
         <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple" id="hs-countries">0</div><div class="stat-note">유럽 전역</div></div>
       </div>
@@ -1359,17 +1359,8 @@ function openDrawer(id) {
     ${j.source!=='VisaSponsor'?`<div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc">${j.description||'상세 없음'}</div></div>`:''}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <a href="${j.url}" target="_blank" class="btn btn-primary btn-sm">지원하러 가기 →</a>
-      ${j.source!=='VisaSponsor'?`
-      <button class="btn btn-ghost btn-sm" onclick="openClaudeWithJD('${j.id}','coverletter')">✍️ 커버레터 (Claude.ai)</button>
-      <button class="btn btn-ghost btn-sm" onclick="openClaudeWithJD('${j.id}','match')">🤖 적합도 분석</button>
-      `:''}
       <button class="btn btn-ghost btn-sm" id="drawer-save-${j.id}" onclick="toggleSaveFromDrawer('${j.id}',this)" style="color:${savedIds.has(j.id)?'var(--warn)':'var(--text2)'}">${savedIds.has(j.id)?'♥ 저장됨':'♡ 저장하기'}</button>
     </div>
-    ${j.source!=='VisaSponsor'?`
-    <div style="margin-top:10px;padding:10px 12px;background:rgba(62,207,160,.06);border:1px solid rgba(62,207,160,.15);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
-      💡 버튼을 누르면 <strong style="color:var(--accent3)">claude.ai</strong>가 새 탭으로 열리고<br>프롬프트가 클립보드에 복사돼요. 거기서 붙여넣기(Ctrl+V)만 하면 끝!
-    </div>`:''}
-
     <!-- Reddit 후기 섹션 -->
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
