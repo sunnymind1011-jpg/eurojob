@@ -33,69 +33,43 @@ async function scrapePage(page, url) {
   try {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
 
+    // 👇 여기서부터 (기존 코드 시작 부분)
     const pageJobs = await page.evaluate(() => {
       const results = [];
-      // 각 공고는 /api/jobs/[32자 hex]/[slug] 링크
-      const jobLinks = [...document.querySelectorAll('a[href]')].filter(a => {
-        const href = a.getAttribute('href') || '';
-        return /\/api\/jobs\/[a-f0-9]{32}\/[^/?#]+$/.test(href);
-      });
+      const jobLinks = [...document.querySelectorAll('a[href*="/api/jobs/"]')];
 
       jobLinks.forEach(link => {
-        const href = link.getAttribute('href');
-        const match = href.match(/\/api\/jobs\/([a-f0-9]{32})\/([^/?#]+)$/);
-        if (!match) return;
+        const fullText = link.innerText;
+        let lines = fullText.split('\n')
+          .map(l => l.trim())
+          .filter(l => l.length > 0 && !l.includes('View all jobs') && !l.includes('Publish date'));
 
-        const id = match[1];
-        const slug = match[2];
+        const idMatch = link.href.match(/\/jobs\/([a-f0-9]{32})/);
+        if (!idMatch) return;
 
-        // 링크 텍스트 = 제목 (숫자 jobs 텍스트 제외)
-        const rawTitle = link.innerText?.trim() || '';
-        // "1555 jobs" 같은 게 title이면 slug에서 복원
-        const isCountText = /^\d+\s+jobs?$/i.test(rawTitle);
-        const title = isCountText
-          ? decodeURIComponent(slug).replace(/-/g, ' ').replace(/[()]/g, '').trim()
-          : rawTitle;
+        const title = lines[0] || 'Unknown Title';
+        let company = lines[1] || 'Unknown Company';
+        let location = lines[2] || '';
 
-        // 공고 컨테이너: 링크 주변 구조에서 회사명/위치/비자타입 추출
-        // visasponsor.jobs 구조: 링크 → 그 안에 또는 바로 다음 sibling에 회사명
-        const container = link.parentElement;
-        const allText = container?.innerText || '';
-        const lines = allText.split('\n').map(l => l.trim()).filter(l => l.length > 1 && !/^\d+\s+jobs?$/i.test(l));
-
-        // 회사명: title 다음 줄 (단, 비자타입/날짜/국가 아닌 것)
-        const skipPatterns = /Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Publish date|Information Technology|Marketing|Human Resources|Engineering|Financial|Management|Research|All other/i;
-        const titleIdx = lines.findIndex(l => l === title || l.startsWith(title.slice(0, 20)));
-        let company = '';
-        for (let i = (titleIdx >= 0 ? titleIdx + 1 : 1); i < lines.length; i++) {
-          if (!skipPatterns.test(lines[i]) && lines[i].length > 1 && lines[i].length < 80) {
-            company = lines[i];
-            break;
-          }
+        if (company.includes(',') && !location) {
+          location = company;
+          company = 'Unknown Company';
         }
 
-        // 위치
-        const locMatch = allText.match(/([A-Z][a-zA-Z\s\-\.]+),\s*([A-Za-z][a-zA-Z\s]+),\s*(Germany|Netherlands|Ireland|United Kingdom|Portugal|England|Scotland|Wales)/);
-        const location = locMatch ? `${locMatch[1].trim()}, ${locMatch[3]}` : '';
-
-        // 비자타입
-        const visaMatch = allText.match(/(Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Health and Care Worker)/i);
-
-        // 날짜
-        const dateMatch = allText.match(/Publish date\s+(\d{2})-(\d{2})-(\d{4})/);
-
-        if (!title || title.length < 3) return;
-
         results.push({
-          id, slug, title, company,
-          location,
-          visa_type: visaMatch ? visaMatch[1] : 'Sponsored',
-          date_str: dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : null,
-          url: `https://visasponsor.jobs${href}`,
+          id: idMatch[1],
+          title: title,
+          company: company,
+          location: location,
+          url: link.href,
+          visa_type: fullText.includes('Skilled Worker') ? 'Skilled Worker' : 
+                     fullText.includes('EU Blue Card') ? 'EU Blue Card' : 'Visa Sponsored',
+          date_str: new Date().toISOString()
         });
       });
       return results;
     });
+    //
 
     jobs.push(...pageJobs);
     console.log(`    ${url.split('?')[1] || 'page0'}: ${pageJobs.length}개`);
@@ -156,9 +130,9 @@ async function main() {
 
         allJobs.push({
           id:         j.id,
-          title:      cleanTitle.slice(0, 120), // 깨끗해진 제목 저장
-          company:    cleanCompany,            // 깨끗해진 회사명 저장
-          location:   cleanLocation,           // 깨끗해진 위치 저장
+          title:      j.title.split('\n')[0].trim(), // 무조건 첫 줄만
+          company:    j.company.replace('View all jobs and profile', '').trim(), // 쓰레기 문구 제거
+          location:   j.location || country.vsName.replace(/-/g, ' '), // 비어있으면 국가명이라도 넣기
           country:    country.code,
           visa_type:  j.visa_type,
           url:        j.url,
