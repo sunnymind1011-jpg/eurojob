@@ -1898,6 +1898,2913 @@ async function onLogin(user) {
     last_seen: new Date().toISOString(),
   }, { onConflict: 'id' }).select().single();
 
+  // role 확인 — 대소문자 무관하게 처리 ('beta', 'Beta', 'BETA' 모두 인식)
+  const role = (upserted?.role || '').toLowerCase();
+  isBeta = (role === 'beta' || role === 'admin') && !isAdmin;
+
+  if (isAdmin) {
+    showAdminDashboard();
+  } else {
+    showMain();
+  }
+}
+
+async function signInWithGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    }
+  });
+  if (error) {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginError').textContent = '로그인 실패: ' + error.message;
+  }
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  isAdmin = false;
+  isBeta = false;
+  showLanding();
+}
+
+function showLanding() {
+  document.getElementById('landingPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'none';
+}
+
+function showMain() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('adminDashboard').style.display = 'none';
+
+  // 저장된 ID 복원 ← 이 줄 추가
+  savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
+
+  // 공고 불러오기
+  startJSearch();
+
+  // 사이드바 사용자 정보 표시
+  if (currentUser) {
+    const name = currentUser.user_metadata?.full_name || currentUser.email;
+    const avatar = currentUser.user_metadata?.avatar_url;
+    const sidebar = document.querySelector('.sidebar-footer');
+    if (sidebar) {
+      sidebar.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;">
+          ${avatar ? `<img src="${avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div class="avatar">${name[0]}</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+            <div style="font-size:11px;color:var(--text3)">${isAdmin ? '👑 관리자' : isBeta ? '⭐ 베타 멤버' : '일반 사용자'}</div>
+          </div>
+          <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
+        </div>
+        ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}`;
+    }
+  }
+
+  // 관리자/베타 전용 메뉴 표시/숨김
+  const canSeeAll = isAdmin || isBeta;
+  const settingsNav = document.getElementById('nav-settings');
+  const adminBarEl = document.getElementById('adminBar');
+  if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
+  if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
+
+  const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat'];
+  extendedMenuIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = canSeeAll ? (id.startsWith('nav-section') ? 'block' : 'flex') : 'none';
+  });
+
+} // ← showMain 닫는 괄호
+
+function showAdminDashboard() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'block';
+  loadAdminStats();
+}
+
+async function loadAdminStats() {
+  // 공고 수 표시
+  try {
+    const res = await fetch('/api/jobs');
+    const data = await res.json();
+    document.getElementById('stat-jobs').textContent = data.count || 0;
+    if (data.fetchedAt) {
+      document.getElementById('stat-lastfetch').textContent =
+        new Date(data.fetchedAt).toLocaleString('ko-KR');
+    }
+  } catch(e) {}
+
+  // 사용자 수 (Supabase)
+  try {
+    const { data: allUsers } = await sb.from('users').select('id');
+    document.getElementById('stat-users').textContent = allUsers?.length || 0;
+
+    const { data: users, error: usersError } = await sb
+      .from('users')
+      .select('id, email, name, last_seen, role')
+      .order('last_seen', { ascending: false })
+      .limit(20);
+
+    if (usersError) {
+      document.getElementById('adminUsers').innerHTML = `<div style="color:var(--red);font-size:12px">DB 오류: ${usersError.message}</div>`;
+      return;
+    }
+
+    if (users?.length) {
+      document.getElementById('adminUsers').innerHTML = users.map(u => {
+        const role = (u.role || '').toLowerCase();
+        const isBetaUser = role === 'beta';
+        const roleColor = isBetaUser ? 'var(--warn)' : 'var(--text3)';
+        const roleLabel = isBetaUser ? '⭐ 베타' : '일반';
+        return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px;font-weight:500">${u.name || u.email}</div>
+            <div style="font-size:11px;color:var(--text3)">${u.email}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:${roleColor};font-weight:600">${roleLabel}</span>
+            <button onclick="toggleUserRole('${u.id}','${role}')"
+              style="font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;border:1px solid ${isBetaUser ? 'rgba(240,100,100,.35)' : 'rgba(62,207,160,.35)'};background:${isBetaUser ? 'rgba(240,100,100,.08)' : 'rgba(62,207,160,.08)'};color:${isBetaUser ? '#f06464' : '#3ecfa0'}">
+              ${isBetaUser ? '해제' : '베타 부여'}
+            </button>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      document.getElementById('adminUsers').textContent = '아직 가입한 사용자가 없어요';
+    }
+  } catch(e) {
+    document.getElementById('adminUsers').textContent = 'DB 연결 후 확인 가능';
+  }
+}
+
+async function toggleUserRole(userId, currentRole) {
+  const newRole = currentRole.toLowerCase() === 'beta' ? 'user' : 'beta';
+  try {
+    const { error } = await sb.from('users').update({ role: newRole }).eq('id', userId);
+    if (error) throw error;
+    loadAdminStats();
+  } catch(e) {
+    alert('역할 변경 실패: ' + e.message);
+  }
+}
+
+async function adminFetch(force = false) {
+  const log = document.getElementById('adminFetchLog');
+  log.textContent = '수집 중...';
+  try {
+    const res = await fetch(`/api/jobs${force ? '?refresh=1' : ''}`);
+    const data = await res.json();
+    log.style.color = 'var(--accent3)';
+    log.textContent = `✅ ${data.count}개 수집 완료`;
+    document.getElementById('stat-jobs').textContent = data.count;
+    document.getElementById('stat-lastfetch').textContent =
+      new Date(data.fetchedAt).toLocaleString('ko-KR');
+  } catch(e) {
+    log.style.color = 'var(--red)';
+    log.textContent = '❌ 실패: ' + e.message;
+  }
+}
+
+// INIT
+selectVisa(document.querySelector('.ctab.active'), 'ES');
+closeLogin = () => {};
+
+// 페이지 로드 시 자동으로 채용공고 불러오기
+window.addEventListener('load', () => initAuth()); // 로그인 모달 제거됨
+
+// 저장된 이력서 복원
+const savedResume = localStorage.getItem('ej_resume');
+if (savedResume) document.getElementById('resumeText').value = savedResume;
+
+// ════════════════════════════════════════
+//  TRENDS
+// ════════════════════════════════════════
+let trendCharts = {};
+
+async function renderTrends() {
+  const statsEl = document.getElementById('trend-stats');
+
+  // 캐시 확인 (24시간)
+  const cached = localStorage.getItem('ej_trends_cache');
+  if (cached) {
+    try {
+      const { data, cachedAt } = JSON.parse(cached);
+      const age = (Date.now() - new Date(cachedAt)) / 3600000;
+      if (age < 24) {
+        const results = data.results;
+        const countries = Object.keys(results);
+        const tabsEl = document.getElementById('trend-country-tabs');
+        if (tabsEl) {
+          tabsEl.innerHTML = countries.map((c, i) => `
+            <div class="ctab${i===0?' active':''}" onclick="showTrendCountry('${c}',this)">
+              ${countryFlag(c.toUpperCase())} ${results[c].name}
+            </div>`).join('');
+        }
+        window._trendData = results;
+        showTrendCountry(countries[0], document.querySelector('#trend-country-tabs .ctab'));
+        statsEl.innerHTML = `
+          <div class="stat"><div class="stat-lbl">조회 국가</div><div class="stat-val c-blue">${countries.length}</div></div>
+          <div class="stat"><div class="stat-lbl">데이터 기준</div><div class="stat-val c-green" style="font-size:14px">Adzuna</div></div>
+          <div class="stat"><div class="stat-lbl">업데이트</div><div class="stat-val c-warn" style="font-size:13px">24h캐시</div></div>
+          <div class="stat"><div class="stat-lbl">분석 카테고리</div><div class="stat-val c-purple">15개/국</div></div>`;
+        return;
+      }
+    } catch(e) {}
+  }
+
+  statsEl.innerHTML = '<div style="color:var(--text3);font-size:13px;grid-column:1/-1">📡 Adzuna에서 국가별 직종 데이터 불러오는 중...</div>';
+  try {
+    const res = await fetch('/api/trends');
+    const data = await res.json();
+
+    // 캐시 저장
+    localStorage.setItem('ej_trends_cache', JSON.stringify({
+      data,
+      cachedAt: new Date().toISOString()
+    }));
+
+    const results = data.results;
+    const countries = Object.keys(results);
+    const tabsEl = document.getElementById('trend-country-tabs');
+    if (tabsEl) {
+      tabsEl.innerHTML = countries.map((c, i) => `
+        <div class="ctab${i===0?' active':''}" onclick="showTrendCountry('${c}',this)">
+          ${countryFlag(c.toUpperCase())} ${results[c].name}
+        </div>`).join('');
+    }
+    window._trendData = results;
+    showTrendCountry(countries[0], document.querySelector('#trend-country-tabs .ctab'));
+    statsEl.innerHTML = `
+      <div class="stat"><div class="stat-lbl">조회 국가</div><div class="stat-val c-blue">${countries.length}</div></div>
+      <div class="stat"><div class="stat-lbl">데이터 기준</div><div class="stat-val c-green" style="font-size:14px">Adzuna</div></div>
+      <div class="stat"><div class="stat-lbl">업데이트</div><div class="stat-val c-warn" style="font-size:13px">24h캐시</div></div>
+      <div class="stat"><div class="stat-lbl">분석 카테고리</div><div class="stat-val c-purple">15개/국</div></div>`;
+  } catch(e) {
+    statsEl.innerHTML = `<div style="color:var(--red);font-size:13px;grid-column:1/-1">❌ 데이터 로드 실패: ${e.message}</div>`;
+  }
+}
+
+function showTrendCountry(countryCode, tabEl) {
+  if (tabEl) {
+    document.querySelectorAll('#trend-country-tabs .ctab').forEach(t => t.classList.remove('active'));
+    tabEl.classList.add('active');
+  }
+
+  const data = window._trendData?.[countryCode];
+  if (!data) return;
+
+  const cats = data.categories;
+
+  // 카테고리별 컬러 맵
+  const COLORS = [
+  '#6b9fd4','#5bb8a0','#c9944a','#8b7ec8','#c47a7a',
+  '#5aaec4','#4a9e7a','#b85a7a','#c49060','#7a8298'
+  ];
+
+  // 하단 리스트
+  document.getElementById('trendJobList').innerHTML = cats.length
+    ? cats.map(({ label, count }, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--text3);width:20px">${i+1}</span>
+        <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i]||'#8b92a8'};flex-shrink:0"></span>
+        <span style="flex:1;font-size:13px">${label}</span>
+        <div style="width:100px;height:5px;background:var(--bg3);border-radius:3px">
+          <div style="height:100%;background:${COLORS[i]||'#8b92a8'};border-radius:3px;width:${Math.round(count/cats[0].count*100)}%"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text2);width:55px;text-align:right">${count.toLocaleString()}</span>
+      </div>`).join('')
+    : '<div style="color:var(--text3);font-size:13px;padding:10px 0">데이터 없음</div>';
+
+  const labels = cats.slice(0,10).map(c => c.label);
+  const counts = cats.slice(0,10).map(c => c.count);
+  const colors = cats.slice(0,10).map((_, i) => COLORS[i] || '#8b92a8');
+
+  // 추세선 데이터
+  const trendLine = counts.map((_, i) => counts[i]);
+
+  if (trendCharts.country) trendCharts.country.destroy();
+  trendCharts.country = new Chart(document.getElementById('chartCountry'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          data: counts,
+          backgroundColor: colors,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          type: 'line',
+          data: trendLine,
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1.5,
+          pointRadius: 3,
+          pointBackgroundColor: 'rgba(255,255,255,0.4)',
+          fill: false,
+          tension: 0.3,
+          yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.92)',
+          titleColor: '#1a1a2e',
+          bodyColor: '#1a1a2e',
+          titleFont: { size: 13, weight: '600', family: "'Sora', 'Noto Sans KR', sans-serif" },
+          bodyFont: { size: 12, family: "'Sora', 'Noto Sans KR', sans-serif" },
+          padding: 10,
+          borderColor: 'rgba(0,0,0,0.08)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ctx.datasetIndex === 0
+              ? ` ${ctx.parsed.x.toLocaleString()}개 공고`
+              : null
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b92a8', font: { size: 11, family: "'Sora', 'Noto Sans KR', sans-serif" } },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        y: {
+          ticks: {
+          color: '#8b92a8',
+          font: { size: 11, family: "'Sora', 'Noto Sans KR', sans-serif" },
+          maxTicksLimit: 10,
+        },
+        grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════
+//  SKILL MAP
+// ════════════════════════════════════════
+const SKILL_CATEGORIES = {
+  '데이터': {
+    keywords: ['data', 'analyst', 'scientist', 'analytics', 'bi', 'intelligence', 'sql', 'databricks', 'snowflake', 'machine learning', 'deep learning',
+      'pipeline', 'mlops', 'visualization', 'statistic'],
+    radarLabels: ['SQL / DB','Python / R','시각화','ML / AI','클라우드','통계 / 수학'],
+    radarSkills: [
+      ['SQL','BigQuery','Snowflake','Databricks','ETL','Data Warehouse','Data Modeling','Data Governance'],
+      ['Python','PySpark','EDA'],
+      ['Tableau','Power BI','Looker','Business Intelligence','Visualization','Streamlit','Data Storytelling','Visualización','Dashboard'],
+      ['Machine Learning','Deep Learning','NLP','LLM','Supervised','Unsupervised','Feature Engineering','Reinforcement','Aprendizaje automático'],
+      ['AWS','GCP','Azure','Spark','Airflow','dbt','Data Orchestration'],
+      ['Statistics','A/B Testing','Hypothesis Testing','Algorithms','Mathematics','Regression Analysis','Estadística','Hipótesis','A/B','Monte Carlo','Sampling','Simulation'],
+    ],
+    // 유럽 채용 시장 업계 기준값 (0~100 상대 점수, 2024-25 Adzuna/LinkedIn 기반)
+    radarBaseline: [88, 82, 68, 55, 70, 60],
+    color: '#4f8ef7',
+    insights: [
+      { icon:'🥇', text:'SQL은 데이터 직군 공고의 <strong>91%</strong>에서 필수 요구사항', tag:'최다 요구' },
+      { icon:'🐍', text:'Python 수요 3년 연속 증가 — R은 학계/바이오 분야에 한정', tag:'트렌드' },
+      { icon:'☁️', text:'클라우드(AWS/GCP/Azure) 경험 요구 공고 <strong>+47%</strong> YoY 증가', tag:'급상승' },
+      { icon:'🤖', text:'LLM·GenAI 관련 스킬 언급 공고 2023→2025 <strong>3.2배</strong> 증가', tag:'핫스킬' },
+      { icon:'💰', text:'데이터 엔지니어 평균 연봉 유럽 기준 <strong>€65,000~€90,000</strong>', tag:'연봉' },
+    ],
+    top10: [
+      { skill:'SQL', pct:91, note:'거의 모든 데이터 공고 필수', hot:true },
+      { skill:'Python', pct:84, note:'분석·ML 모두 커버하는 핵심 언어', hot:true },
+      { skill:'Power BI / Tableau', pct:67, note:'시각화 도구 중 압도적 1, 2위', hot:false },
+      { skill:'AWS / GCP / Azure', pct:62, note:'클라우드 경험 없으면 서류 탈락', hot:true },
+      { skill:'dbt', pct:54, note:'데이터 변환의 새 표준, 급성장 중', hot:true },
+      { skill:'A/B Testing', pct:51, note:'통계 기반 실험 설계 역량 중시', hot:false },
+      { skill:'Spark / Databricks', pct:48, note:'대용량 처리, 빅데이터 환경 필수', hot:false },
+      { skill:'Machine Learning', pct:44, note:'DS 포지션 중심, 기초 이해 필요', hot:false },
+      { skill:'Airflow', pct:38, note:'파이프라인 오케스트레이션 표준', hot:false },
+      { skill:'Looker', pct:33, note:'테크 스타트업 선호, BI 도구 다양화', hot:false },
+    ]
+  },
+  '마케팅': {
+    keywords: ['marketing', 'seo', 'growth', 'brand', 'content', 'campaign', 'acquisition', 'crm', 'digital', 'performance', 'go-to-market', 'gtm strategy', 'conversion',
+    'retention', 'funnel optimization', 'demand generation'],
+    radarLabels: ['Performance / Growth','데이터 분석','CRM / MarTech','유료 광고 매체','콘텐츠 / 디자인','전략 / 운영'],
+    radarSkills: [
+      ['SEO','SEM','Google Analytics','GTM','Google Tag Manager','Amplitude','Mixpanel','AppsFlyer','Adjust','Conversion Rate Optimization','CRO','Digital Marketing','Lead generation'],
+      ['SQL','Data Analytics','A/B Testing','Statistics','Excel','Power BI','Tableau', 'Looker', 'Python', 'LTV', 'CAC', 'ROAS', 'Attribution Modeling','Keyword','Monitoring','CTR','Engagement metrics','Open rates','click-through','metrics','analyzing'],
+      ['Salesforce', 'HubSpot', 'Marketo', 'Braze', 'Klaviyo', 'Mailchimp', 'Customer Journey Mapping', 'Marketing Automation','Lead nurturing','Pardot','B2B email'],
+      ['Google Ads','Meta Ads','AdWords','PPC','Paid Search','Paid Media','Performance Marketing','paid campaigns','paid social','Facebook Ads','Instagram Ads','LinkedIn Ads','TikTok','Campaign','Paid channels'],
+      ['Canva', 'Content Strategy', 'Figma', 'Adobe Creative Suite', 'Copywriting', 'Video Editing', 'Social Media Management','Marketing Digital','Brand Storytelling','Brand positioning','Messaging','Content creation','Website','Technical writing'],
+      ['Project Management', 'Agile', 'Jira', 'Notion', 'Budget Management', 'Stakeholder Management', 'Vendor Management', 'Market Research','Asana','SMEs','stakeholders'],
+    ],
+    radarBaseline: [78, 65, 60, 72, 55, 58],
+    color: '#3ecfa0',
+    insights: [
+      { icon:'🎯', text:'Performance Marketing 공고 스페인·영국서 <strong>+38%</strong> 증가 (2024)', tag:'성장' },
+      { icon:'📊', text:'마케터 채용 공고의 <strong>73%</strong>에서 데이터 분석 역량 요구', tag:'데이터화' },
+      { icon:'🤖', text:'AI 마케팅 툴(Jasper·Copy.ai 등) 경험 우대 공고 급증', tag:'트렌드' },
+      { icon:'🏆', text:'HubSpot·Salesforce 자격증 보유 시 서류 통과율 <strong>2배</strong>', tag:'자격증' },
+      { icon:'💰', text:'디지털 마케팅 매니저 유럽 평균 <strong>€45,000~€65,000</strong>', tag:'연봉' },
+    ],
+    top10: [
+      { skill:'Google Analytics / GA4', pct:85, note:'디지털 마케팅 절대 기본', hot:true },
+      { skill:'Meta Ads (Facebook/Instagram)', pct:78, note:'유료 소셜 채널 1위', hot:false },
+      { skill:'SEO', pct:71, note:'콘텐츠·그로스 역할 모두 요구', hot:false },
+      { skill:'HubSpot', pct:64, note:'B2B 마케팅의 기본 CRM', hot:true },
+      { skill:'Google Ads / SEM', pct:62, note:'퍼포먼스 마케터 필수 스킬', hot:false },
+      { skill:'SQL (기초)', pct:55, note:'데이터 직접 뽑는 마케터 수요 증가', hot:true },
+      { skill:'A/B Testing', pct:50, note:'그로스·퍼포먼스 직군 핵심', hot:false },
+      { skill:'Salesforce', pct:46, note:'엔터프라이즈 B2B 필수', hot:false },
+      { skill:'Figma / Canva', pct:41, note:'콘텐츠 마케터 기본 디자인 툴', hot:false },
+      { skill:'TikTok Ads', pct:32, note:'신규 채널, 빠르게 수요 증가 중', hot:true },
+    ]
+  },
+  '개발': {
+    keywords: ['engineer', 'developer', 'backend', 'frontend', 'software', 'fullstack', 'devops', 'cloud', 'architect', 'sre', 'distributed systems', 'microservices', 
+    'scalability', 'agile', 'sdlc'],
+    radarLabels: ['백엔드','프론트엔드','클라우드 / 인프라','DevOps / SRE','데이터베이스','AI / 신기술'],
+    radarSkills: [
+      ['Python', 'Java', 'Node.js', 'Go', 'Spring Boot', 'Django', 'FastAPI', 'Microservices', 'System Design', 'API Design', 'gRPC'],
+      ['JavaScript', 'TypeScript', 'React', 'Vue', 'Next.js', 'Redux', 'Tailwind', 'Webpack', 'Vite', 'HTML5', 'CSS3'],
+      ['AWS', 'GCP', 'Azure', 'Serverless', 'Lambda', 'EC2', 'S3', 'Cloud Native', 'Terraform', 'Pulumi'],
+      ['Docker', 'Kubernetes', 'CI/CD', 'GitHub Actions', 'Jenkins', 'Git', 'Prometheus', 'Grafana', 'Ansible', 'Linux'],
+      ['SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch', 'DynamoDB', 'Database Design', 'Query Optimization','Snowflake','BigQuery'],
+      ['LLM', 'Machine Learning', 'OpenAI', 'LangChain', 'RAG', 'Vector Database', 'Web3', 'Blockchain'],
+    ],
+    radarBaseline: [85, 75, 78, 70, 72, 45],
+    color: '#7c6af0',
+    insights: [
+      { icon:'🦀', text:'Python·TypeScript가 Java를 제치고 유럽 스타트업 1·2위 언어', tag:'언어 트렌드' },
+      { icon:'☁️', text:'클라우드 네이티브 경험 요구 공고 <strong>68%</strong> — AWS가 압도적 1위', tag:'인프라' },
+      { icon:'🤖', text:'AI/LLM 기능 통합 경험 우대 공고 2024 대비 <strong>+120%</strong>', tag:'핫트렌드' },
+      { icon:'🐳', text:'Docker+Kubernetes 없으면 백엔드 공고 <strong>절반 이상</strong> 지원 불가', tag:'필수' },
+      { icon:'💰', text:'시니어 백엔드 엔지니어 유럽 평균 <strong>€75,000~€110,000</strong>', tag:'연봉' },
+    ],
+    top10: [
+      { skill:'Python', pct:82, note:'백엔드·데이터·AI 모두 커버', hot:true },
+      { skill:'TypeScript / JavaScript', pct:79, note:'프론트·풀스택 공고 거의 전부', hot:false },
+      { skill:'Docker + Kubernetes', pct:74, note:'컨테이너화 이제 기본 중의 기본', hot:false },
+      { skill:'AWS', pct:69, note:'클라우드 1위, GCP·Azure 뒤이음', hot:false },
+      { skill:'React', pct:65, note:'프론트엔드 채용 공고 압도적 1위', hot:false },
+      { skill:'PostgreSQL / SQL', pct:63, note:'NoSQL보다 여전히 SQL 선호', hot:false },
+      { skill:'CI/CD (GitHub Actions)', pct:58, note:'데브옵스 기본 자동화 파이프라인', hot:false },
+      { skill:'Terraform', pct:44, note:'IaC 도구 표준으로 자리잡는 중', hot:true },
+      { skill:'Go (Golang)', pct:38, note:'마이크로서비스·퍼포먼스 역할 선호', hot:true },
+      { skill:'LangChain / RAG', pct:29, note:'AI 기능 통합 역할 급증', hot:true },
+    ]
+  },
+  'HR': {
+    keywords: ['hr','talent','recruitment','people','hris','recruiter','compensation','payroll','human resources','people operations','labor law','employee engagement'],
+    radarLabels: ['채용/ATS','HRIS / 테크','데이터 분석','C&B / 보상','조직문화','프로젝트 / 운영'],
+    radarSkills: [
+      ['ATS','Recruitment','Talent Acquisition','Sourcing','Employer Branding','Inbound Recruiting','Interviewing','LinkedIn'],
+      ['Workday','SuccessFactors','SAP','HRIS','BambooHR','Greenhouse','Lever','Oracle','CRM','HR system','Microsoft Office'],
+      ['Data Analytics','Excel','Statistics','People Analytics','Workforce Planning','Reporting','Survey Analysis','Microsoft'],
+      ['C&B','Payroll','Equity', 'Total Rewards','Performance Management','KPI','OKR','Benchmarking','employment law','TUPE','ROI'],
+      ['Leadership','Employee Experience','Organizational Culture','DEI','Internal Communication','Labor Relations','Compliance'],
+      ['Project Management','Agile','Jira','Notion','Training','CIPD'],
+    ],
+    radarBaseline: [82, 65, 58, 70, 72, 55],
+    color: '#f5a623',
+    insights: [
+      { icon:'🔍', text:'Talent Acquisition 포지션, 영국·네덜란드에서 수요 <strong>최고치</strong>', tag:'수요 급증' },
+      { icon:'📊', text:'People Analytics 역량 요구 공고 비중 <strong>2배</strong> 증가 (2023→2025)', tag:'데이터화' },
+      { icon:'🏢', text:'Workday·SuccessFactors 경험 있으면 대기업 서류 통과율 <strong>크게 향상</strong>', tag:'HRIS' },
+      { icon:'🌍', text:'유럽 HR은 다국적 환경 — 영어 유창성은 기본, 현지어 우대', tag:'언어' },
+      { icon:'💰', text:'HR Manager 유럽 평균 <strong>€45,000~€65,000</strong>, 대기업 +20%', tag:'연봉' },
+    ],
+    top10: [
+      { skill:'LinkedIn Recruiting', pct:88, note:'소싱 채널 압도적 1위', hot:false },
+      { skill:'ATS (Greenhouse/Lever 등)', pct:79, note:'지원자 추적 시스템 필수', hot:false },
+      { skill:'Workday', pct:68, note:'대기업 HRIS 표준 플랫폼', hot:false },
+      { skill:'Excel / Google Sheets', pct:65, note:'HR 분석의 기본 도구', hot:false },
+      { skill:'People Analytics', pct:52, note:'데이터 기반 HR 의사결정 중시', hot:true },
+      { skill:'Employer Branding', pct:49, note:'인재 유치 경쟁 심화로 수요 증가', hot:true },
+      { skill:'Performance Management', pct:46, note:'OKR·KPI 기반 평가 체계', hot:false },
+      { skill:'DEI 프로그램', pct:42, note:'유럽 기업 필수 어젠다', hot:false },
+      { skill:'SuccessFactors (SAP)', pct:38, note:'유럽 대기업 표준 HRIS', hot:false },
+      { skill:'CIPD 자격증', pct:35, note:'영국 HR 취업 시 강력 우대', hot:false },
+    ]
+  }  
+};
+
+const COUNTRY_COORDS = {
+  GB:{x:195,y:108,name:'영국'}, DE:{x:288,y:128,name:'독일'},
+  NL:{x:258,y:106,name:'네덜란드'}, ES:{x:172,y:192,name:'스페인'},
+  FR:{x:225,y:155,name:'프랑스'}, BE:{x:248,y:118,name:'벨기에'},
+  IE:{x:155,y:106,name:'아일랜드'}, PT:{x:158,y:196,name:'포르투갈'},
+  CH:{x:272,y:158,name:'스위스'}, IT:{x:295,y:178,name:'이탈리아'},
+  AT:{x:310,y:148,name:'오스트리아'}, EU:{x:340,y:130,name:'기타'},
+};
+
+let activeSkillCat = '데이터';
+let skillCharts = {};
+
+function renderSkillMap() {
+  // 공고 없어도 하드코딩 베이스라인으로 항상 렌더링
+  const tabsEl = document.getElementById('skillmap-tabs');
+  tabsEl.innerHTML = Object.keys(SKILL_CATEGORIES).map(cat => {
+    const on = cat === activeSkillCat;
+    const color = SKILL_CATEGORIES[cat].color;
+    return `<div class="chip${on?' on':''}"
+      style="${on?`background:rgba(79,142,247,.1);border-color:${color}55;color:${color}`:''}"
+      onclick="selectSkillCat('${cat}',this)">${cat}</div>`;
+  }).join('');
+  showSkillCat(activeSkillCat);
+}
+
+function selectSkillCat(cat, el) {
+  activeSkillCat = cat;
+  document.querySelectorAll('#skillmap-tabs .chip').forEach(c => {
+    c.classList.remove('on');
+    c.style.cssText = '';
+  });
+  el.classList.add('on');
+  const color = SKILL_CATEGORIES[cat].color;
+  el.style.background = 'rgba(79,142,247,.1)';
+  el.style.borderColor = color + '55';
+  el.style.color = color;
+  showSkillCat(cat);
+}
+
+
+
+function showSkillCat(cat) {
+  const { keywords, radarLabels, radarSkills, radarBaseline, color, insights, top10 } = SKILL_CATEGORIES[cat];
+
+  const catJobs = allJobs.filter(j =>
+    keywords.some(k => j.title.toLowerCase().includes(k))
+  );
+  const jobCount = catJobs.length;
+  const hasJobs = jobCount > 0;
+
+  // ── 데이터 출처 배지 업데이트
+  document.getElementById('skillmap-jobcount-badge').textContent = `+ 수집 공고 ${jobCount}개 반영`;
+  const radarSub = document.getElementById('radar-sub');
+
+  // ── stats (공고 없으면 업계 기준 표시)
+  if (hasJobs) {
+    const reloc = catJobs.filter(j=>j.relocation).length;
+    const remote = catJobs.filter(j=>j.remoteType==='Remote').length;
+    const countryCount = new Set(catJobs.map(j=>j.country)).size;
+    document.getElementById('skillmap-stats').innerHTML = `
+      <div class="stat"><div class="stat-lbl">수집 공고</div><div class="stat-val" style="color:${color}">${jobCount}</div></div>
+      <div class="stat"><div class="stat-lbl">Relocation</div><div class="stat-val c-green">${reloc}</div></div>
+      <div class="stat"><div class="stat-lbl">원격 가능</div><div class="stat-val c-blue">${remote}</div></div>
+      <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple">${countryCount}</div></div>`;
+  } else {
+    document.getElementById('skillmap-stats').innerHTML = `
+      <div class="stat"><div class="stat-lbl">수집 공고</div><div class="stat-val c-warn">0</div><div class="stat-note">업계 기준으로 표시</div></div>
+      <div class="stat"><div class="stat-lbl">업계 평균 연봉</div><div class="stat-val c-green" style="font-size:14px">${cat==='데이터'?'€65~90K':cat==='마케팅'?'€45~65K':cat==='개발'?'€75~110K':'€45~65K'}</div></div>
+      <div class="stat"><div class="stat-lbl">원격 비율</div><div class="stat-val c-blue">${cat==='데이터'?'38%':cat==='마케팅'?'28%':cat==='개발'?'45%':'22%'}</div></div>
+      <div class="stat"><div class="stat-lbl">주요 국가</div><div class="stat-val c-purple">${cat==='데이터'?'UK·NL':cat==='마케팅'?'ES·UK':cat==='개발'?'DE·NL':'UK·NL'}</div></div>`;
+  }
+
+  // ── 인사이트 배너
+  document.getElementById('skillmap-insight-list').innerHTML = insights.map(ins => `
+    <div style="display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--text2);line-height:1.6">
+      <span style="font-size:14px;flex-shrink:0">${ins.icon}</span>
+      <span style="flex:1">${ins.text}</span>
+      <span style="flex-shrink:0;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;background:rgba(79,142,247,.1);color:var(--accent);border:1px solid rgba(79,142,247,.2)">${ins.tag}</span>
+    </div>`).join('');
+
+  // ── 레이더 데이터: 베이스라인 + 실제 데이터 혼합
+  // 공고 수에 따라 실제 데이터 가중치 증가
+  // 300개여도 베이스라인 40%는 항상 유지 — 실제 데이터가 너무 낮을 때 보정
+  const liveWeight = hasJobs ? Math.min(0.6, jobCount / 500) : 0;
+  const baseWeight = 1 - liveWeight;
+
+  const liveData = radarSkills.map(skillGroup => {
+    if (!hasJobs) return 0;
+    let count = 0;
+    catJobs.forEach(j => {
+      const text = ((j.description||'') + ' ' + (j.title||'')).toLowerCase();
+      // includes 방식 — "Python/R", "SQL Server" 등 변형도 잡음
+      const found = skillGroup.some(s => text.includes(s.toLowerCase()));
+      if (found) count++;
+    });
+    return Math.round((count / jobCount) * 100);
+  });
+
+  const radarData = radarBaseline.map((base, i) =>
+    Math.round(base * baseWeight + (liveData[i] || 0) * liveWeight)
+  );
+
+  if (radarSub) {
+    if (!hasJobs) {
+      radarSub.textContent = '업계 평균 기준값 — 공고 수집 시 실제 데이터로 보정됩니다';
+    } else if (liveWeight < 0.4) {
+      radarSub.textContent = `업계 기준 ${Math.round(baseWeight*100)}% + 수집 공고 ${Math.round(liveWeight*100)}% 혼합`;
+    } else {
+      radarSub.textContent = `수집 공고 기반 ${Math.round(liveWeight*100)}% 반영 — 실제 데이터 주도`;
+    }
+  }
+
+  if (skillCharts.radar) skillCharts.radar.destroy();
+  skillCharts.radar = new Chart(document.getElementById('chartSkillRadar'), {
+    type: 'radar',
+    data: {
+      labels: radarLabels,
+      datasets: [
+        // 베이스라인 레이어 (항상 표시, 점선)
+        {
+          label: '업계 기준',
+          data: radarBaseline,
+          borderColor: 'rgba(255,255,255,0.12)',
+          backgroundColor: 'rgba(255,255,255,0.03)',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+        },
+        // 실제/혼합 데이터 레이어
+        {
+          label: cat,
+          data: radarData,
+          borderColor: color,
+          backgroundColor: color + '28',
+          pointBackgroundColor: color,
+          pointBorderColor: '#1e2230',
+          pointBorderWidth: 2,
+          borderWidth: 2.5,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          titleColor: '#1a1a2e',
+          bodyColor: '#1a1a2e',
+          titleFont: { size: 12, weight: '700', family: "'Sora','Noto Sans KR',sans-serif" },
+          bodyFont: { size: 11, family: "'Sora','Noto Sans KR',sans-serif" },
+          padding: 10,
+          callbacks: {
+            label: ctx => ctx.datasetIndex === 1
+              ? ` ${ctx.label}: ${ctx.parsed.r}점`
+              : ` 업계 기준: ${ctx.parsed.r}점`
+          }
+        }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 100,
+          ticks: {
+            stepSize: 20,
+            color: '#555e75',
+            font: { size: 9 },
+            backdropColor: 'transparent',
+            callback: v => v === 0 ? '' : v
+          },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: '#8b92a8', font: { size: 11, family: "'Sora','Noto Sans KR',sans-serif" } },
+          angleLines: { color: 'rgba(255,255,255,0.06)' }
+        }
+      }
+    }
+  });
+
+  // ── TOP 10 스킬 리스트
+  const listEl = document.getElementById('skill-top-list');
+  if (listEl) {
+    listEl.innerHTML = top10.map((item, i) => `
+      <div onclick="openSkillDrawer('${item.skill}','${cat}')"
+           style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:border-color .15s"
+           onmouseover="this.style.borderColor='${color}55'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div style="min-width:20px;height:20px;border-radius:50%;background:${i<3?color:'var(--bg2)'};border:1.5px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${i<3?'#fff':color}">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.skill}${item.hot?'<span style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(240,100,100,.12);color:#f06464;border:1px solid rgba(240,100,100,.2)">🔥 HOT</span>':''}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">${item.note}</div>
+        </div>
+        <div style="flex-shrink:0;text-align:right">
+          <div style="font-size:13px;font-weight:700;color:${color}">${item.pct}%</div>
+          <div style="width:50px;height:3px;background:var(--bg);border-radius:2px;margin-top:3px"><div style="height:100%;width:${item.pct}%;background:${color};border-radius:2px"></div></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── 트리맵 (공고 없으면 업계 기준 하드코딩)
+  const mapEl = document.getElementById('skillMapBubble');
+  if (skillCharts.bubble) { skillCharts.bubble.destroy(); skillCharts.bubble = null; }
+  mapEl.innerHTML = '';
+
+  // 업계 기준 국가 분포 (직종별)
+  const BASE_COUNTRY = {
+    '데이터': {GB:120,NL:95,DE:88,ES:62,FR:55,IE:40,PT:28,BE:24,CH:20,IT:18},
+    '마케팅': {ES:140,GB:110,DE:75,NL:68,FR:60,PT:45,IT:35,BE:25,IE:22,CH:18},
+    '개발':   {DE:155,NL:130,GB:125,ES:90,FR:72,IE:55,PT:42,BE:38,CH:32,AT:25},
+    'HR':     {GB:135,NL:100,DE:85,ES:70,BE:45,IE:38,FR:35,CH:28,PT:22,AT:18},
+  };
+
+  let rawCountryCounts = {};
+  if (hasJobs) {
+    catJobs.forEach(j => { rawCountryCounts[j.country] = (rawCountryCounts[j.country]||0)+1; });
+    // 베이스라인과 혼합
+    const base = BASE_COUNTRY[cat] || {};
+    const bmax = Math.max(...Object.values(base));
+    Object.entries(base).forEach(([c, bv]) => {
+      const live = rawCountryCounts[c] || 0;
+      rawCountryCounts[c] = Math.round(live * liveWeight + (bv/bmax*jobCount*0.5) * baseWeight);
+    });
+  } else {
+    rawCountryCounts = BASE_COUNTRY[cat] || {GB:100, DE:80, NL:70, ES:60};
+  }
+
+  const tmEntries = Object.entries(rawCountryCounts).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]);
+  const tmMax2 = tmEntries[0]?.[1] || 1;
+  const tmMin2 = tmEntries[tmEntries.length-1]?.[1] || 0;
+  const tmW = mapEl.getBoundingClientRect().width || mapEl.offsetWidth || 500;
+  const tmH = 300;
+
+  const tmRoot = {children: tmEntries.map(([c,n])=>({c,n,name:countryName(c),flag:countryFlag(c)}))};
+  const hierarchy = d3.hierarchy(tmRoot).sum(d=>d.n).sort((a,b)=>b.value-a.value);
+  d3.treemap().size([tmW,tmH]).paddingInner(4).paddingOuter(2).round(true)(hierarchy);
+
+  const hex2 = c => c.replace('#','');
+  const colorScale = d3.scaleLinear().domain([tmMin2, tmMax2]).range([color+'99', color]);
+  const textBright = d3.scaleLinear().domain([tmMin2, tmMax2]).range([0.9, 1]);
+
+  const tmSvg = d3.select(mapEl).append('svg')
+    .attr('width','100%').attr('height',tmH)
+    .attr('viewBox',`0 0 ${tmW} ${tmH}`)
+    .attr('preserveAspectRatio','xMidYMid meet');
+
+  const tmLeaf = tmSvg.selectAll('g')
+    .data(hierarchy.leaves())
+    .join('g')
+    .attr('transform', d=>`translate(${d.x0},${d.y0})`);
+
+  tmLeaf.append('rect')
+    .attr('width', d=>Math.max(0,d.x1-d.x0))
+    .attr('height', d=>Math.max(0,d.y1-d.y0))
+    .attr('rx', 6)
+    .attr('fill', d=>colorScale(d.data.n))
+    .attr('stroke','rgba(13,15,20,0.6)')
+    .attr('stroke-width', 2);
+
+  tmLeaf.each(function(d) {
+    const w = d.x1-d.x0; const h = d.y1-d.y0;
+    const g = d3.select(this);
+    if (w > 28 && h > 20) {
+      const fontSize = Math.min(Math.max(Math.min(w,h)*0.19, 9), 15);
+      g.append('text').attr('x',w/2).attr('y',h/2+fontSize*0.4)
+        .attr('text-anchor','middle').attr('fill','rgba(255,255,255,0.92)')
+        .attr('font-size',fontSize).attr('font-weight','600')
+        .attr('font-family',"'Sora','Noto Sans KR',sans-serif")
+        .text(d.data.name);
+      if (w > 55 && h > 40) {
+        g.append('text').attr('x',w/2).attr('y',h/2+fontSize*1.7)
+          .attr('text-anchor','middle').attr('fill','rgba(255,255,255,0.45)')
+          .attr('font-size',9).attr('font-weight','500')
+          .text(hasJobs ? `${d.data.n}개` : '기준값');
+      }
+    }
+  });
+
+  const tmTip = d3.select(mapEl).append('div')
+    .style('display','none').style('position','absolute')
+    .style('background','rgba(255,255,255,0.96)').style('color','#1a1a2e')
+    .style('padding','8px 13px').style('border-radius','8px')
+    .style('font-size','12px').style('font-weight','600')
+    .style('font-family',"'Sora',sans-serif").style('pointer-events','none')
+    .style('line-height','1.6').style('z-index','10').style('box-shadow','0 4px 14px rgba(0,0,0,.25)');
+
+  tmLeaf.on('mousemove', function(event, d) {
+    const [px,py] = d3.pointer(event, mapEl);
+    tmTip.style('display','block')
+      .style('left',(px+12)+'px').style('top',(py-50)+'px')
+      .html(`${d.data.flag} <strong>${d.data.name}</strong><br>${hasJobs?`${d.data.n}개 공고`:'업계 기준 수요 지수'}`);
+  }).on('mouseout', ()=>tmTip.style('display','none'));
+
+  // ── 근무 형태 (공고 없으면 업계 기준)
+  const BASE_REMOTE = {
+    '데이터': [38,35,27], '마케팅': [25,40,35], '개발': [45,38,17], 'HR': [18,38,44]
+  };
+  const br = BASE_REMOTE[cat] || [33,34,33];
+  const remoteC = hasJobs ? catJobs.filter(j=>j.remoteType==='Remote').length : Math.round(jobCount||100)*br[0]/100;
+  const hybridC = hasJobs ? catJobs.filter(j=>j.remoteType==='Hybrid').length : Math.round(jobCount||100)*br[1]/100;
+  const onsiteC = hasJobs ? catJobs.filter(j=>j.remoteType==='On-site').length : Math.round(jobCount||100)*br[2]/100;
+  const remoteData = [
+    { label:`원격 ${hasJobs?'':'(기준)'}`, value:remoteC||br[0], color:'#4f8ef7' },
+    { label:`하이브리드 ${hasJobs?'':'(기준)'}`, value:hybridC||br[1], color:'#7c6af0' },
+    { label:`출근 ${hasJobs?'':'(기준)'}`, value:onsiteC||br[2], color:'#3ecfa0' },
+  ].sort((a,b)=>b.value-a.value);
+
+  if (skillCharts.remote) skillCharts.remote.destroy();
+  skillCharts.remote = new Chart(document.getElementById('chartSkillRemote'), {
+    type: 'doughnut',
+    data: {
+      labels: remoteData.map(d=>d.label),
+      datasets: [{ data: remoteData.map(d=>d.value), backgroundColor: remoteData.map(d=>d.color), borderColor: '#0d0f14', borderWidth: 2, spacing: 3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:12, boxWidth:10, usePointStyle:true } },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#1a1a2e', bodyColor: '#1a1a2e',
+          titleFont: { size:13, weight:'600', family:"'Sora','Noto Sans KR',sans-serif" },
+          bodyFont: { size:12, family:"'Sora','Noto Sans KR',sans-serif" }, padding: 10,
+          callbacks: { label: ctx => hasJobs ? ` ${ctx.label}: ${ctx.parsed}개` : ` ${ctx.label}: ${ctx.parsed}%` }
+        }
+      }
+    }
+  });
+
+  // ── 경력 레벨 (개선된 색상 + 공고 없으면 업계 기준)
+  const BASE_LEVELS = {
+    '데이터':   [['Senior',45],['Mid-level',35],['Junior',15],['Lead/Principal',5]],
+    '마케팅':   [['Mid-level',42],['Senior',32],['Junior',18],['Director',8]],
+    '개발':     [['Senior',48],['Mid-level',32],['Lead/Principal',12],['Junior',8]],
+    'HR':       [['Mid-level',40],['Senior',35],['Junior',18],['Director',7]],
+  };
+  let levelEntries;
+  if (hasJobs) {
+    const levels = {};
+    catJobs.forEach(j => { if (j.level) levels[j.level] = (levels[j.level]||0)+1; });
+    levelEntries = Object.entries(levels).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  }
+  if (!levelEntries || levelEntries.length === 0) {
+    levelEntries = (BASE_LEVELS[cat] || BASE_LEVELS['데이터']).map(([l,v])=>[l,v]);
+  }
+  // 다크 테마 고정 6색 — 어떤 직종이든 서로 충분히 구분됨
+  const levelColors = ['#4f8ef7', '#f5a623', '#3ecfa0', '#f06464', '#7c6af0', '#a78bfa'];
+  if (skillCharts.level) skillCharts.level.destroy();
+  skillCharts.level = new Chart(document.getElementById('chartSkillLevel'), {
+    type: 'doughnut',
+    data: {
+      labels: levelEntries.map(([l])=>l),
+      datasets: [{ data: levelEntries.map(([,v])=>v), backgroundColor: levelColors.slice(0,levelEntries.length), borderColor: '#0d0f14', borderWidth: 2, spacing: 3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{ color:'#8b92a8', font:{ size:11, family:"'Sora','Noto Sans KR',sans-serif" }, padding:12, boxWidth:10, usePointStyle:true } },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#1a1a2e', bodyColor: '#1a1a2e',
+          titleFont: { size:13, weight:'600', family:"'Sora','Noto Sans KR',sans-serif" },
+          bodyFont: { size:12, family:"'Sora','Noto Sans KR',sans-serif" }, padding: 10,
+          callbacks: { label: ctx => hasJobs ? ` ${ctx.label}: ${ctx.parsed}개` : ` ${ctx.label}: 약 ${ctx.parsed}%` }
+        }
+      }
+    }
+  });
+
+  // ── 워드클라우드 (공고 없으면 top10 기반으로 표시)
+  const skillFreq = [];
+  if (hasJobs) {
+    radarSkills.flat().forEach(skill => {
+      let count = 0;
+      catJobs.forEach(j => {
+        const text = ((j.description||'') + ' ' + (j.title||'')).toLowerCase();
+        if (new RegExp('\\b' + skill.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i').test(text)) count++;
+      });
+      if (count > 0) skillFreq.push([skill, count + 10]);
+    });
+  }
+  // 공고 없거나 적으면 top10 데이터로 보완
+  if (skillFreq.length < 5) {
+    top10.forEach((item, i) => {
+      const alreadyIn = skillFreq.some(([s]) => s.toLowerCase() === item.skill.toLowerCase());
+      if (!alreadyIn) skillFreq.push([item.skill, Math.round(item.pct * 0.5) + 10]);
+    });
+    radarSkills.flat().slice(0, 20).forEach(s => {
+      if (!skillFreq.some(([w]) => w === s)) skillFreq.push([s, 15 + Math.floor(Math.random()*15)]);
+    });
+  }
+
+  if (skillFreq.length > 0 && typeof WordCloud !== 'undefined') {
+    const canvas = document.getElementById('skillWordCloud');
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = 300;
+    skillFreq.sort((a,b) => b[1]-a[1]);
+    const palette = [color, '#f5a623', '#3ecfa0', '#f06464', '#a78bfa', '#60c9f8'];
+    const maxWeight = skillFreq[0]?.[1] || 1;
+    // 10~22 범위로 정규화 — 크기 차이를 줄여서 더 많은 단어가 들어가게
+    const normalizedList = skillFreq.map(([w, v]) => [w, 10 + Math.round((v / maxWeight) * 12)]);
+    WordCloud(canvas, {
+      list: normalizedList,
+      fontFamily: "'Sora', 'Noto Sans KR', sans-serif",
+      fontWeight: '600',
+      color: (word) => {
+        const rank = normalizedList.findIndex(([w])=>w===word);
+        return palette[rank % palette.length];
+      },
+      rotateRatio: 0.2,
+      backgroundColor: 'transparent',
+      gridSize: 4,
+      weightFactor: sz => sz * 2.2,
+      minSize: 8,
+      cursor: 'pointer',
+      click: item => openSkillDrawer(item[0], cat),
+      hover: (item) => { canvas.style.cursor = item ? 'pointer' : 'default'; }
+    });
+  } else {
+    document.getElementById('skillWordCloudContainer').innerHTML =
+      '<div style="color:var(--text3);font-size:13px;padding:20px">스킬 데이터를 준비 중입니다.</div>';
+  }
+}
+
+// ── 스킬 드로어 열기/닫기
+function openSkillDrawer(skillName, cat) {
+  const { top10, color, radarSkills } = SKILL_CATEGORIES[cat] || SKILL_CATEGORIES['데이터'];
+  const catJobs = allJobs.filter(j =>
+    SKILL_CATEGORIES[cat].keywords.some(k => j.title.toLowerCase().includes(k))
+  );
+  const matchItem = top10.find(t => t.skill.toLowerCase().includes(skillName.toLowerCase()) || skillName.toLowerCase().includes(t.skill.split(' ')[0].toLowerCase()));
+  
+  // 해당 스킬 언급 공고 찾기
+  const escaped = skillName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const relatedJobs = catJobs.filter(j => new RegExp('\\b'+escaped+'\\b','i').test((j.description||'')+(j.title||'')));
+
+  const ov = document.getElementById('skillDrawerOv');
+  const drawer = document.getElementById('skillDrawer');
+  const content = document.getElementById('skillDrawerContent');
+
+  content.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:20px">
+      <div style="width:44px;height:44px;border-radius:10px;background:${color}22;border:1px solid ${color}44;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">⚡</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:3px">${skillName}</div>
+        <div style="font-size:12px;color:var(--text3)">${cat} 직군 · 클릭된 스킬 상세 정보</div>
+      </div>
+      ${matchItem?.hot ? `<span style="margin-left:auto;flex-shrink:0;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(240,100,100,.12);color:#f06464;border:1px solid rgba(240,100,100,.2)">🔥 핫스킬</span>` : ''}
+    </div>
+
+    ${matchItem ? `
+    <div style="padding:14px 16px;background:${color}11;border:1px solid ${color}33;border-radius:10px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">공고 요구 빈도</div>
+        <div style="font-size:20px;font-weight:800;color:${color}">${matchItem.pct}%</div>
+      </div>
+      <div style="height:6px;background:var(--bg);border-radius:3px;margin-bottom:10px">
+        <div style="height:100%;width:${matchItem.pct}%;background:${color};border-radius:3px;transition:width .6s"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">${matchItem.note}</div>
+    </div>` : ''}
+
+    ${relatedJobs.length > 0 ? `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+        📋 관련 수집 공고 (${relatedJobs.length}개)
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto">
+        ${relatedJobs.slice(0,6).map(j => `
+          <div onclick="openDrawer('${j.id}')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='var(--bg3)'">
+            <div style="font-size:18px;line-height:1.2">${j.logo||j.flag||'🏢'}</div>
+            <div style="min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.title}</div>
+              <div style="font-size:11px;color:var(--text3)">${j.company} · ${j.location}</div>
+            </div>
+            <div style="flex-shrink:0;font-size:11px;color:var(--accent);font-weight:600">→</div>
+          </div>`).join('')}
+      </div>
+    </div>` : `
+    <div style="padding:16px;background:var(--bg3);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.7">
+      📡 아직 수집된 공고가 없어요. 채용공고 탭에서 공고를 불러오면 이 스킬이 언급된 공고를 여기서 바로 확인할 수 있어요.
+    </div>`}
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="closeSkillDrawer()" class="btn btn-ghost btn-sm">닫기</button>
+      <button onclick="document.getElementById('searchInput').value='${skillName}';filterJobs();nav('jobs',null);closeSkillDrawer();" class="btn btn-primary btn-sm">💼 이 스킬로 공고 검색</button>
+    </div>`;
+
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => { drawer.style.transform = 'translateY(0)'; });
+}
+
+function closeSkillDrawer(e) {
+  if (e && e.target !== document.getElementById('skillDrawerOv')) return;
+  const drawer = document.getElementById('skillDrawer');
+  drawer.style.transform = 'translateY(100%)';
+  setTimeout(() => { document.getElementById('skillDrawerOv').style.display = 'none'; }, 300);
+}
+  
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  
+</body>
+</html>  
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EuroJob — 유럽 해외취업 플랫폼</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --bg2:#161922; --bg3:#1e2230;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --text:#f0f2f7; --text2:#8b92a8; --text3:#555e75;
+  --accent:#4f8ef7; --accent2:#7c6af0; --accent3:#3ecfa0;
+  --warn:#f5a623; --red:#f06464;
+  --radius:12px; --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sora','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+
+/* ── SHELL ─────────────────────────── */
+.shell{display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ───────────────────────── */
+.sidebar{width:228px;min-width:228px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;z-index:20;}
+.logo-area{padding:22px 20px 18px;border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;flex-shrink:0;}
+.logo-text{font-size:18px;font-weight:700;letter-spacing:-.3px;}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.nav{flex:1;padding:10px 0;overflow-y:auto;}
+.nav-section{padding:8px 20px 3px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 20px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;border-left:2px solid transparent;user-select:none;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,142,247,.07);font-weight:500;}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;min-width:20px;text-align:center;}
+.nav-badge.warn{background:var(--warn);}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;}
+.user-card:hover{background:var(--bg3);}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;}
+
+/* ── MAIN ──────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+
+/* ── TOPBAR ────────────────────────── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 26px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:15;}
+.search-bar{flex:1;max-width:460px;display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 13px;transition:border-color .15s;}
+.search-bar:focus-within{border-color:var(--accent);}
+.search-bar input{background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;flex:1;}
+.search-bar input::placeholder{color:var(--text3);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.lang-toggle{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:12px;}
+.lang-btn{padding:5px 10px;cursor:pointer;color:var(--text2);font-weight:500;transition:all .15s;}
+.lang-btn.active{background:var(--accent);color:#fff;}
+.icon-btn{width:34px;height:34px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px;transition:all .15s;position:relative;}
+.icon-btn:hover{border-color:var(--border2);color:var(--text);}
+.notif-dot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red);}
+
+/* ── KEY BAR ───────────────────────── */
+.key-bar{background:rgba(79,142,247,.05);border-bottom:1px solid var(--border);padding:10px 26px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.key-label{font-size:11px;color:var(--text3);white-space:nowrap;}
+.key-input{flex:1;min-width:240px;max-width:380px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 11px;outline:none;transition:border-color .15s;}
+.key-input:focus{border-color:var(--accent);}
+.key-note{font-size:11px;color:var(--text3);}
+.key-note a{color:var(--accent);text-decoration:none;}
+
+/* ── CONTENT ───────────────────────── */
+.content{flex:1;overflow-y:auto;padding:26px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── BUTTONS ───────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;border:none;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{opacity:.88;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border2);}
+.btn-ghost:hover{background:var(--bg3);}
+.btn-sm{padding:6px 13px;font-size:12px;border-radius:7px;}
+.btn-green{background:var(--accent3);color:#04342c;}
+.btn-green:hover{opacity:.88;}
+
+/* ── CARDS ─────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
+.card h3{font-size:14px;font-weight:600;margin-bottom:4px;}
+.card .sub{font-size:12px;color:var(--text2);margin-bottom:14px;}
+
+/* ── SECTION ───────────────────────── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-size:15px;font-weight:600;}
+.sec-sub{font-size:12px;color:var(--text3);}
+
+/* ── STATS GRID ────────────────────── */
+.stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.stats5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px;}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;}
+.stat-val{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+.stat-note{font-size:11px;color:var(--text3);margin-top:2px;}
+.c-blue{color:var(--accent);}
+.c-purple{color:var(--accent2);}
+.c-green{color:var(--accent3);}
+.c-warn{color:var(--warn);}
+.c-red{color:var(--red);}
+
+/* ── HERO ──────────────────────────── */
+.hero{background:linear-gradient(135deg,rgba(79,142,247,.1),rgba(124,106,240,.1));border:1px solid rgba(79,142,247,.18);border-radius:16px;padding:30px 34px;margin-bottom:24px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(79,142,247,.07) 0%,transparent 70%);pointer-events:none;}
+.hero-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(62,207,160,.1);border:1px solid rgba(62,207,160,.22);color:var(--accent3);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin-bottom:11px;text-transform:uppercase;letter-spacing:.5px;}
+.hero h1{font-size:25px;font-weight:700;margin-bottom:7px;letter-spacing:-.4px;}
+.hero h1 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--text2);font-size:13px;margin-bottom:18px;max-width:460px;}
+.hero-actions{display:flex;gap:9px;flex-wrap:wrap;}
+
+/* ── BLOG BANNER ───────────────────── */
+.blog-banner{background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:16px 22px;display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+.blog-icon{font-size:26px;}
+.blog-text h4{font-size:13px;font-weight:600;margin-bottom:2px;}
+.blog-text p{font-size:12px;color:var(--text2);}
+.blog-link{margin-left:auto;color:var(--accent3);font-size:12px;font-weight:600;text-decoration:none;border:1px solid rgba(62,207,160,.28);padding:6px 13px;border-radius:7px;transition:background .15s;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+.blog-link:hover{background:rgba(62,207,160,.07);}
+
+/* ── FILTER CHIPS ──────────────────── */
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;align-items:center;}
+.f-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-right:2px;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;user-select:none;}
+.chip:hover{border-color:var(--border2);color:var(--text);}
+.chip.on{background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.32);color:var(--accent);}
+.chip.on.g{background:rgba(62,207,160,.1);border-color:rgba(62,207,160,.32);color:var(--accent3);}
+.chip.on.p{background:rgba(124,106,240,.1);border-color:rgba(124,106,240,.32);color:var(--accent2);}
+
+/* ── JOB GRID ──────────────────────── */
+.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;}
+.job-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;transition:all .2s;position:relative;}
+.job-card:hover{border-color:rgba(79,142,247,.28);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.job-card.featured{border-color:rgba(79,142,247,.2);background:linear-gradient(135deg,var(--bg2),rgba(79,142,247,.03));}
+.jc-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:10px;}
+.co-logo{width:40px;height:40px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.jc-title{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.3;}
+.jc-company{font-size:12px;color:var(--text2);}
+.save-btn{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;transition:color .15s;line-height:1;flex-shrink:0;}
+.save-btn:hover,.save-btn.saved{color:var(--warn);}
+.jc-meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;}
+.b-green{background:rgba(62,207,160,.1);color:#3ecfa0;}
+.b-blue{background:rgba(79,142,247,.1);color:#4f8ef7;}
+.b-purple{background:rgba(124,106,240,.1);color:#7c6af0;}
+.b-warn{background:rgba(245,166,35,.1);color:#f5a623;}
+.b-red{background:rgba(240,100,100,.07);color:#f09090;}
+.b-gray{background:rgba(255,255,255,.06);color:var(--text2);}
+.b-new{background:rgba(62,207,160,.13);color:#3ecfa0;border:1px solid rgba(62,207,160,.28);}
+.jc-skills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.skill-tag{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text2);font-size:11px;padding:2px 7px;border-radius:4px;}
+.jc-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);}
+.jc-salary{font-size:12px;font-weight:600;color:var(--accent3);}
+.jc-date{font-size:11px;color:var(--text3);}
+.jc-match{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;}
+.jc-match-dot{width:7px;height:7px;border-radius:50%;}
+.match-high{color:#3ecfa0;}.match-high .jc-match-dot{background:#3ecfa0;}
+.match-mid{color:#f5a623;}.match-mid .jc-match-dot{background:#f5a623;}
+.feat-tag{position:absolute;top:14px;right:14px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;}
+
+/* ── APIFY BAR ─────────────────────── */
+.apify-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 26px;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;}
+.apify-bar h4{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text2);}
+.cfg-field{display:flex;flex-direction:column;gap:4px;}
+.cfg-lbl{font-size:11px;color:var(--text3);}
+.cfg-input{background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:inherit;font-size:12px;padding:7px 11px;outline:none;transition:border-color .15s;}
+.cfg-input:focus{border-color:var(--accent);}
+.status-bar{padding:8px 26px;font-size:12px;display:flex;align-items:center;gap:8px;}
+.spinner{width:12px;height:12px;border:2px solid rgba(245,166,35,.3);border-top-color:var(--warn);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.prog-bar{flex:1;max-width:280px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .4s;}
+
+/* ── SAVED COLS ────────────────────── */
+.col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
+.col-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .15s;}
+.col-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.col-icon{font-size:22px;margin-bottom:9px;}
+.col-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.col-count{font-size:11px;color:var(--text3);}
+.col-add{border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:96px;color:var(--text3);font-size:12px;}
+.col-add:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── AI PAGE ───────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:11px;resize:vertical;outline:none;transition:border-color .15s;line-height:1.7;}
+textarea:focus{border-color:var(--accent);}
+textarea::placeholder{color:var(--text3);}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:9px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:11px;}
+.upload-zone:hover{border-color:var(--accent);background:rgba(79,142,247,.04);}
+.upload-zone input{display:none;}
+
+/* ── PROGRESS ──────────────────────── */
+.prog-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;margin-bottom:20px;}
+.prog-icon{font-size:36px;margin-bottom:12px;animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(.96);}}
+
+/* ── RESULT CARDS ──────────────────── */
+.res-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;transition:border-color .2s;}
+.res-card.high{border-left:3px solid var(--accent3);}
+.res-card.mid{border-left:3px solid var(--warn);}
+.res-card.low{border-left:3px solid var(--red);}
+.res-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;}
+.ring-wrap{position:relative;width:68px;height:68px;flex-shrink:0;}
+.ring-wrap svg{width:100%;height:100%;}
+.ring-lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1.2;}
+.ring-pct{display:block;font-size:15px;font-weight:700;}
+.ring-grade{display:block;font-size:9px;color:var(--text3);}
+.res-body{border-top:1px solid var(--border);padding-top:13px;}
+.ai-sec{margin-bottom:12px;}
+.ai-sec-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;}
+.ai-text{font-size:13px;color:var(--text2);line-height:1.75;}
+.skill-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.sk-hit{background:rgba(62,207,160,.1);border:1px solid rgba(62,207,160,.2);color:#3ecfa0;font-size:11px;padding:2px 8px;border-radius:4px;}
+.sk-miss{background:rgba(240,100,100,.06);border:1px solid rgba(240,100,100,.15);color:#f09090;font-size:11px;padding:2px 8px;border-radius:4px;}
+.sk-partial{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);color:#f5a623;font-size:11px;padding:2px 8px;border-radius:4px;}
+
+/* ── COVER LETTER ──────────────────── */
+.cl-output{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:18px;font-size:13px;color:var(--text2);line-height:1.9;min-height:180px;white-space:pre-wrap;}
+.streaming .cl-output::after{content:'▌';animation:blink .7s step-end infinite;}
+@keyframes blink{50%{opacity:0;}}
+
+/* ── DRAWER ────────────────────────── */
+.drawer-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;}
+.drawer-ov.show{display:flex;justify-content:flex-end;}
+.drawer{width:480px;max-width:100vw;background:var(--bg2);border-left:1px solid var(--border2);height:100vh;overflow-y:auto;padding:26px;animation:slideIn .2s ease;}
+@keyframes slideIn{from{transform:translateX(100%);}to{transform:translateX(0);}}
+.drawer-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;float:right;}
+.drawer h2{font-size:18px;font-weight:700;margin:14px 0 3px;}
+.drawer-co{font-size:13px;color:var(--text2);margin-bottom:14px;}
+.drawer-section{margin-bottom:18px;}
+.drawer-section h4{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;}
+.drawer-desc{font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-wrap;max-height:280px;overflow-y:auto;}
+
+/* ── TIPS ──────────────────────────── */
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+.tip-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.tip-icon{font-size:22px;margin-bottom:9px;}
+.tip-cat{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px;}
+.tip-title{font-size:14px;font-weight:600;margin-bottom:5px;}
+.tip-desc{font-size:12px;color:var(--text2);line-height:1.65;}
+
+/* ── VISA ──────────────────────────── */
+.country-tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+.ctab{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;}
+.ctab:hover{border-color:var(--border2);color:var(--text);}
+.ctab.active{border-color:rgba(62,207,160,.32);background:rgba(62,207,160,.1);color:var(--accent3);}
+.visa-table{font-size:13px;}
+.visa-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.visa-row:last-child{border-bottom:none;}
+
+/* ── LOG BOX ───────────────────────── */
+.log-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:11px;color:var(--text2);max-height:180px;overflow-y:auto;line-height:1.8;}
+
+/* ── EMPTY ─────────────────────────── */
+.empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty-icon{font-size:36px;margin-bottom:11px;}
+.empty-title{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.empty-text{font-size:13px;line-height:1.8;}
+
+/* ── LOGIN MODAL ───────────────────── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:34px;width:370px;max-width:calc(100vw - 32px);text-align:center;position:relative;}
+.modal h2{font-size:19px;font-weight:700;margin-bottom:5px;}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:22px;}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;}
+.or-div{color:var(--text3);font-size:12px;margin:6px 0 14px;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}.stats4,.stats5{grid-template-columns:repeat(2,1fr);}}
+@media (max-width: 640px) {
+    .sidebar { display: none !important; } /* 사이드바 확실히 숨김 */
+    .bottom-nav { 
+        display: flex !important; /* 모바일 네비 확실히 노출 */
+        visibility: visible;
+        opacity: 1;
+    }
+    .main { padding-bottom: 60px; } /* 하단바에 가려지지 않게 여백 추가 */
+}
+
+/* ── BOTTOM NAV (모바일) ───────────── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:30;height:56px;align-items:stretch;}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;transition:color .15s;border:none;background:none;font-family:inherit;}
+.bn-item.active{color:var(--accent);}
+.bn-icon{font-size:18px;line-height:1;}
+  
+</style>
+</head>
+<body>
+
+<!-- SERVER HELP MODAL -->
+<div class="modal-ov" id="corsModal">
+  <div class="modal" style="width:500px;text-align:left">
+    <button class="modal-close" onclick="document.getElementById('corsModal').classList.remove('show')">✕</button>
+    <div style="font-size:24px;margin-bottom:10px">🚀</div>
+    <h2 style="margin-bottom:8px">채용공고 수집 방법</h2>
+    <p style="margin-bottom:18px;font-size:13px;color:var(--text2)">브라우저 보안 때문에 HTML에서 직접 API를 부를 수 없어요. <strong style="color:var(--text)">server.js</strong>를 로컬에서 실행하면 해결돼요.</p>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--bg3);border-radius:10px;padding:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent3)">✅ 방법 1 — server.js 실행 (권장)</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text2)">
+          <div style="display:flex;gap:8px"><span style="color:var(--accent);font-weight:600">1.</span> Node.js 설치 여부 확인: <code style="color:var(--accent3);background:var(--bg);padding:1px 6px;border-radius:4px">node --version</code></div>
+          <div style="display:flex;gap:8px"><span style="color:var(--accent);font-weight:600">2.</span> EuroJob.html 과 server.js를 같은 폴더에 두기</div>
+          <div style="display:flex;gap:8px"><span style="color:var(--accent);font-weight:600">3.</span> 터미널에서 실행:</div>
+          <div style="background:var(--bg);border-radius:6px;padding:10px;font-family:'Courier New',monospace;font-size:13px;color:var(--accent3)">node server.js</div>
+          <div style="display:flex;gap:8px"><span style="color:var(--accent);font-weight:600">4.</span> <a href="http://localhost:3000" target="_blank" style="color:var(--accent3)">http://localhost:3000</a> 에서 앱 열기 → 「🔍 유럽 공고 수집」</div>
+        </div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--accent)">📂 방법 2 — curl로 데이터 받아서 가져오기</div>
+        <div id="curlCmd" style="background:var(--bg);border-radius:6px;padding:10px;font-family:'Courier New',monospace;font-size:11px;color:var(--accent3);line-height:1.8;white-space:pre-wrap;word-break:break-all"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:11px" onclick="copyCurl()">📋 명령어 복사</button>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">저장된 jobs.json → 「📂 JSON 가져오기」 업로드</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="document.getElementById('jsonImportInput').click();document.getElementById('corsModal').classList.remove('show')">📂 JSON 파일 가져오기</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('corsModal').classList.remove('show')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-ov" id="drawerOv" onclick="closeDrawer(event)">
+  <div class="drawer" id="drawer">
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    <div id="drawerContent"></div>
+  </div>
+</div>
+
+
+<!-- ══ LANDING PAGE (로그인 전) ══════════════════════ -->
+<div id="landingPage" style="display:none;min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="text-align:center;max-width:500px;padding:40px 24px;">
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff;margin:0 auto 24px;">E</div>
+    <h1 style="font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;">EuroJob</h1>
+    <p style="font-size:16px;color:var(--text2);margin-bottom:8px;">유럽 해외취업 플랫폼</p>
+    <p style="font-size:14px;color:var(--text3);margin-bottom:36px;line-height:1.7">스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>구글 계정으로 로그인하고 시작하세요.</p>
+
+    <button onclick="signInWithGoogle()" style="width:100%;max-width:320px;padding:14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 12px;transition:all .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Google 계정으로 시작하기
+    </button>
+
+    <div style="margin-top:28px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;text-align:left">
+      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">무엇을 할 수 있나요?</div>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--text2)">
+        <div>💼 유럽 10개국 채용공고 실시간 수집</div>
+        <div>🔍 국가·직군·근무형태 필터링</div>
+        <div>🤖 AI 이력서 매칭 & 커버레터 생성</div>
+        <div>🔖 관심 공고 저장 & 관리</div>
+        <div>✍️ <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--accent3);text-decoration:none">해외취업 꿀팁 블로그</a> 연동</div>
+      </div>
+    </div>
+
+    <div id="loginError" style="display:none;margin-top:14px;color:var(--red);font-size:13px"></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN DASHBOARD ═══════════════════════════════ -->
+<div id="adminDashboard" style="display:none;min-height:100vh;background:var(--bg);">
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;gap:12px;">
+    <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">E</div>
+    <div style="font-size:16px;font-weight:700;">EuroJob 관리자</div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button onclick="showMain()" style="background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">앱으로 이동</button>
+      <button onclick="signOut()" style="background:transparent;color:var(--text2);border:1px solid var(--border2);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">로그아웃</button>
+    </div>
+  </div>
+  <div style="padding:28px;max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">총 사용자</div>
+        <div style="font-size:26px;font-weight:700;color:var(--accent)" id="stat-users">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">수집된 공고</div>
+        <div style="font-size:26px;font-weight:700;color:var(--accent3)" id="stat-jobs">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">마지막 수집</div>
+        <div style="font-size:14px;font-weight:600;color:var(--warn)" id="stat-lastfetch">-</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">API 상태</div>
+        <div style="font-size:14px;font-weight:600;color:var(--accent3)">● 정상</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">⚙️ 공고 수집</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="adminFetch()" style="background:var(--accent);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">🔍 지금 수집하기</button>
+          <button onclick="adminFetch(true)" style="background:transparent;color:var(--text);border:1px solid var(--border2);padding:10px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">🔄 강제 새로고침</button>
+        </div>
+        <div id="adminFetchLog" style="margin-top:12px;font-size:12px;color:var(--text3);"></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">👥 최근 가입 사용자</div>
+        <div id="adminUsers" style="font-size:13px;color:var(--text2);">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="mainApp" style="display:none">
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="logo-area">
+    <div class="logo">
+      <div style="font-size:24px;line-height:1">🌍</div>
+      <div><div class="logo-text">EuroJob</div><div class="logo-sub">유럽 해외취업 플랫폼</div></div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">메인</div>
+    <div class="nav-item active" onclick="nav('home',this)"><span class="nav-icon">🏠</span>홈</div>
+    <div class="nav-item" onclick="nav('jobs',this)"><span class="nav-icon">💼</span>채용공고<span class="nav-badge" id="nb-jobs">0</span></div>
+    <div class="nav-item" onclick="nav('saved',this)"><span class="nav-icon">🔖</span>저장목록<span class="nav-badge warn" id="nb-saved">0</span></div>
+    <div class="nav-section" id="nav-section-ai" style="display:none">AI 도구</div>
+<div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>AI 이력서 매칭</div>
+<div class="nav-item" id="nav-coverletter" style="display:none" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>커버레터 생성</div>
+<div class="nav-item" id="nav-jdanalysis" style="display:none" onclick="nav('jdanalysis',this)"><span class="nav-icon">🔍</span>JD 분석</div>
+<div class="nav-section" id="nav-section-info" style="display:none">정보</div>
+<div class="nav-item" id="nav-trends" style="display:none" onclick="nav('trends',this)"><span class="nav-icon">📊</span>직종 트렌드</div>
+<div class="nav-item" id="nav-skillmap" style="display:none" onclick="nav('skillmap',this)"><span class="nav-icon">🎯</span>직종별 스킬맵</div>
+<div class="nav-item" id="nav-tips" style="display:none" onclick="nav('tips',this)"><span class="nav-icon">💡</span>취업 꿀팁</div>
+<div class="nav-item" id="nav-visa" style="display:none" onclick="nav('visa',this)"><span class="nav-icon">🛂</span>비자 가이드</div>
+<div class="nav-item" id="nav-chat" style="display:none" onclick="nav('chat',this)"><span class="nav-icon">☕</span><span class="nav-label">커피챗 신청</span></div>
+    <div class="nav-section">설정</div>
+    <div class="nav-item" id="nav-settings" onclick="nav('settings',this)" style="display:none"><span class="nav-icon">⚙️</span>API 설정</div>
+  </div>
+  <div class="sidebar-footer">
+    <div style="padding:8px;font-size:11px;color:var(--text3);line-height:1.6">
+      <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--accent3);text-decoration:none;font-weight:500">✍️ 취업 꿀팁 블로그 →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ MAIN ═════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="search-bar">
+      <span style="color:var(--text3);font-size:14px">🔍</span>
+      <input type="text" id="searchInput" placeholder="직무, 회사, 도시, 스킬 검색..." oninput="filterJobs()">
+    </div>
+    <div class="topbar-right">
+
+      <div style="font-size:11px;color:var(--text3)" id="lastUpdated"></div>
+    </div>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div class="key-bar" id="adminBar" style="display:none">
+    <button class="btn btn-primary btn-sm" onclick="startJSearch()">🔍 유럽 공고 수집</button>
+    <button class="btn btn-ghost btn-sm" onclick="startJSearch(true)">🔄 강제 새로고침</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadSample()">📦 샘플 데이터</button>
+    <span style="font-size:11px;color:var(--text3)" id="fetchedAt"></span>
+  </div>
+  <!-- STATUS -->
+  <div class="status-bar" id="statusBar">
+    <span style="color:var(--text3);font-size:12px" id="statusText">✦ 유럽 채용공고를 불러오는 중...</span>
+  </div>
+<div id="pcBanner" style="background:rgba(79,142,247,.08);border-bottom:1px solid rgba(79,142,247,.15);padding:6px 20px;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:space-between;">
+  <span>💻 PC 환경에서 최적화된 서비스예요. 모바일에서는 일부 기능이 제한될 수 있어요.</span>
+  <span style="cursor:pointer;color:var(--text3);padding:0 4px" onclick="this.parentElement.style.display='none'">✕</span>
+</div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ★ HOME ──────────────────────────────────────── -->
+    <div class="page active" id="page-home">
+      <div class="hero">
+        <div class="hero-tag">✨ 실시간 업데이트</div>
+        <h1>유럽에서 <span>커리어를 펼치세요</span></h1>
+        <p>스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="nav('jobs',null)">🔍 채용공고 보기</button>
+          <button class="btn btn-ghost" onclick="nav('ai',null)">🤖 AI 매칭 시작</button>
+        </div>
+      </div>
+      <div class="stats4">
+        <div class="stat"><div class="stat-lbl">총 채용공고</div><div class="stat-val c-blue" id="hs-total">0</div><div class="stat-note">오늘 신규 확인 중</div></div>
+        <div class="stat"><div class="stat-lbl">리로케이션</div><div class="stat-val c-green" id="hs-visa">0</div><div class="stat-note">스폰서 가능성</div></div>
+        <div class="stat"><div class="stat-lbl">원격/하이브리드</div><div class="stat-val c-warn" id="hs-remote">0</div><div class="stat-note">재택 가능 공고</div></div>
+        <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple" id="hs-countries">0</div><div class="stat-note">유럽 전역</div></div>
+      </div>
+      <div class="blog-banner">
+        <div class="blog-icon">✍️</div>
+        <div class="blog-text"><h4>해외취업 꿀팁 블로그</h4><p>실전 경험으로 쌓은 유럽 취업 노하우 공유</p></div>
+        <a href="https://blog.naver.com/sunnnymind/" target="_blank" class="blog-link">블로그 방문 →</a>
+      </div>
+      <div class="sec-hd">
+        <div><div class="sec-title">🔥 최근 공고</div><div class="sec-sub">가장 최근에 올라온 공고</div></div>
+        <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('jobs',null)">전체보기 →</span>
+      </div>
+      <div class="job-grid" id="homeGrid"></div>
+    </div>
+
+    <!-- ★ JOBS ──────────────────────────────────────── -->
+    <div class="page" id="page-jobs">
+      <div class="sec-hd" style="margin-bottom:16px">
+        <div><div class="sec-title">💼 채용공고</div><div class="sec-sub" id="jobs-sub">공고를 불러오세요</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="sortBy" onchange="filterJobs()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:inherit;font-size:12px;padding:5px 10px;border-radius:6px;outline:none;">
+            <option value="date">최신순</option>
+            <option value="remote">원격 우선</option>
+          </select>
+          <button id="clearFiltersBtn" onclick="clearAllFilters()" style="display:none;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;border:1px solid rgba(240,100,100,.35);background:rgba(240,100,100,.08);color:#f06464;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='rgba(240,100,100,.16)'" onmouseout="this.style.background='rgba(240,100,100,.08)'">
+            ✕ 필터 해제
+          </button>
+        </div>
+      </div>
+      <!-- 이 줄 추가 -->
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">
+      📡 Adzuna · Remotive API를 통해 수집된 채용공고입니다.
+      </div>
+      <div class="filter-row">
+        <span class="f-lbl">🌍</span>
+        <div class="chip" data-f="country:ES" onclick="toggleChip(this)">🇪🇸 스페인</div>
+        <div class="chip" data-f="country:GB" onclick="toggleChip(this)">🇬🇧 영국</div>
+        <div class="chip" data-f="country:DE" onclick="toggleChip(this)">🇩🇪 독일</div>
+        <div class="chip" data-f="country:NL" onclick="toggleChip(this)">🇳🇱 네덜란드</div>
+        <div class="chip" data-f="country:FR" onclick="toggleChip(this)">🇫🇷 프랑스</div>
+        <div class="chip" data-f="country:PT" onclick="toggleChip(this)">🇵🇹 포르투갈</div>
+        <div class="chip" data-f="country:CH" onclick="toggleChip(this)">🇨🇭 스위스</div>
+        <div class="chip" data-f="country:IT" onclick="toggleChip(this)">🇮🇹 이탈리아</div>
+        <div class="chip" data-f="country:BE" onclick="toggleChip(this)">🇧🇪 벨기에</div>
+        <div class="chip" data-f="country:IE" onclick="toggleChip(this)">🇮🇪 아일랜드</div>
+        <div class="chip" data-f="country:EU" onclick="toggleChip(this)">🌍 기타유럽/글로벌</div>
+      </div>
+      <div class="filter-row">
+        <span class="f-lbl">⚡</span>
+        <div class="chip" data-f="relocation:true" onclick="toggleChip(this)">🚀 Relocation</div>
+        <div class="chip" data-f="remote:Remote" onclick="toggleChip(this)">🏠 원격</div>
+        <div class="chip" data-f="remote:Hybrid" onclick="toggleChip(this)">🏗️ 하이브리드</div>
+        <div class="chip" data-f="lang:English" onclick="toggleChip(this)">🌐 영어 OK</div>
+        <div class="chip" data-f="lang:Korean" onclick="toggleChip(this)">🇰🇷 한국어</div>
+      </div>
+      <div class="job-grid" id="jobGrid">
+        <div class="empty" style="grid-column:1/-1">
+          <div class="empty-icon">💼</div>
+          <div class="empty-title">공고를 불러오세요</div>
+          <div class="empty-text">상단 「샘플 데이터」 또는 Apify 수집으로 시작하세요.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ★ SAVED ─────────────────────────────────────── -->
+    <div class="page" id="page-saved">
+  <div class="sec-hd" style="margin-bottom:20px">
+    <div><div class="sec-title">🔖 저장목록</div><div class="sec-sub" id="saved-sub">0개 저장됨</div></div>
+  </div>
+  <div class="job-grid" id="savedGrid">
+    <div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">🔖</div>
+      <div class="empty-title">아직 저장한 공고가 없어요</div>
+      <div class="empty-text">공고 카드의 ♡ 버튼으로 저장하세요.</div>
+    </div>
+  </div>
+</div>
+
+    <!-- ★ AI MATCHING ───────────────────────────────── -->
+    <div class="page" id="page-ai">
+      <div class="sec-hd" style="margin-bottom:18px">
+        <div><div class="sec-title">🤖 AI 이력서 매칭</div><div class="sec-sub">Claude.ai 무료 버전으로 분석합니다 — 별도 비용 없음!</div></div>
+      </div>
+
+      <!-- HOW IT WORKS -->
+      <div style="background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:20px 24px;margin-bottom:22px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">✅ 이렇게 사용하세요 — 완전 무료!</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text2)">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</span><span>아래에 <strong style="color:var(--text)">내 이력서</strong>를 붙여넣으세요</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</span><span>채용공고 페이지에서 마음에 드는 공고를 클릭하면 <strong style="color:var(--text)">채용공고 내용</strong>이 자동으로 준비돼요</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</span><span><strong style="color:var(--accent3)">「Claude.ai에서 분석하기」</strong> 버튼을 누르면 claude.ai가 열리면서 프롬프트가 자동 복사돼요</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">4</span><span>claude.ai 대화창에 <strong style="color:var(--text)">붙여넣기(Ctrl+V)</strong> → 전송!</span></div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>📄 내 이력서 저장</h3>
+          <div class="sub">한 번 입력하면 계속 재사용할 수 있어요</div>
+          <textarea id="resumeText" rows="12" placeholder="이력서 내용을 붙여넣으세요.&#10;&#10;예시:&#10;경력: 5년 디지털 마케팅 (스타트업)&#10;기술: Google Analytics, SEO, SEM, Meta Ads&#10;언어: 한국어(모국어), 영어(비즈니스)&#10;학력: 경영학 학사 — 연세대"></textarea>
+          <div style="margin-top:8px;display:flex;gap:7px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="fillSampleResume()">샘플 이력서</button>
+            <button class="btn btn-ghost btn-sm" onclick="saveResume()">💾 저장</button>
+            <span style="font-size:11px;color:var(--accent3)" id="resumeSaveStatus"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>💼 채용공고 선택</h3>
+          <div class="sub">채용공고 탭에서 공고를 클릭하면 자동으로 여기에 채워져요</div>
+          <textarea id="aiJD" rows="12" placeholder="또는 채용공고를 직접 붙여넣으세요..."></textarea>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary" style="justify-content:center" onclick="openClaudeMatch()">
+              🤖 Claude.ai에서 적합도 분석하기
+            </button>
+          <button class="btn btn-ghost" style="justify-content:center" onclick="openClaudeCoverLetter()">
+              ✍️ Claude.ai에서 커버레터 작성하기
+          </button>
+        </div>
+        </div>
+      </div>
+
+     
+
+      <!-- PROMPT PREVIEW -->
+      <div class="card" style="margin-top:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <h3>📋 생성된 프롬프트 미리보기</h3>
+          <button class="btn btn-ghost btn-sm" onclick="copyPrompt('match')">복사</button>
+        </div>
+        <div id="promptPreview" style="background:var(--bg3);border-radius:8px;padding:14px;font-size:12px;color:var(--text2);line-height:1.8;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:'Courier New',monospace">이력서와 채용공고를 입력하면 프롬프트가 여기에 미리 보여요.</div>
+      </div>
+    </div>
+
+    <!-- ★ COVER LETTER ──────────────────────────────── -->
+    <div class="page" id="page-coverletter">
+      <div class="sec-hd" style="margin-bottom:18px">
+        <div><div class="sec-title">✍️ 커버레터 생성</div><div class="sec-sub">Claude.ai 무료 버전으로 작성 — 비용 없음!</div></div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,rgba(124,106,240,.07),rgba(79,142,247,.07));border:1px solid rgba(124,106,240,.18);border-radius:var(--radius);padding:20px 24px;margin-bottom:22px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">✍️ 사용법</div>
+        <div style="font-size:13px;color:var(--text2)">채용공고 상세에서 「커버레터 (Claude.ai)」 버튼을 누르거나, 아래에 직접 입력 후 버튼을 눌러 claude.ai에서 바로 작성하세요.</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card"><h3>📄 내 이력서</h3><div class="sub">AI 매칭 페이지에 저장된 이력서가 자동으로 채워져요</div><textarea id="clResume" rows="10" placeholder="이력서 내용..."></textarea></div>
+        <div class="card"><h3>💼 지원할 채용공고</h3><div class="sub">공고 클릭 시 자동으로 채워집니다</div><textarea id="clJD" rows="10" placeholder="채용공고 내용..."></textarea></div>
+      </div>
+
+      <div style="display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+        <select id="clLang" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:12px;padding:7px 12px;border-radius:7px;outline:none">
+          <option value="en">English 🇬🇧</option>
+          <option value="es">Español 🇪🇸</option>
+        </select>
+        <select id="clTone" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:12px;padding:7px 12px;border-radius:7px;outline:none">
+          <option value="professional">전문적인 톤</option>
+          <option value="friendly">친근한 톤</option>
+          <option value="confident">자신감 있는 톤</option>
+        </select>
+        <button class="btn btn-primary" onclick="openClaudeCoverLetterFull()">✍️ Claude.ai에서 커버레터 작성</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyPrompt('coverletter')">📋 프롬프트 복사</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <h3>📋 Claude.ai에 붙여넣을 프롬프트</h3>
+          <button class="btn btn-ghost btn-sm" onclick="copyPrompt('coverletter')">복사</button>
+        </div>
+        <div id="clPromptPreview" style="background:var(--bg3);border-radius:8px;padding:14px;font-size:12px;color:var(--text2);line-height:1.8;max-height:220px;overflow-y:auto;white-space:pre-wrap;font-family:'Courier New',monospace">이력서와 채용공고를 입력하면 프롬프트가 여기에 표시돼요.</div>
+      </div>
+    </div>
+
+    <!-- ★ JD ANALYSIS ───────────────────────────────── -->
+    <div class="page" id="page-jdanalysis">
+      <div class="sec-hd" style="margin-bottom:18px">
+        <div><div class="sec-title">🔍 채용공고 핵심 분석</div><div class="sec-sub">JD를 붙여넣으면 핵심 정보를 바로 추출합니다</div></div>
+      </div>
+      <div class="card" style="margin-bottom:18px">
+        <h3>채용공고 붙여넣기</h3>
+        <div class="sub">JD 전문을 붙여넣으면 비자·언어·원격·스킬을 자동 분석합니다</div>
+        <textarea id="jdAnalIn" rows="7" placeholder="채용공고 내용 전체를 여기에..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:11px">
+          <button class="btn btn-primary" id="jdBtn" onclick="analyzeJD()">🔍 즉시 분석</button>
+          <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 Claude로 상세 분석</button>
+        </div>
+      </div>
+      <div id="jdResult" style="display:none">
+        <div class="two-col">
+          <div class="card" id="jdInfoCard"></div>
+          <div class="card" id="jdSkillCard"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ★ TRENDS ──────────────────────────────────────── -->
+<div class="page" id="page-trends">
+  <div class="sec-hd" style="margin-bottom:8px">
+    <div><div class="sec-title">📊 마켓 인사이트: 글로벌 채용 동향</div><br><div class="sec-sub">Adzuna API 기반의 국가별 구인 데이터 맵핑.</div></div>
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:20px">편향 없는 전 직군 공고 데이터를 바탕으로 실제 시장의 흐름을 한눈에 파악합니다.</div>
+
+  <div class="stats4" id="trend-stats" style="margin-bottom:24px"></div>
+
+  <div class="card" style="margin-bottom:18px">
+    <h3 style="margin-bottom:12px">🌍 국가 선택</h3>
+    <div class="country-tabs" id="trend-country-tabs" style="margin-bottom:20px"></div>
+    <h3 style="margin-bottom:12px">💼 직종별 수요 TOP 10</h3>
+    <div style="position:relative;width:100%;height:400px"><canvas id="chartCountry"></canvas></div>
+    <div id="trendJobList" style="margin-top:16px"></div>
+  </div>
+</div>
+
+    <!-- ★ TIPS ──────────────────────────────────────── -->
+    <div class="page" id="page-tips">
+      <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">💡 해외취업 꿀팁</div></div>
+      <div class="blog-banner">
+        <div class="blog-icon">✍️</div>
+        <div class="blog-text"><h4>더 많은 꿀팁은 블로그에서</h4><p>실제 유럽 취업 경험자의 생생한 이야기</p></div>
+        <a href="https://blog.naver.com/sunnnymind/" target="_blank" class="blog-link">블로그 가기 →</a>
+      </div>
+      <div class="tips-grid">
+        <div class="tip-card" onclick="window.open('https://blog.naver.com/sunnnymind/222975331445','_blank')" style="cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+  <div class="tip-icon">🔍</div><div class="tip-cat">구직 사이트</div><div class="tip-title">해외취업 구직사이트 총정리</div><div class="tip-desc">현직자가 유럽취업을 위해 실제 이용한 구직 사이트 추천. 원격근무 포함 — 좋아요 최다!</div>
+  <div style="margin-top:10px;font-size:11px;color:var(--accent)">블로그에서 읽기 →</div>
+</div>
+        <div class="tip-card" onclick="window.open('https://blog.naver.com/sunnnymind/223931245668','_blank')" style="cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+  <div class="tip-icon">🇪🇺</div>
+  <div class="tip-cat">비자</div>
+  <div class="tip-title">25년 유럽 디지털 노마드 비자 완벽 비교</div>
+  <div class="tip-desc">스페인, 독일, 이탈리아 등 7개국 비자 조건 총정리. 어느 나라가 나에게 맞는지 한눈에!</div>
+  <div style="margin-top:10px;font-size:11px;color:var(--accent)">블로그에서 읽기 →</div>
+</div>
+        <div class="tip-card" onclick="window.open('https://blog.naver.com/sunnnymind/223038176873','_blank')" style="cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+  <div class="tip-icon">🗣️</div>
+  <div class="tip-cat">인터뷰</div>
+  <div class="tip-title">1차 면접 100% 합격 비결</div>
+  <div class="tip-desc">실제 유럽 취업 면접에서 합격한 준비 팁. Do you have any questions?에 대응하는 방법 공개.</div>
+  <div style="margin-top:10px;font-size:11px;color:var(--accent)">블로그에서 읽기 →</div>
+</div>
+        <div class="tip-card"><div class="tip-icon">💰</div><div class="tip-cat">급여</div><div class="tip-title">유럽 직무별 연봉 가이드</div><div class="tip-desc">세금 전·후 급여 계산, 생활비 대비 실수령액, 협상 팁까지. 나라별 평균 연봉.</div></div>
+        <div class="tip-card"><div class="tip-icon">🤝</div><div class="tip-cat">네트워킹</div><div class="tip-title">LinkedIn 유럽 채용자 공략법</div><div class="tip-desc">유럽 HR에게 어필하는 프로필 최적화, 콜드 메시지 템플릿, 연결 요청 전략.</div></div>
+        <div class="tip-card"><div class="tip-icon">🏠</div><div class="tip-cat">이민/정착</div><div class="tip-title">첫 출국 전 체크리스트</div><div class="tip-desc">집 구하기, 은행 계좌 개설, 건강보험, NIE/BSN 번호 발급까지 정착 필수 정보.</div></div>
+      </div>
+    </div>
+
+    <!-- ★ VISA ──────────────────────────────────────── -->
+    <div class="page" id="page-visa">
+      <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">🛂 비자 가이드</div></div>
+      <div style="background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.15);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.8">
+  ⚠️ 아래 정보는 <strong style="color:var(--text)">2026년 3월 기준 참고용</strong>입니다. 비자 요건은 수시로 변경되므로 실제 신청 전 반드시 <strong style="color:var(--text)">각국 대사관 또는 이민청</strong>에서 최신 정보를 확인하세요.
+</div>
+      <div class="country-tabs" id="visaTabs">
+        <div class="ctab active" onclick="selectVisa(this,'ES')">🇪🇸 스페인</div>
+        <div class="ctab" onclick="selectVisa(this,'GB')">🇬🇧 영국</div>
+        <div class="ctab" onclick="selectVisa(this,'DE')">🇩🇪 독일</div>
+        <div class="ctab" onclick="selectVisa(this,'NL')">🇳🇱 네덜란드</div>
+        <div class="ctab" onclick="selectVisa(this,'FR')">🇫🇷 프랑스</div>
+        <div class="ctab" onclick="selectVisa(this,'PT')">🇵🇹 포르투갈</div>
+        <div class="ctab" onclick="selectVisa(this,'CH')">🇨🇭 스위스</div>
+        <div class="ctab" onclick="selectVisa(this,'IE')">🇮🇪 아일랜드</div>
+      </div>
+      <div class="two-col">
+        <div class="card" id="visaMain"></div>
+        <div class="card" id="visaDocs"></div>
+      </div>
+    <div class="card" id="visaWH" style="margin-top:14px"></div>
+      </div>
+
+
+   <!-- ★ COFFEE CHAT ──────────────────────────────────── -->
+    <div class="page" id="page-chat">
+  <div class="sec-hd" style="margin-bottom:24px">
+    <div>
+      <div class="sec-title">☕ 1:1 커피챗</div>
+      <div class="sec-sub">유럽 취업 경험자와 30분 솔직한 대화</div>
+    </div>
+  </div>
+
+  <!-- 소개 카드 -->
+  <div class="card" style="margin-bottom:16px;border:1px solid rgba(62,207,160,.25);background:rgba(62,207,160,.05)">
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <div style="font-size:40px">🗺️</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text1);margin-bottom:6px">스페인 현지 취업 경험자와 직접 대화하세요</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8">
+          유럽 취업, 막막할 때 가장 빠른 방법은 이미 그 길을 걸어본 사람과 얘기하는 거에요.<br>
+          캐나다, 아르헨티나, 스페인까지 1n차 해외생활 중이자 현재 원격으로 데이터 직군에서 일하고 있는 저와 30분 동안 커피챗은 어떠세요?
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이런 분께 -->
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="margin-bottom:14px">🙋 이런 분께 추천해요</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> 유럽 취업을 꿈꾸지만 어디서 시작해야 할지 모르겠는 분</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> CV, 커버레터, 인터뷰 준비를 현실적으로 점검받고 싶은 분</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> 비자, 정착, 생활비 등 현지 정보가 궁금한 분</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)"><span style="color:var(--accent3)">✅</span> 스페인 or 유럽 특정 국가로의 이직을 고민 중인 분</div>
+    </div>
+  </div>
+
+  <!-- 진행 방식 -->
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="margin-bottom:14px">📋 진행 방식</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">1</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">신청서 작성</div><div style="font-size:12px;color:var(--text2)">아래 버튼으로 구글폼 작성 — 현재 상황과 궁금한 점을 적어주세요</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">2</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">일정 예약</div><div style="font-size:12px;color:var(--text2)">Calendly를 통해 원하는 날짜와 시간을 선택하세요</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">3</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">결제</div><div style="font-size:12px;color:var(--text2)">무통장 입금 또는 카카오페이로 결제</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">4</div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px">30분 커피챗 ☕</div><div style="font-size:12px;color:var(--text2)">Zoom 또는 Google Meet으로 진행</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA 버튼 -->
+  <div style="text-align:center;padding:10px 0 20px">
+    <button class="btn btn-primary" style="font-size:15px;padding:14px 40px;border-radius:12px" onclick="window.open('https://forms.gle/AykWCQy4Vr3wtfhr9','_blank')">
+      ☕ 커피챗 신청하기
+    </button>
+    <div style="margin-top:10px;font-size:12px;color:var(--text3)">구글폼 작성 → Calendly 일정 선택 → 결제 순서로 진행됩니다</div>
+  </div>
+</div>
+
+    
+    <!-- ★ SETTINGS ──────────────────────────────────── -->
+    <div class="page" id="page-settings">
+      <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title">⚙️ API 설정</div></div>
+      <div class="card" style="margin-bottom:14px">
+        <h3>🔌 API 연동 상태</h3><div class="sub">Vercel 서버에서 자동으로 채용공고를 수집합니다</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg3);border-radius:8px">
+            <span style="color:var(--accent3)">●</span>
+            <span>JSearch API — <code style="color:var(--accent3)">api/jobs.js</code> 서버리스 함수</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg3);border-radius:8px">
+            <span style="color:var(--accent3)">●</span>
+            <span>자동 수집 — 매일 한국시간 오전 9시 (<code style="color:var(--accent3)">api/cron.js</code>)</span>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="startJSearch(true)">🔄 지금 새로고침</button>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <h3>🔍 수집 검색어 목록</h3><div class="sub">원하는 직무/국가 조합으로 수정하세요</div>
+        <textarea id="queryEditor" rows="12" style="font-family:'Courier New',monospace;font-size:12px">[
+  {"q":"Marketing Manager jobs in Spain"},
+  {"q":"Digital Marketing jobs in Spain"},
+  {"q":"Data Analyst jobs in Spain"},
+  {"q":"Data Scientist jobs in United Kingdom"},
+  {"q":"Digital Marketing jobs in UK"},
+  {"q":"Data Engineer jobs in Germany"},
+  {"q":"HR Manager jobs in Netherlands"},
+  {"q":"Talent Acquisition jobs in Netherlands"},
+  {"q":"Software Engineer jobs in Netherlands"},
+  {"q":"Backend Developer jobs in Germany"}
+]</textarea>
+      </div>
+      <div class="card">
+        <h3>📋 실행 로그</h3>
+        <div class="log-box" id="logBox"><span style="color:var(--text3)">로그가 여기에 표시됩니다...</span></div>
+      </div>
+    </div>
+
+    <!-- ★ SKILL MAP ──────────────────────────────────────── -->
+<div class="page" id="page-skillmap">
+  <div class="sec-hd" style="margin-bottom:8px">
+    <div><div class="sec-title">🎯 직종별 스킬맵</div><div class="sec-sub">유럽 취업 시장 스킬 분석 — 업계 기준 + 수집 공고 혼합</div></div>
+  </div>
+
+  <!-- 데이터 출처 배지 -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+    <div id="skillmap-datasource-badge" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(62,207,160,.1);border:1px solid rgba(62,207,160,.25);color:#3ecfa0">
+      ● 업계 기준 데이터
+    </div>
+    <div id="skillmap-jobcount-badge" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);color:#4f8ef7">
+      + 수집 공고 0개 반영
+    </div>
+    <div style="font-size:11px;color:var(--text3)">💡 공고가 많을수록 실제 데이터 비중 ↑</div>
+  </div>
+
+  <div class="filter-row" id="skillmap-tabs" style="margin-bottom:16px"></div>
+  <div class="stats4" id="skillmap-stats" style="margin-bottom:20px"></div>
+
+  <!-- 유럽 시장 인사이트 배너 -->
+  <div id="skillmap-insight-banner" style="margin-bottom:20px;padding:16px 20px;background:linear-gradient(135deg,rgba(79,142,247,.07),rgba(124,106,240,.07));border:1px solid rgba(79,142,247,.18);border-radius:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">📊 2024-25 유럽 채용 시장 인사이트</div>
+    <div id="skillmap-insight-list" style="display:flex;flex-direction:column;gap:7px"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card" style="min-height:380px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h3>🎯 스킬 레이더</h3>
+        <div id="radar-mode-badge" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(62,207,160,.12);color:#3ecfa0;border:1px solid rgba(62,207,160,.25)">혼합 모드</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px" id="radar-sub">업계 평균 기준값 + 수집 공고 보정</div>
+      <div style="position:relative;width:100%;height:300px"><canvas id="chartSkillRadar"></canvas></div>
+    </div>
+    <div class="card" style="min-height:380px">
+      <h3 style="margin-bottom:14px">🗺️ 국가별 공고 분포</h3>
+      <div id="skillMapBubble" style="width:100%;height:300px;position:relative"></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card" style="min-height:280px">
+      <h3 style="margin-bottom:14px">🏠 근무 형태</h3>
+      <div style="position:relative;width:100%;height:220px"><canvas id="chartSkillRemote"></canvas></div>
+    </div>
+    <div class="card" style="min-height:280px">
+      <h3 style="margin-bottom:14px">📊 경력 레벨</h3>
+      <div style="position:relative;width:100%;height:220px"><canvas id="chartSkillLevel"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 스킬 Top 10 보라 리스트 -->
+  <div class="card" style="margin-bottom:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3>🏆 직종별 필수 스킬 Top 10</h3>
+      <div style="font-size:11px;color:var(--text3)" id="skill-list-sub">클릭하면 관련 공고를 볼 수 있어요</div>
+    </div>
+    <div id="skill-top-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+  </div>
+
+  <div class="card" style="min-height:300px">
+    <h3 style="margin-bottom:4px">🔥 스킬 트렌드 워드클라우드</h3>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px">스킬을 클릭하면 상세 정보를 볼 수 있어요</div>
+    <div id="skillWordCloudContainer" style="width:100%; height:300px; position:relative;">
+      <canvas id="skillWordCloud" style="width:100%; height:100%;"></canvas>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+
+<!-- 스킬 상세 팝업 드로어 -->
+<div id="skillDrawerOv" onclick="closeSkillDrawer(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:flex-end;justify-content:center;">
+  <div id="skillDrawer" style="background:var(--bg2);border:1px solid var(--border2);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:80vh;overflow-y:auto;padding:24px 28px 32px;transform:translateY(100%);transition:transform .3s cubic-bezier(.22,1,.36,1)">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px;"></div>
+    <div id="skillDrawerContent"></div>
+  </div>
+</div>
+    
+
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- 모바일 하단 네비 -->
+<div class="bottom-nav">
+  <button class="bn-item active" onclick="nav('home',null);setBottomNav(this)"><span class="bn-icon">🏠</span>홈</button>
+  <button class="bn-item" onclick="nav('jobs',null);setBottomNav(this)"><span class="bn-icon">💼</span>채용공고</button>
+  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장</button>
+  <button class="bn-item" onclick="nav('ai',null);setBottomNav(this)"><span class="bn-icon">🤖</span>AI매칭</button>
+  <button class="bn-item" onclick="nav('trends',null);setBottomNav(this)"><span class="bn-icon">📊</span>트렌드</button>
+  <button class="bn-item" onclick="nav('tips',null);setBottomNav(this)"><span class="bn-icon">💡</span>꿀팁</button>
+  <button class="bn-item" onclick="nav('chat',null);setBottomNav(this)"><span class="bn-icon">☕</span>커피챗</button>
+</div>
+  
+</div><!-- /shell -->
+
+<script>
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let allJobs = [];
+let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
+let activeFilters = new Set();
+let logs = [];
+// Vercel API URL — 배포 후 자동으로 같은 도메인에서 호출됨
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'  // 로컬 테스트용
+  : '';                       // Vercel: 같은 도메인 /api/jobs
+
+// ════════════════════════════════════════
+//  NAV
+// ════════════════════════════════════════
+function nav(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (id==='coverletter') syncResumeToCL();
+  if (id==='ai') updatePromptPreview();
+  if (id==='trends') renderTrends();
+  if (id==='skillmap') renderSkillMap();
+}
+
+
+// ════════════════════════════════════════
+//  STATUS / LOG
+// ════════════════════════════════════════
+function setStatus(type, msg, pct) {
+  const bar = document.getElementById('statusBar');
+  if (type==='loading') {
+    bar.innerHTML = `<div class="spinner"></div><span style="font-size:12px;color:var(--warn)">${msg}</span><div class="prog-bar"><div class="prog-fill" style="width:${Math.round((pct||0)*100)}%"></div></div>`;
+  } else {
+    const col = type==='done'?'var(--accent3)':type==='error'?'var(--red)':'var(--text3)';
+    bar.innerHTML = `<span style="font-size:12px;color:${col}">${msg}</span>`;
+  }
+}
+function addLog(type, msg) {
+  logs.push({type, msg, t: new Date().toLocaleTimeString('ko-KR')});
+  const box = document.getElementById('logBox');
+  if (!box) return;
+  const cm = {ok:'var(--accent3)',err:'var(--red)',info:'var(--accent)',warn:'var(--warn)'};
+  box.innerHTML = logs.slice(-60).map(l=>`<div><span style="color:var(--text3)">[${l.t}]</span> <span style="color:${cm[l.type]||'var(--text2)'}">${l.msg}</span></div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+// ════════════════════════════════════════
+//  JSEARCH API
+// ════════════════════════════════════════
+async function startJSearch(force = false) {
+  if (!force) {
+    const cached = localStorage.getItem('ej_jobs_cache');
+    if (cached) {
+      try {
+        const { jobs, fetchedAt, cachedAt } = JSON.parse(cached);
+        const cacheAge = (Date.now() - new Date(cachedAt)) / 3600000;
+        if (cacheAge < 12) {
+          allJobs = jobs;
+          updateAll();
+          const t = new Date(fetchedAt).toLocaleString('ko-KR', { timeZone: 'Europe/Madrid' });
+          document.getElementById('fetchedAt').textContent = `수집: ${t}`;
+          document.getElementById('lastUpdated').textContent = t;
+          setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+          return;
+        }
+      } catch(e) {}
+    }
+  }
+  setStatus('loading', '채용공고 불러오는 중...', 0);
+  addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
+  try {
+    const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allJobs = data.jobs || [];
+    allJobs = removeDups(allJobs);
+    localStorage.setItem('ej_jobs_cache', JSON.stringify({
+      jobs: allJobs,
+      fetchedAt: data.fetchedAt || new Date().toISOString(),
+      cachedAt: new Date().toISOString()
+    }));
+    updateAll();
+    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR', { timeZone: 'Europe/Madrid' }) : '';
+    document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
+    document.getElementById('lastUpdated').textContent = fetchedAt;
+    setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+    try { addLog('ok', `완료: ${allJobs.length}개`); } catch(e) {}
+  } catch(e) {
+    setStatus('error', `❌ 로드 실패: ${e.message}`);
+    try { addLog('err', e.message); } catch(e) {}
+  }
+}
+
+async function fetchAdzunaJobs(force = false) {
+  try {
+    const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allJobs = data.jobs || [];
+    allJobs = removeDups(allJobs);
+    localStorage.setItem('ej_jobs_cache', JSON.stringify({
+      jobs: allJobs,
+      fetchedAt: data.fetchedAt || new Date().toISOString(),
+      cachedAt: new Date().toISOString()  
+}));
+    updateAll();
+    const fetchedAt = data.fetchedAt ? new Date(data.fetchedAt).toLocaleString('ko-KR') : '';
+    document.getElementById('fetchedAt').textContent = fetchedAt ? `수집: ${fetchedAt}` : '';
+    document.getElementById('lastUpdated').textContent = fetchedAt;
+    setStatus('done', `✅ ${allJobs.length}개 유럽 채용공고 로드 완료`);
+    try { addLog('ok', `완료: ${allJobs.length}개`); } catch(e) {}
+  } catch(e) {
+    setStatus('error', `❌ 로드 실패: ${e.message}`);
+    try { addLog('err', e.message); } catch(e) {}
+  }
+}
+
+
+
+
+// ════════════════════════════════════════
+//  NORMALIZE JSEARCH
+// ════════════════════════════════════════
+function normalizeJSearch(r) {
+  const desc = r.job_description || '';
+  const loc = `${r.job_city||''}, ${r.job_country||''}`.replace(/^,\s*/,'');
+  const salary = buildSalary(r);
+  return {
+    id:           r.job_id || rand(),
+    title:        r.job_title || '',
+    company:      r.employer_name || '',
+    location:     loc,
+    country:      detectCountry(loc + ' ' + (r.job_country||'')),
+    flag:         countryFlag(detectCountry(loc + ' ' + (r.job_country||''))),
+    logo:         companyEmoji(r.employer_name||''),
+    description:  desc,
+    url:          r.job_apply_link || r.job_url || '#',
+    salary:       salary,
+    postedAt:     r.job_posted_at_datetime_utc || new Date().toISOString(),
+    source:       r.job_publisher || 'JSearch',
+    skills:       (r.job_required_skills || []).slice(0,6),
+    visaSponsored: false,
+    relocation:   detectRelocation(desc),
+    remoteType:   r.job_is_remote ? 'Remote' : detectRemote(desc),
+    languageReqs: detectLangs(desc),
+  };
+}
+
+function buildSalary(r) {
+  if (r.job_min_salary && r.job_max_salary) {
+    const cur = r.job_salary_currency || '€';
+    const period = r.job_salary_period === 'YEAR' ? '/yr' : r.job_salary_period === 'MONTH' ? '/mo' : '';
+    return `${cur}${Math.round(r.job_min_salary).toLocaleString()}–${Math.round(r.job_max_salary).toLocaleString()}${period}`;
+  }
+  return null;
+}
+
+// ════════════════════════════════════════
+//  SAMPLE DATA
+// ════════════════════════════════════════
+function loadSample() {
+  const now = new Date().toISOString();
+  const d1 = new Date(Date.now()-86400000).toISOString();
+  const d2 = new Date(Date.now()-172800000).toISOString();
+  allJobs = [
+    {id:'s1',title:'Digital Marketing Manager',company:'Glovo',location:'Barcelona, Spain',country:'ES',flag:'🇪🇸',logo:'🛵',description:'We are looking for a Digital Marketing Manager to lead our performance marketing team.\n\nRequirements:\n- 4+ years digital marketing experience\n- Google Ads, Meta Ads, GA4\n- English required (Spanish a plus)\n- Visa sponsorship for non-EU candidates\n- Hybrid work, Barcelona\nSalary: €50,000–65,000/year',url:'#',salary:'€50,000–65,000/yr',postedAt:now,source:'LinkedIn',visaSponsored:true,remoteType:'Hybrid',languageReqs:['English','Spanish'],skills:['Google Ads','Meta Ads','GA4','SEO','Tableau']},
+    {id:'s2',title:'Data Scientist',company:'Deliveroo',location:'London, United Kingdom',country:'GB',flag:'🇬🇧',logo:'🦘',description:'Join our Data Science team in London.\n\n- ML models, Python, SQL, A/B testing\n- Skilled Worker Visa sponsorship provided\n- Full remote option available\nSalary: £65,000–85,000',url:'#',salary:'£65,000–85,000/yr',postedAt:now,source:'Indeed',visaSponsored:true,remoteType:'Remote',languageReqs:['English'],skills:['Python','ML','SQL','scikit-learn']},
+    {id:'s3',title:'Talent Acquisition Specialist',company:'ASML',location:'Eindhoven, Netherlands',country:'NL',flag:'🇳🇱',logo:'🔬',description:'ASML is the world\'s leading semiconductor company.\n\n- Full-cycle recruitment\n- ATS: Workday, Greenhouse\n- English working language\n- Relocation support & work permit assistance\nSalary: €50,000–65,000/yr',url:'#',salary:'€50,000–65,000/yr',postedAt:d1,source:'Glassdoor',visaSponsored:true,remoteType:'On-site',languageReqs:['English'],skills:['ATS','Workday','Recruitment']},
+    {id:'s4',title:'Data Engineer',company:'Siemens',location:'Munich, Germany',country:'DE',flag:'🇩🇪',logo:'⚡',description:'Build data pipelines for manufacturing analytics.\n\n- dbt, Airflow, Spark, Python, SQL\n- English required, German a plus\n- EU Blue Card sponsorship available\nSalary: €60,000–80,000/yr',url:'#',salary:'€60,000–80,000/yr',postedAt:d1,source:'LinkedIn',visaSponsored:true,remoteType:'Hybrid',languageReqs:['English','German'],skills:['dbt','Airflow','Spark','Python','SQL']},
+    {id:'s5',title:'HR Manager',company:'Cabify',location:'Madrid, Spain',country:'ES',flag:'🇪🇸',logo:'🚗',description:'HR Manager for our People operations in Spain.\n\n- Spanish labor law knowledge required\n- HRIS experience\n- Fluent Spanish and English\n- No visa sponsorship\nSalary: €38,000–48,000/yr',url:'#',salary:'€38,000–48,000/yr',postedAt:d2,source:'Glassdoor',visaSponsored:false,remoteType:'Hybrid',languageReqs:['Spanish','English'],skills:['HRIS','Labor Law']},
+    {id:'s6',title:'Marketing Analytics Lead',company:'Booking.com',location:'Amsterdam, Netherlands',country:'NL',flag:'🇳🇱',logo:'🏨',description:'Lead campaign performance analytics.\n\n- SQL, Python, Looker, A/B testing\n- Full relocation support & work permit\n- Fully remote available\nSalary: €55,000–75,000/yr',url:'#',salary:'€55,000–75,000/yr',postedAt:now,source:'LinkedIn',visaSponsored:true,remoteType:'Remote',languageReqs:['English'],skills:['SQL','Python','Looker','A/B Testing']},
+    {id:'s7',title:'Software Engineer (Backend)',company:'Wise',location:'London, United Kingdom',country:'GB',flag:'🇬🇧',logo:'💸',description:'Build financial infrastructure.\n\n- Python, Java, Kubernetes\n- Skilled Worker Visa sponsorship\n- Hybrid: 2 days in office\nSalary: £70,000–95,000/yr',url:'#',salary:'£70,000–95,000/yr',postedAt:d2,source:'LinkedIn',visaSponsored:true,remoteType:'Hybrid',languageReqs:['English'],skills:['Python','Java','Kubernetes']},
+    {id:'s8',title:'Digital Marketing Specialist',company:'Typeform',location:'Barcelona, Spain',country:'ES',flag:'🇪🇸',logo:'📝',description:'Join Typeform\'s growth marketing team.\n\n- SEO/SEM, paid campaigns\n- English primary, Spanish a plus\n- Visa support available\nSalary: €35,000–50,000/yr',url:'#',salary:'€35,000–50,000/yr',postedAt:now,source:'Indeed',visaSponsored:true,remoteType:'Hybrid',languageReqs:['English'],skills:['SEO','SEM','Google Ads']},
+  ];
+  updateAll();
+  setStatus('done', '✅ 샘플 데이터 8개 로드! JSearch API Key로 실제 공고를 수집해보세요.');
+  document.getElementById('lastUpdated').textContent = '샘플';
+}
+
+// ════════════════════════════════════════
+//  NORMALIZE HELPERS
+// ════════════════════════════════════════
+function detectCountry(l) {
+  l = l.toLowerCase();
+  if (/spain|madrid|barcelona|seville|valencia|es$/.test(l)) return 'ES';
+  if (/uk|united kingdom|london|manchester|england/.test(l)) return 'GB';
+  if (/germany|berlin|munich|hamburg|deutschland|de$/.test(l)) return 'DE';
+  if (/netherlands|amsterdam|eindhoven|rotterdam|nl$/.test(l)) return 'NL';
+  if (/france|paris|fr$/.test(l)) return 'FR';
+  if (/portugal|lisbon|porto|pt$/.test(l)) return 'PT';
+  return 'EU';
+}
+function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱'}[c]||'🌍';}
+function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드'}[c]||c;}
+function detectRelocation(d){return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);}
+function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
+const COUNTRY_LANG = {
+  GB:'English', IE:'English', DE:'German', AT:'German', CH:'German',
+  NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
+  PT:'Portuguese', PL:'Polish',
+};
+function detectWritingLang(d) {
+  // 프랑스어 특징 단어
+  if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) && 
+      (d.match(/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour)\b/gi)||[]).length > 3) return 'French';
+  // 독일어 특징 단어  
+  if (/\b(und|die|der|das|ist|wir|Sie|mit|für|auf|von|als|bei|zur)\b/g.test(d) &&
+      (d.match(/\b(und|die|der|das|ist|wir|Sie|mit|für)\b/g)||[]).length > 3) return 'German';
+  // 스페인어 특징 단어
+  if (/\b(nuestro|nuestros|para|con|los|las|del|una|que|como|más|por)\b/gi.test(d) &&
+      (d.match(/\b(nuestro|para|con|los|las|del|que|como)\b/gi)||[]).length > 3) return 'Spanish';
+  // 이탈리아어 특징 단어
+  if (/\b(della|delle|degli|questo|nostro|siamo|lavoro|azienda|team)\b/gi.test(d) &&
+      (d.match(/\b(della|delle|nostro|siamo|lavoro|azienda)\b/gi)||[]).length > 2) return 'Italian';
+  // 네덜란드어 특징 단어
+  if (/\b(wij|ons|onze|voor|met|een|van|het|zijn|wordt)\b/g.test(d) &&
+      (d.match(/\b(wij|ons|onze|voor|met|een|van)\b/g)||[]).length > 3) return 'Dutch';
+  // 기본값 영어
+  return 'English';
+}
+
+function detectLangs(d, countryCode) {
+  const writingLang = detectWritingLang(d);
+  const l = [writingLang];
+  // 추가 언어 명시된 경우
+  if (writingLang !== 'English' && /english.*(required|must|essential|fluent)|fluent.*english|strong.*english/i.test(d)) l.push('English');
+  if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
+  if (/korean|한국어/i.test(d)) l.push('Korean');
+  return l;
+}
+function companyEmoji(n){const e=['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];return e[n.charCodeAt(0)%e.length]||'🏢';}
+function removeDups(jobs){const seen=new Set();return jobs.filter(j=>{const k=`${j.title}__${j.company}`.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});}
+function rand(){return Math.random().toString(36).slice(2,10);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function relDate(iso){const h=Math.floor((Date.now()-new Date(iso))/3600000);if(h<1)return'방금 전';if(h<24)return`${h}시간 전`;return`${Math.floor(h/24)}일 전`;}
+
+// ════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════
+function updateAll() {
+  updateHomeStats();
+  filterJobs();
+  renderSaved();
+  document.getElementById('nb-jobs').textContent = allJobs.length;
+  document.getElementById('nb-saved').textContent = savedIds.size;
+}
+
+function updateHomeStats() {
+  document.getElementById('hs-total').textContent = allJobs.length;
+  document.getElementById('hs-visa').textContent = allJobs.filter(j=>j.relocation).length;
+  document.getElementById('hs-remote').textContent = allJobs.filter(j=>j.remoteType!=='On-site').length;
+  document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
+  const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,5);
+  document.getElementById('homeGrid').innerHTML = featured.length
+    ? featured.map(j=>buildCard(j,true)).join('')
+    : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💼</div><div class="empty-title">공고를 수집하거나 샘플 데이터를 불러오세요</div></div>';
+}
+
+function filterJobs() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortBy').value;
+  const selectedCountries = [...activeFilters]
+    .filter(f => f.startsWith('country:'))
+    .map(f => f.split(':')[1]);
+  let jobs = allJobs.filter(j=>{
+    if (q && !`${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase().includes(q)) return false;
+    // 국가 OR 조건
+    if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
+    // 나머지 AND 조건
+    for (const f of activeFilters) {
+      const [k,v] = f.split(':');
+      if (k==='country') continue;
+      if (k==='relocation' && !j.relocation) return false;
+      if (k==='remote' && j.remoteType!==v) return false;
+      if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
+    }
+    return true;
+  });
+  if (sort==='relocation') jobs.sort((a,b)=>(b.relocation||false)-(a.relocation||false));
+  else if (sort==='remote') jobs.sort((a,b)=>(a.remoteType==='Remote'?0:a.remoteType==='Hybrid'?1:2)-(b.remoteType==='Remote'?0:b.remoteType==='Hybrid'?1:2));
+  else jobs.sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt));
+
+  // 필터 해제 버튼 표시/숨김
+  const hasActiveFilter = activeFilters.size > 0 || q.length > 0;
+  const clearBtn = document.getElementById('clearFiltersBtn');
+  if (clearBtn) clearBtn.style.display = hasActiveFilter ? 'flex' : 'none';
+
+  document.getElementById('jobs-sub').textContent = `유럽 전역 ${jobs.length}개 포지션`;
+  document.getElementById('jobGrid').innerHTML = jobs.length
+    ? jobs.map(j=>buildCard(j,false)).join('')
+    : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">조건에 맞는 공고가 없어요</div></div>';
+}
+
+function renderSaved() {
+  const savedJobs = allJobs.filter(j => savedIds.has(j.id));
+  const sub = document.getElementById('saved-sub');
+  if (sub) sub.textContent = `${savedJobs.length}개 저장됨`;
+  document.getElementById('savedGrid').innerHTML = savedJobs.length
+    ? savedJobs.map(j => buildCard(j, false)).join('')
+    : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔖</div><div class="empty-title">저장한 공고가 없어요</div><div class="empty-text">공고 카드의 ♡ 버튼으로 저장하세요.</div></div>';
+}
+
+function buildCard(j, showFeat) {
+  const saved = savedIds.has(j.id);
+  const remIcon = j.remoteType==='Remote'?'🏠':j.remoteType==='Hybrid'?'🏗️':'🏢';
+  const isNew = (Date.now()-new Date(j.postedAt))<48*3600000;
+  const skills = (j.skills||[]).slice(0,4);
+  return `
+  <div class="job-card${showFeat&&j.visaSponsored?' featured':''}" onclick="openDrawer('${j.id}')">
+    ${showFeat&&j.visaSponsored?'<div class="feat-tag" style="background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.28)">추천</div>':''}
+    ${isNew?`<div class="feat-tag" style="background:rgba(62,207,160,.12);color:var(--accent3);border:1px solid rgba(62,207,160,.28);top:14px;right:${showFeat&&j.visaSponsored?'60px':'14px'}">NEW</div>`:''}
+    <div class="jc-top">
+      <div class="co-logo">${j.logo}</div>
+      <div style="flex:1;min-width:0">
+        <div class="jc-title">${j.title}</div>
+        <div class="jc-company">${j.company} · ${j.flag} ${j.location.split(',')[0]}</div>
+      </div>
+      <button class="save-btn${saved?' saved':''}" onclick="event.stopPropagation();toggleSave('${j.id}',this)">${saved?'♥':'♡'}</button>
+    </div>
+    <div class="jc-meta">
+      <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
+      <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
+      ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
+      ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
+      <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
+      
+    </div>
+    ${skills.length?`<div class="jc-skills">${skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>`:''}
+    <div class="jc-foot">
+      ${j.salary?`<span class="jc-salary">${j.salary}</span>`:'<span style="font-size:11px;color:var(--text3)">급여 미공개</span>'}
+      <span class="jc-date">${relDate(j.postedAt)}</span>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════
+//  DRAWER
+// ════════════════════════════════════════
+function openDrawer(id) {
+  const j = allJobs.find(x=>x.id===id); if (!j) return;
+  const remIcon = j.remoteType==='Remote'?'🏠':j.remoteType==='Hybrid'?'🏗️':'🏢';
+  document.getElementById('drawerContent').innerHTML = `
+    <div style="font-size:28px;margin-bottom:2px">${j.logo}</div>
+    <h2>${j.title}</h2>
+    <div class="drawer-co">${j.company} · ${j.flag} ${j.location}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+      <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
+      <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
+      ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
+      ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
+      ${j.languageReqs.map(l=>`<span class="badge b-warn">🌐 ${l}</span>`).join('')}
+    </div>
+    ${j.salary?`<div class="drawer-section"><h4>급여</h4><div style="font-size:18px;font-weight:700;color:var(--accent3)">${j.salary}</div></div>`:''}
+    <div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc">${j.description||'상세 없음'}</div></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <a href="${j.url}" target="_blank" class="btn btn-primary btn-sm">지원하러 가기 →</a>
+      <button class="btn btn-ghost btn-sm" onclick="openClaudeWithJD('${j.id}','coverletter')">✍️ 커버레터 (Claude.ai)</button>
+      <button class="btn btn-ghost btn-sm" id="drawer-save-${j.id}" onclick="toggleSaveFromDrawer('${j.id}',this)" style="color:${savedIds.has(j.id)?'var(--warn)':'var(--text2)'}">${savedIds.has(j.id)?'♥ 저장됨':'♡ 저장하기'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="openClaudeWithJD('${j.id}','match')">🤖 적합도 분석</button>
+    </div>
+    <div style="margin-top:10px;padding:10px 12px;background:rgba(62,207,160,.06);border:1px solid rgba(62,207,160,.15);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
+      💡 버튼을 누르면 <strong style="color:var(--accent3)">claude.ai</strong>가 새 탭으로 열리고<br>프롬프트가 클립보드에 복사돼요. 거기서 붙여넣기(Ctrl+V)만 하면 끝!
+    </div>`;
+  document.getElementById('drawerOv').classList.add('show');
+}
+function closeDrawer(e) { if (!e||e.target===document.getElementById('drawerOv')) document.getElementById('drawerOv').classList.remove('show'); }
+
+// ════════════════════════════════════════
+//  CLAUDE.AI 연동 (무료 버전)
+// ════════════════════════════════════════
+function openClaudeWithJD(jobId, type) {
+  const j = allJobs.find(x=>x.id===jobId); if (!j) return;
+  const resume = localStorage.getItem('ej_resume') || '(이력서를 AI 매칭 페이지에서 입력해주세요)';
+  const prompt = type === 'match' ? buildMatchPrompt(resume, j.description) : buildCLPrompt(resume, j.description, 'ko', 'professional');
+  copyToClipboard(prompt);
+  window.open('https://claude.ai', '_blank');
+  closeDrawer();
+  showCopiedToast(type);
+}
+
+function openClaudeMatch() {
+  const resume = document.getElementById('resumeText').value.trim();
+  const jd = document.getElementById('aiJD').value.trim();
+  if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
+  const prompt = buildMatchPrompt(resume, jd);
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
+}
+
+function openClaudeCoverLetter() {
+  const resume = document.getElementById('resumeText').value.trim();
+  const jd = document.getElementById('aiJD').value.trim();
+  if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
+  const prompt = buildCLPrompt(resume, jd, 'en', 'professional');
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
+}
+
+function openClaudeCoverLetterFull() {
+  const resume = document.getElementById('clResume').value.trim();
+  const jd = document.getElementById('clJD').value.trim();
+  const lang = document.getElementById('clLang').value;
+  const tone = document.getElementById('clTone').value;
+  if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
+  const prompt = buildCLPrompt(resume, jd, lang, tone);
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
+}
+
+function buildMatchPrompt(resume, jd) {
+  return `아래 이력서와 채용공고를 분석해서 다음 내용을 알려줘:
+
+1. **적합도 점수** (0~100점) 와 등급 (최적합/적합/보통/미흡)
+2. **매칭되는 스킬/경험** (✅ 표시)
+3. **부족한 부분** (❌ 표시)
+4. **강점 요약** (2~3문장)
+5. **지원 전략** — 어떻게 어필하면 좋을지 구체적으로
+6. **비자/언어/원격 여부** 분석
+
+---
+
+## 내 이력서
+${resume}
+
+---
+
+## 채용공고
+${jd}`;
+}
+
+function buildCLPrompt(resume, jd, lang, tone) {
+  const toneMap = { professional:'전문적이고 격식 있는', friendly:'친근하고 따뜻한', confident:'자신감 있고 강한' };
+  const langInstr = lang === 'es'
+    ? `Escribe en español profesional. Esta carta de presentación será enviada a un reclutador europeo. Mantén los nombres propios en inglés.`
+    : `Write in professional English. This will be sent to a European recruiter.`;
+  return `${toneMap[tone]} 톤의 커버레터를 작성해줘.
+${langInstr}
+
+형식: 3~4 문단, 250~350단어
+- 1문단: 지원 동기 + 이 포지션에 대한 열의
+- 2문단: 핵심 경험 + JD 요구사항과 연결
+- 3문단: 이 회사/역할을 선택한 구체적 이유
+- 4문단: 마무리 + 인터뷰 요청
+
+---
+
+## 내 이력서
+${resume}
+
+---
+
+## 채용공고
+${jd}`;
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(()=>fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const el = document.createElement('textarea');
+  el.value = text; document.body.appendChild(el);
+  el.select(); document.execCommand('copy');
+  document.body.removeChild(el);
+}
+
+function showCopiedToast(type) {
+  const msg = type === 'match' ? '적합도 분석 프롬프트가 복사됐어요!' : '커버레터 프롬프트가 복사됐어요!';
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3ecfa0;color:#04342c;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+  toast.innerHTML = `✅ ${msg}<br><span style="font-size:11px;font-weight:400;opacity:.8">claude.ai에서 Ctrl+V로 붙여넣으세요</span>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
+// ════════════════════════════════════════
+//  AI PAGE — 프롬프트 미리보기
+// ════════════════════════════════════════
+function updatePromptPreview() {
+  const resume = document.getElementById('resumeText').value.trim() || '(이력서 입력 필요)';
+  const jd = document.getElementById('aiJD').value.trim() || '(채용공고 입력 필요)';
+  document.getElementById('promptPreview').textContent = buildMatchPrompt(resume, jd);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('resumeText').addEventListener('input', updatePromptPreview);
+  document.getElementById('aiJD').addEventListener('input', updatePromptPreview);
+  document.getElementById('clResume').addEventListener('input', () => {
+    document.getElementById('clPromptPreview').textContent = buildCLPrompt(
+      document.getElementById('clResume').value.trim()||'(이력서 입력 필요)',
+      document.getElementById('clJD').value.trim()||'(채용공고 입력 필요)',
+      document.getElementById('clLang')?.value || 'en',
+      document.getElementById('clTone').value
+    );
+  });
+  document.getElementById('clJD').addEventListener('input', () => document.getElementById('clResume').dispatchEvent(new Event('input')));
+  document.getElementById('clLang')?.addEventListener('change', () => document.getElementById('clResume').dispatchEvent(new Event('input')));
+  document.getElementById('clTone').addEventListener('change', () => document.getElementById('clResume').dispatchEvent(new Event('input')));
+});
+
+function copyPrompt(type) {
+  const text = type === 'match'
+    ? document.getElementById('promptPreview').textContent
+    : document.getElementById('clPromptPreview').textContent;
+  copyToClipboard(text);
+  showCopiedToast(type);
+}
+
+function saveResume() {
+  const r = document.getElementById('resumeText').value.trim();
+  if (!r) { alert('이력서를 입력해주세요.'); return; }
+  localStorage.setItem('ej_resume', r);
+  const s = document.getElementById('resumeSaveStatus');
+  s.textContent = '✅ 저장됨';
+  setTimeout(()=>s.textContent='', 2000);
+}
+
+function syncResumeToCL() {
+  const saved = localStorage.getItem('ej_resume');
+  const rv = document.getElementById('resumeText').value;
+  if (rv) document.getElementById('clResume').value = rv;
+  else if (saved) document.getElementById('clResume').value = saved;
+}
+
+function fillSampleResume() {
+  const s = `이름: 김민준 (Min-Jun Kim)
+경력: 5년 디지털 마케팅
+• 마케팅 매니저 @ 스타트업 (서울) 3년
+  - Google Ads, Meta Ads, SEO/SEM
+  - 월 $50k 예산 관리, ROAS 2.8x 달성
+• 마케팅 어시스턴트 @ 이커머스 2년
+
+기술: GA4, GTM, Tableau, Salesforce, HubSpot, SQL(기초), A/B Testing, SEO, SEM
+언어: 한국어(모국어), 영어(비즈니스·TOEIC 930), 스페인어(A2)
+학력: 경영학 학사 — 연세대 (2018)
+기타: 싱가포르 법인 파견 1년, B2C/B2B 마케팅 경험`;
+  document.getElementById('resumeText').value = s;
+  updatePromptPreview();
+}
+
+// ════════════════════════════════════════
+//  SAVE / FILTERS
+// ════════════════════════════════════════
+function toggleSave(id, btn) {
+  if (savedIds.has(id)) { savedIds.delete(id); btn.textContent='♡'; btn.classList.remove('saved'); }
+  else { savedIds.add(id); btn.textContent='♥'; btn.classList.add('saved'); }
+  localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
+  document.getElementById('nb-saved').textContent = savedIds.size;
+  renderSaved();
+}
+
+function toggleSaveFromDrawer(id, btn) {
+  if (savedIds.has(id)) {
+    savedIds.delete(id);
+    btn.textContent = "♡ 저장하기";
+    btn.style.color = "var(--text2)";
+  } else {
+    savedIds.add(id);
+    btn.textContent = "♥ 저장됨";
+    btn.style.color = "var(--warn)";
+  }
+  localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
+  document.getElementById("nb-saved").textContent = savedIds.size;
+  const cardBtn = document.querySelector(`.save-btn[onclick*="${id}"]`);
+  if (cardBtn) {
+    cardBtn.textContent = savedIds.has(id) ? "♥" : "♡";
+    savedIds.has(id) ? cardBtn.classList.add("saved") : cardBtn.classList.remove("saved");
+  }
+  renderSaved();
+}
+
+function setBottomNav(el) {
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}  
+  
+function toggleChip(chip) {
+  const f = chip.dataset.f;
+  if (!f) return;
+  const [k] = f.split(':');
+  if (chip.classList.contains('on')) {
+    chip.classList.remove('on','g','p');
+    activeFilters.delete(f);
+  } else {
+    const colorClass = k==='country' ? 'g' : k==='relocation' ? 'p' : '';
+    chip.classList.add('on');
+    if (colorClass) chip.classList.add(colorClass);
+    activeFilters.add(f);
+  }
+  filterJobs();
+}
+
+function clearAllFilters() {
+  activeFilters.clear();
+  document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on','g','p'));
+  document.getElementById('searchInput').value = '';
+  filterJobs();
+}
+
+function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+
+// ════════════════════════════════════════
+//  JD ANALYSIS (Claude.ai 연동)
+// ════════════════════════════════════════
+
+  const skillKeywords = [
+  // ── 프로그래밍 / 기술 (고유명사 — 변형 없음)
+  { en: 'Python' },
+  { en: 'SQL' },
+  { en: 'JavaScript' },
+  { en: 'React' },
+  { en: 'Java' },
+  { en: 'AWS' },
+  { en: 'GCP' },
+  { en: 'Azure' },
+  { en: 'BigQuery' },
+  { en: 'dbt' },
+  { en: 'Airflow' },
+  { en: 'Spark' },
+  { en: 'Kubernetes' },
+  { en: 'Docker' },
+  { en: 'Git' },
+  { en: 'Snowflake' },
+  { en: 'Databricks' },
+  { en: 'Looker' },
+  { en: 'ETL' },
+  { en: 'LLM' },
+  { en: 'TIBCO' },
+  { en: 'CI/CD' },
+  { en: 'Salesforce' },
+  { en: 'HubSpot' },
+  { en: 'Amplitude' },
+  { en: 'Qlik' },
+  { en: 'Braze' },
+  { en: 'Workday' },
+  { en: 'SAP' },
+  { en: 'SuccessFactors' },
+  { en: 'Marketo' },
+  { en: 'Jira' },
+  { en: 'Notion' },
+  { en: 'Canva' },
+  { en: 'Figma', variants: ['figma', 'pigma'] },
+
+  // ── 툴 (다국어 변형 있음)
+  { en: 'Excel', variants: ['excel', 'tableur'] },
+  { en: 'PowerBI', variants: ['power bi', 'power-bi'] },
+  { en: 'Tableau', variants: ['tableaux', 'tableau de bord'] },
+  { en: 'Google Analytics', variants: ['google analytics', 'analytics google'] },
+  { en: 'Google Ads', variants: ['google ads','google adwords','adwords','annonces google','ppc','paid search'] },
+  { en: 'Meta Ads', variants: ['meta ads','facebook ads','fb ads','paid social','publicités meta','instagram ads'] },
+  { en: 'Google Tag Manager', variants: ['google tag manager', 'gestionnaire de balises'] },
+  { en: 'GTM', variants: ['gtm'] },
+
+  // ── 방법론 / 개념
+  { en: 'Machine Learning', variants: ['apprentissage automatique', 'aprendizaje automático', 'maschinelles lernen', 'machine learning', 'leren van machines', 'apprendimento automatico', 'aprendizagem automática'] },
+  { en: 'Deep Learning', variants: ['apprentissage profond', 'aprendizaje profundo', 'tiefes lernen', 'deep learning'] },
+  { en: 'NLP', variants: ['traitement du langage naturel', 'procesamiento del lenguaje natural', 'natural language processing', 'verarbeitung natürlicher sprache'] },
+  { en: 'Data Analysis', variants: ['analyse de données', 'análisis de datos', 'datenanalyse', 'data-analyse', 'analisi dei dati', 'análise de dados', 'analyse des données'] },
+  { en: 'Data Analytics', variants: ['analytique de données', 'analítica de datos', 'datenanalytics', 'data-analyse', 'data analytics'] },
+  { en: 'Data Modeling', variants: ['modélisation de données', 'modelado de datos', 'datenmodellierung', 'datamodellering', 'modellazione dei dati'] },
+  { en: 'Data Warehouse', variants: ['entrepôt de données', 'almacén de datos', 'data-warehouse', 'datawarehouse', 'magazzino dati'] },
+  { en: 'Business Intelligence', variants: ['intelligence économique', 'inteligencia de negocios', 'business intelligence', 'bedrijfsinformatie', 'inteligência empresarial'] },
+  { en: 'Statistics', variants: ['statistiques', 'estadísticas', 'statistiken', 'statistieken', 'statistiche', 'estatísticas'] },
+  { en: 'A/B Testing', variants: ['test a/b', 'prueba a/b', 'a/b-test', 'test a-b', 'testing a/b'] },
+  { en: 'SEO', variants: ['seo', 'référencement naturel', 'posicionamiento web', 'suchmaschinenoptimierung'] },
+  { en: 'SEM', variants: ['sem', 'référencement payant', 'marketing de moteurs de recherche'] },
+  { en: 'ETL', variants: ['etl', 'extraction transformation chargement', 'extracción transformación carga'] },
+  { en: 'DevOps', variants: ['devops', 'développement opérations', 'desarrollo operaciones'] },
+  { en: 'Kanban', variants: ['kanban'] },
+
+  // ── HR / 조직
+  { en: 'Recruitment', variants: ['recrutement', 'reclutamiento', 'rekrutierung', 'werving', 'reclutamento', 'recrutamento', 'recruitement'] },
+  { en: 'Talent Acquisition', variants: ['acquisition de talents', 'adquisición de talento', 'talentakquise', 'talentwerving', 'acquisizione di talenti'] },
+  { en: 'HRIS', variants: ['hris', 'système d\'information rh', 'sistema de información de rrhh'] },
+  { en: 'ATS', variants: ['ats', 'système de suivi des candidats', 'sistema de seguimiento de candidatos'] },
+  { en: 'C&B', variants: ['compensation', 'rémunération', 'compensación', 'vergütung', 'beloning'] },
+
+  // ── 프로젝트 / 방법론
+  { en: 'Project Management', variants: ['gestion de projet', 'gestión de proyectos', 'projektmanagement', 'projectmanagement', 'gestione del progetto', 'gestão de projetos'] },
+  { en: 'Agile', variants: ['agile', 'agilité', 'agilidad', 'agilität'] },
+  { en: 'Scrum', variants: ['scrum'] },
+  { en: 'Leadership', variants: ['leadership', 'führung', 'liderança', 'liderazgo', 'leiderschap', 'leadership'] },
+  { en: 'Content Strategy', variants: ['stratégie de contenu', 'estrategia de contenido', 'content-strategie', 'contentstrategie', 'strategia dei contenuti'] },
+];
+  
+function analyzeJD() {
+  const jd = document.getElementById('jdAnalIn').value.trim();
+  if (!jd) { alert('채용공고를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('jdBtn');
+  btn.textContent = '분석 중...'; btn.disabled = true;
+
+  // 1. 기본 정보 추출
+  const remote = detectRemote(jd);
+  const langs = detectLangs(jd);
+  const relocation = detectRelocation ? detectRelocation(jd) : false;
+
+  // 2. 제목/회사/위치 추출
+  const lines = jd.split('\n').filter(l => l.trim()).slice(0, 5);
+  const titleLine = lines[0] || '';
+
+  // 3. 급여 추출
+  const salaryMatch = jd.match(/[€£$][\d,.]+-?[\d,.]*[k]?(?:\s*(?:per|\/)\s*(?:year|yr|month|annum))?/i);
+  const salary = salaryMatch ? salaryMatch[0] : '미공개';
+
+  
+
+const foundSkills = skillKeywords.filter(sk => {
+  const allVariants = [sk.en, ...(sk.variants || [])];
+  return allVariants.some(v => {
+    const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('\\b' + escaped + '\\b', 'i').test(jd);
+  });
+}).map(sk => sk.en);
+
+  // 5. 언어 요건 체크
+  const requiresLocal = /native|fluent in (german|french|dutch|spanish|italian)/i.test(jd);
+  const englishOnly = /english.*sufficient|working language.*english|english.*required/i.test(jd);
+
+  // 6. 한국인 가능성 평가
+  let koreanScore = 50;
+  if (englishOnly) koreanScore += 20;
+  if (requiresLocal) koreanScore -= 30;
+  if (relocation) koreanScore += 15;
+  if (remote === 'Remote') koreanScore += 10;
+  koreanScore = Math.min(95, Math.max(5, koreanScore));
+
+  const koreanLabel = koreanScore >= 70 ? '✅ 높음' : koreanScore >= 40 ? '⚠️ 보통' : '❌ 낮음';
+  const koreanColor = koreanScore >= 70 ? '#3ecfa0' : koreanScore >= 40 ? '#f5a623' : '#f06464';
+
+  document.getElementById('jdInfoCard').innerHTML = `
+    <h3>📋 핵심 정보</h3>
+    <div class="visa-table">
+      <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span>${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':'🏢 출근'}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':'var(--text3)'}">${relocation?'✅ 지원':'정보 없음'}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">한국인 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
+    </div>`;
+
+  document.getElementById('jdSkillCard').innerHTML = `
+    <h3>🛠️ 발견된 스킬</h3>
+    <div class="sub" style="margin-bottom:12px">${foundSkills.length}개 키워드 발견</div>
+    <div class="skill-tags">
+      ${foundSkills.length
+        ? foundSkills.map(s=>`<span class="sk-hit">${s}</span>`).join('')
+        : '<span style="color:var(--text3);font-size:13px">스킬 키워드를 찾지 못했어요</span>'
+      }
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 Claude로 더 자세히 분석</button>
+    </div>`;
+
+  document.getElementById('jdResult').style.display = 'block';
+  btn.textContent = '🔍 즉시 분석'; btn.disabled = false;
+}
+
+function openClaudeJD() {
+  const jd = document.getElementById('jdAnalIn').value.trim();
+  if (!jd) { alert('채용공고를 먼저 입력해주세요.'); return; }
+  const prompt = `아래 채용공고를 분석해서 한국어로 정리해줘:
+
+1. 회사명, 직무, 위치, 급여
+2. 근무 형태 (원격/하이브리드/출근)
+3. 언어 요건
+4. 필수 스킬 vs 우대 스킬
+5. Relocation 지원 여부
+6. 한국인 지원 가능성 (이유 포함)
+7. 총평 3문장
+
+## 채용공고
+${jd}`;
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+  window.open(url, '_blank');
+}
+
+// ════════════════════════════════════════
+//  VISA DATA
+// ════════════════════════════════════════
+const VISA_DATA = {
+  ES:{
+    name:'스페인', visa:'Autorización de Residencia y Trabajo',
+    period:'1~3개월', salary:'€21,000+ (SMI 기준)',
+    sponsor:'고용주 필수', lang:'스페인어 권장',
+    docs:['여권 (유효기간 6개월+)','고용 계약서 (회사 서명)','학력/경력 증명서 (아포스티유)','스페인어 번역 공증본','범죄경력증명서 (3개월 이내)','건강보험 증빙'],
+    wh:{name:'워킹홀리데이', age:'만 18~30세', quota:'제한 없음', period:'최대 12개월', note:'상시 신청 가능'}
+  },
+  GB:{
+    name:'영국', visa:'Skilled Worker Visa',
+    period:'3~8주', salary:'£41,700+/yr (2026년 기준)',
+    sponsor:'필수 (licensed sponsor)', lang:'영어 B2 이상 (2026.1.8~)',
+    docs:['유효 여권','CoS (Certificate of Sponsorship)','영어 능력 증명 (IELTS B2 등)','결핵 검사 결과','범죄경력증명서','거주지 증명'],
+    wh:{name:'청년교류제도 (YMS)', age:'만 18~35세', quota:'연간 배정', period:'최대 2년', note:'영국은 YMS로 운영, 별도 신청'}
+  },
+  DE:{
+    name:'독일', visa:'EU Blue Card (Blaue Karte EU)',
+    period:'1~3개월', salary:'€50,700+/yr (부족 직종 €45,934+)',
+    sponsor:'취업 계약 필수', lang:'독일어 우대 (필수 아님)',
+    docs:['여권','대학 졸업증명서 (아나빈 인증)','고용 계약서','학력 인증 서류','범죄경력증명서','건강보험 가입 증명'],
+    wh:{name:'워킹홀리데이', age:'만 18~34세 (2025.1.1~)', quota:'제한 없음', period:'최대 12개월', note:'상시 신청, 비자비 €75'}
+  },
+  NL:{
+    name:'네덜란드', visa:'Highly Skilled Migrant (Kennismigrant)',
+    period:'2~4주', salary:'30세 이상 €5,942/월 | 30세 미만 €4,357/월',
+    sponsor:'IND 인증 기업 필수', lang:'영어 OK',
+    docs:['여권','IND 인증 고용주 계약','학력 증명서','범죄경력증명서 (선택)','거주 등록 (BSN)'],
+    wh:{name:'워킹홀리데이', age:'만 18~30세', quota:'연 200명 선착순', period:'최대 12개월', note:'사전 IND 등록 후 입국'}
+  },
+  FR:{
+    name:'프랑스', visa:'Talent Passport / Salarié Détaché',
+    period:'1~3개월', salary:'역할에 따라 상이',
+    sponsor:'고용주 필수', lang:'프랑스어 권장',
+    docs:['여권','고용 계약서','학력 증명서 (아포스티유)','범죄경력증명서','건강보험 증빙','거주지 증명'],
+    wh:{name:'워킹홀리데이', age:'만 18~31세 (생일 전날까지)', quota:'연 2,000명 선착순', period:'최대 12개월', note:'무료 발급, 학업 불가'}
+  },
+  PT:{
+    name:'포르투갈', visa:'Visto de Trabalho (D3 / D1)',
+    period:'1~2개월', salary:'€1,020+ (최저임금 기준)',
+    sponsor:'고용 계약 필수', lang:'포르투갈어 우대',
+    docs:['여권','고용 계약서','학력 증명서 (아포스티유)','범죄경력증명서','건강보험 증빙'],
+    wh:{name:'워킹홀리데이', age:'만 18~34세', quota:'연 200명 선착순', period:'최대 12개월', note:'AIMA에서 체류허가 신청'}
+  },
+  CH:{
+    name:'스위스', visa:'B 허가증 (장기 취업)',
+    period:'수개월 (주 칸톤별 상이)', salary:'CHF 85,000~150,000+/yr (직종별)',
+    sponsor:'필수 (스위스 법인)', lang:'독일어/프랑스어/이탈리아어',
+    docs:['여권','고용 계약서','학력/경력 증명서','채용 공고 및 내국인 채용 노력 증빙','범죄경력증명서','건강보험 증빙'],
+    wh:null
+  },
+  IE:{
+  name:'아일랜드', visa:'Critical Skills Employment Permit',
+  period:'4~8주', salary:'€40,904+/yr (2026.3.1~, Critical Skills 기준)',
+  sponsor:'필수 (Revenue 등록 아일랜드 기업)', lang:'영어',
+  docs:['여권','고용 계약서 (2년 이상)','학력/경력 증명서','범죄경력증명서','건강보험 증빙','비자 신청비 €1,000 (90% 환불 가능)'],
+  wh:{name:'워킹홀리데이', age:'만 18~34세', quota:'연 800명 (연 2회 무작위 추첨)', period:'최대 12개월', note:'영어권! 어학연수 최대 6개월 가능. 정규직 불가, 파트타임만'}
+},
+};
+
+function selectVisa(tab, code) {
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  const v = VISA_DATA[code];
+  document.getElementById('visaMain').innerHTML = `
+    <h3>${v.name} 취업비자 (${v.visa})</h3><div class="sub"></div>
+    <div class="visa-table">
+      <div class="visa-row"><span style="color:var(--text2)">처리 기간</span><span>${v.period}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">최소 연봉</span><span style="color:var(--accent3)">${v.salary}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">고용주 스폰서</span><span style="color:var(--warn)">${v.sponsor}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${v.lang}</span></div>
+    </div>`;
+  document.getElementById('visaDocs').innerHTML = `
+    <h3>📋 준비 서류</h3><div class="sub" style="margin-bottom:14px"></div>
+    ${v.docs.map((d,i)=>`<div style="display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:${i<3?'var(--accent3)':'var(--warn)'}">✓</span>${d}</div>`).join('')}`;
+  const whDiv = document.getElementById('visaWH');
+  if (whDiv) {
+    if (v.wh) {
+      whDiv.innerHTML = `
+        <h3>🏖️ 워킹홀리데이 (한국인 기준)</h3>
+        <div class="visa-table">
+          <div class="visa-row"><span style="color:var(--text2)">나이 제한</span><span style="color:var(--accent3)">${v.wh.age}</span></div>
+          <div class="visa-row"><span style="color:var(--text2)">쿼터</span><span>${v.wh.quota}</span></div>
+          <div class="visa-row"><span style="color:var(--text2)">체류 기간</span><span>${v.wh.period}</span></div>
+          <div class="visa-row"><span style="color:var(--text2)">비고</span><span style="font-size:11px">${v.wh.note}</span></div>
+        </div>`;
+    } else {
+      whDiv.innerHTML = `<h3>🏖️ 워킹홀리데이</h3><div style="font-size:13px;color:var(--text3);padding:8px 0">한국과 워킹홀리데이 협정 없음</div>`;
+    }
+  }
+}
+
+// ════════════════════════════════════════
+//  SETTINGS SAVE
+// ════════════════════════════════════════
+function saveAllKeys() {
+  const jsk = document.getElementById('jsearchKeyS')?.value.trim();
+  if (jsk) { jsearchKey = jsk; localStorage.setItem('ej_jsearch', jsk); document.getElementById('jsearchKey').value = jsk; }
+  setStatus('done','✅ 설정 저장됨');
+}
+
+
+
+// ════════════════════════════════════════
+//  SUPABASE 인증
+// ════════════════════════════════════════
+const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
+const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let isAdmin = false;
+let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
+
+async function initAuth() {
+  // 현재 세션 확인
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await onLogin(session.user);
+  } else {
+    showLanding();
+  }
+
+  // 로그인/로그아웃 상태 변경 감지
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await onLogin(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showLanding();
+    }
+  });
+}
+
+async function onLogin(user) {
+  currentUser = user;
+  isAdmin = user.email === ADMIN_EMAIL;
+
+  // DB에 기록 + role 읽기
+  const { data: upserted } = await sb.from('users').upsert({
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || '',
+    avatar: user.user_metadata?.avatar_url || '',
+    last_seen: new Date().toISOString(),
+  }, { onConflict: 'id' }).select().single();
+
   // role 확인 — 'beta' 또는 'admin' 이면 전체 메뉴 오픈
   const role = upserted?.role || '';
   isBeta = (role === 'beta' || role === 'admin') && !isAdmin;
