@@ -1175,7 +1175,7 @@ function detectVisaSponsorship(d) {
   if (negPattern.test(text)) return false;
 
   // 긍정 표현
-  const yesPattern = /visa sponsorship (available|provided|offered|supported|possible|considered)|we (will|can|do) sponsor|sponsor(ing|ed|ship for) (non-eu|non eu|international|overseas|foreign|candidates|applicants)|skilled worker visa|work permit (provided|supported|assistance|included)|relocation (package|support|assistance|allowance|provided)|we (will|can) relocate|right to work (provided|sponsored|supported)|eu blue card|tier 2 (visa|sponsor)|sponsorship (available|provided|offered)|open to sponsoring|happy to sponsor|able to sponsor/i;
+  const yesPattern = /visa sponsorship (available|provided|offered|supported|possible|considered)|we (will|can|do) sponsor|sponsor(ing|ed|ship for) (non-eu|non eu|international|overseas|foreign|candidates|applicants)|skilled worker visa|work permit (provided|supported|assistance|included)|relocation (package|support|assistance|allowance|provided)|we (will|can) relocate|right to work (provided|sponsored|supported)|eu blue card|tier 2 (visa|sponsor)|sponsorship (available|provided|offered)|open to sponsoring|happy to sponsor|able to sponsor|(visa|sponsorship|work permit).{0,50}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,50}(visa|sponsorship|work permit)/i;
 
   return yesPattern.test(text);
 }
@@ -1185,7 +1185,7 @@ function detectRelocation(d) {
   const text = d.toLowerCase();
   // 부정 먼저 체크
   if (/no relocation|relocation (not|is not) (provided|offered|available|supported)/i.test(text)) return false;
-  return /relocation (package|support|assistance|allowance|provided|offered)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)/i.test(text);
+  return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)|(relocation|moving).{0,40}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,40}(relocation|moving)|(package|support|assistance).{0,30}relocation|relo (package|support|benefit)/i.test(text);
 }
 function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
 const COUNTRY_LANG = {
