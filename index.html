@@ -491,7 +491,7 @@ textarea::placeholder{color:var(--text3);}
       </div>
       <div class="stats4">
         <div class="stat"><div class="stat-lbl">총 채용공고</div><div class="stat-val c-blue" id="hs-total">0</div><div class="stat-note">오늘 신규 확인 중</div></div>
-        <div class="stat"><div class="stat-lbl">리로케이션</div><div class="stat-val c-green" id="hs-visa">0</div><div class="stat-note">스폰서 가능성</div></div>
+        <div class="stat"><div class="stat-lbl">비자스폰서</div><div class="stat-val c-green" id="hs-visa">0</div><div class="stat-note">리로케이션 포함</div></div>
         <div class="stat"><div class="stat-lbl">원격/하이브리드</div><div class="stat-val c-warn" id="hs-remote">0</div><div class="stat-note">재택 가능 공고</div></div>
         <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple" id="hs-countries">0</div><div class="stat-note">유럽 전역</div></div>
       </div>
@@ -1240,10 +1240,19 @@ function updateAll() {
 }
 
 function updateHomeStats() {
-  document.getElementById('hs-total').textContent = allJobs.length;
-  document.getElementById('hs-visa').textContent = allJobs.filter(j=>j.relocation).length;
+  const adsRelocation = allJobs.filter(j => j.relocation);
+  
+  // 2. 비자 스폰서 전용 공고 (GitHub Actions로 긁어온 데이터)
+  // 3. 두 데이터의 ID를 합쳐서 중복 제거 (합집합)
+  const combinedSponsorIds = new Set([
+    ...adsRelocation.map(j => j.id),
+    ...visaJobs.map(j => j.id)
+  ]);
+  
+  document.getElementById('hs-total').textContent = allJobs.length + visaJobs.length;
+  document.getElementById('hs-visa').textContent = combinedSponsorIds.size;
   document.getElementById('hs-remote').textContent = allJobs.filter(j=>j.remoteType!=='On-site').length;
-  document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
+  document.getElementById('hs-countries').textContent = new Set([...allJobs.map(j=>j.country), ...visaJobs.map(j=>j.country)]).size;
   const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,5);
   document.getElementById('homeGrid').innerHTML = featured.length
     ? featured.map(j=>buildCard(j,true)).join('')
