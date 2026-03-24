@@ -260,24 +260,124 @@ function fetchRemotive() {
 }
 
 // ── visasponsor.jobs ──────────────────────────────────────
-// Puppeteer 스크래퍼(/api/visaspot)를 호출해서 결과 가져오기
+// Puppeteer로 직접 스크래핑
+
+const VISA_SPONSOR_COUNTRIES = [
+  { vsName: 'Germany',        code: 'DE', flag: '🇩🇪' },
+  { vsName: 'Netherlands',    code: 'NL', flag: '🇳🇱' },
+  { vsName: 'Ireland',        code: 'IE', flag: '🇮🇪' },
+  { vsName: 'United-Kingdom', code: 'GB', flag: '🇬🇧' },
+  { vsName: 'Portugal',       code: 'PT', flag: '🇵🇹' },
+];
+
+async function getBrowser() {
+  const chromium = (await import('@sparticuz/chromium')).default;
+  const puppeteer = (await import('puppeteer-core')).default;
+  return puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+    ignoreHTTPSErrors: true,
+  });
+}
+
+async function scrapeVisaSponsorCountry(page, countryInfo) {
+  const jobs = [];
+  const seen = new Set();
+
+  for (let p = 0; p <= 2; p++) {
+    try {
+      const url = p === 0
+        ? `https://visasponsor.jobs/api/jobs?country=${countryInfo.vsName}`
+        : `https://visasponsor.jobs/api/jobs?country=${countryInfo.vsName}&page=${p}`;
+
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 });
+
+      const pageJobs = await page.evaluate(() => {
+        const links = document.querySelectorAll('a[href*="/api/jobs/"]');
+        const results = [];
+        links.forEach(link => {
+          const href = link.getAttribute('href') || '';
+          const match = href.match(/\/api\/jobs\/([a-f0-9]{32})\/([^/?#]+)/);
+          if (!match) return;
+          const id = match[1];
+          const slug = match[2];
+          const container = link.closest('article, li, [class*="job"], [class*="card"]') || link.parentElement;
+          const text = container?.textContent || '';
+          const visaMatch = text.match(/(Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Health and Care Worker)/i);
+          const dateMatch = text.match(/Publish date\s+(\d{2})-(\d{2})-(\d{4})/);
+          const companyMatch = text.match(/---\s*([\s\S]{2,80}?)\s*---/);
+          results.push({
+            id, slug,
+            title: link.textContent?.trim() || '',
+            company: companyMatch ? companyMatch[1].trim().split('\n')[0].trim() : '',
+            visaType: visaMatch ? visaMatch[1] : 'Sponsored',
+            dateStr: dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : null,
+            url: `https://visasponsor.jobs${href}`,
+          });
+        });
+        return results;
+      });
+
+      if (pageJobs.length === 0) break;
+
+      for (const j of pageJobs) {
+        if (seen.has(j.id)) continue;
+        seen.add(j.id);
+        const title = (j.title || decodeURIComponent(j.slug.replace(/-/g,' '))).trim();
+        if (!title || title.length < 3) continue;
+        jobs.push({
+          id:           `vs_${j.id}`,
+          title:        title.slice(0, 120),
+          level:        detectLevel(title, ''),
+          company:      j.company || 'Unknown',
+          location:     countryInfo.vsName.replace(/-/g,' '),
+          country:      countryInfo.code,
+          flag:         countryInfo.flag,
+          logo:         companyEmoji(j.company || 'V'),
+          description:  `[비자 스폰서 확정 - ${j.visaType}] visasponsor.jobs 검증 공고. 원문에서 상세 내용을 확인하세요.`,
+          url:          j.url,
+          salary:       null,
+          postedAt:     j.dateStr ? new Date(j.dateStr).toISOString() : new Date().toISOString(),
+          source:       'VisaSponsor',
+          skills:       [],
+          visaSponsored: true,
+          relocation:   false,
+          remoteType:   'On-site',
+          languageReqs: ['English'],
+          visaType:     j.visaType,
+        });
+      }
+      console.log(`  [${countryInfo.vsName}] page ${p}: ${pageJobs.length}개`);
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) {
+      console.log(`  [${countryInfo.vsName}] page ${p} 오류: ${e.message}`);
+      break;
+    }
+  }
+  return jobs;
+}
 
 async function fetchAllVisaSponsor() {
+  let browser;
   try {
-    // 같은 Vercel 인스턴스의 /api/visaspot 호출
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
+    browser = await getBrowser();
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-    const res = await fetch(`${baseUrl}/api/visaspot`);
-    if (!res.ok) throw new Error(`visaspot HTTP ${res.status}`);
-    const data = await res.json();
-    const jobs = data.jobs || [];
-    console.log(`  visasponsor.jobs (Puppeteer): ${jobs.length}개`);
-    return jobs;
+    const allJobs = [];
+    for (const country of VISA_SPONSOR_COUNTRIES) {
+      const jobs = await scrapeVisaSponsorCountry(page, country);
+      allJobs.push(...jobs);
+      console.log(`  visasponsor ${country.vsName}: ${jobs.length}개`);
+    }
+    return allJobs;
   } catch(e) {
-    console.log(`  visasponsor.jobs 실패: ${e.message}`);
+    console.log(`  visasponsor.jobs Puppeteer 실패: ${e.message}`);
     return [];
+  } finally {
+    if (browser) await browser.close().catch(() => {});
   }
 }
 
