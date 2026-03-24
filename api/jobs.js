@@ -113,7 +113,10 @@ function detectLangs(d) {
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
-    const key = `${j.title}__${j.company}`.toLowerCase();
+    // VisaSponsor 공고는 ID 기준으로 중복 제거 (title 파싱 오류 방지)
+    const key = j.source === 'VisaSponsor'
+      ? j.id
+      : `${j.title}__${j.company}`.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
