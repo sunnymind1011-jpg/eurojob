@@ -150,11 +150,15 @@ async function main() {
       for (const j of jobs) {
         if (seen.has(j.id)) continue;
         seen.add(j.id);
+        const cleanTitle = j.title.split('\n')[0].trim();
+        const cleanCompany = (j.company || 'Unknown').split('\n')[0].trim();
+        const cleanLocation = (j.location || country.vsName.replace(/-/g, ' ')).split('\n')[0].trim();
+
         allJobs.push({
           id:         j.id,
-          title:      j.title.slice(0, 120),
-          company:    j.company || 'Unknown',
-          location:   j.location || country.vsName.replace(/-/g, ' '),
+          title:      cleanTitle.slice(0, 120), // 깨끗해진 제목 저장
+          company:    cleanCompany,            // 깨끗해진 회사명 저장
+          location:   cleanLocation,           // 깨끗해진 위치 저장
           country:    country.code,
           visa_type:  j.visa_type,
           url:        j.url,
