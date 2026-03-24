@@ -232,42 +232,50 @@ function fetchVisaSponsorSinglePage(countryInfo, page = 0) {
 
 function parseVisaSponsorHTML(html, countryInfo) {
   const jobs = [];
-  const linkRegex = /href="(https:\/\/visasponsor\.jobs\/api\/jobs\/([a-f0-9]+)\/([^"]+))"/g;
   const seen = new Set();
+  const COUNTRY_FLAGS = { DE:'🇩🇪', NL:'🇳🇱', IE:'🇮🇪', GB:'🇬🇧', PT:'🇵🇹' };
+
+  const linkRegex = /href="https:\/\/visasponsor\.jobs\/api\/jobs\/([a-f0-9]{32})\/([^"]+)"/g;
   let match;
+
   while ((match = linkRegex.exec(html)) !== null) {
-    const url = match[1];
-    const id  = match[2];
-    const slug = match[3];
+    const id   = match[1];
+    const slug = match[2];
     if (seen.has(id)) continue;
     seen.add(id);
-    const title = decodeURIComponent(slug.replace(/-/g, ' ')).replace(/\(.*?\)/g, '').trim();
-    const pos = html.indexOf(`href="${url}"`);
-    const block = html.slice(Math.max(0, pos - 100), pos + 600);
-    const companyMatch = block.match(/alt="([^"]+?)"\s*\/?>\s*\n?\s*([A-Z][^\n<]{2,60}?)\s*\n?\s*---/);
-    const company = companyMatch ? companyMatch[2].trim() : '';
-    const locationMatch = block.match(/([A-Z][a-zA-Z\s]+),\s*\n?\s*([A-Z][a-zA-Z\s]+),\s*\n?\s*([A-Z][a-zA-Z\s]+)/);
-    const location = locationMatch ? `${locationMatch[1].trim()}, ${countryInfo.vsName.replace(/-/g,' ')}` : countryInfo.vsName.replace(/-/g,' ');
-    const visaMatch = block.match(/(Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Health and Care Worker|All other\/unspecified)/i);
-    const visaType = visaMatch ? visaMatch[1] : 'Sponsored';
-    const dateMatch = block.match(/Publish date\s+(\d{2}-\d{2}-\d{4})/);
-    let postedAt = new Date().toISOString();
-    if (dateMatch) {
-      const [d, m, y] = dateMatch[1].split('-');
-      postedAt = new Date(`${y}-${m}-${d}`).toISOString();
-    }
+
+    const url = `https://visasponsor.jobs/api/jobs/${id}/${slug}`;
+    const title = decodeURIComponent(slug).replace(/-/g, ' ').replace(/[()]/g, '').trim();
     if (!title || title.length < 3) continue;
-    const COUNTRY_FLAGS = { DE:'🇩🇪', NL:'🇳🇱', IE:'🇮🇪', GB:'🇬🇧', PT:'🇵🇹' };
+
+    const pos = match.index;
+    const block = html.slice(pos, pos + 900);
+
+    const companyMatch = block.match(/---\s*\n\s*([\s\S]{2,80}?)\s*\n\s*---/);
+    let company = companyMatch ? companyMatch[1].replace(/<[^>]*>/g, '').trim().split('\n')[0].trim() : '';
+
+    const locationMatch = block.match(/\n([A-Z][a-zA-Z\s\-]+),\s*\n([A-Za-z][a-zA-Z\s]+),\s*\n([A-Za-z][a-zA-Z\s]+)/);
+    const location = locationMatch
+      ? `${locationMatch[1].trim()}, ${countryInfo.vsName.replace(/-/g,' ')}`
+      : countryInfo.vsName.replace(/-/g,' ');
+
+    const visaMatch = block.match(/(Skilled Worker|EU Blue Card|Highly Skilled Migrant|Critical Skills|Tech Visa|Health and Care Worker)/i);
+    const visaType = visaMatch ? visaMatch[1] : 'Sponsored';
+
+    const dateMatch = block.match(/Publish date\s+(\d{2})-(\d{2})-(\d{4})/);
+    let postedAt = new Date().toISOString();
+    if (dateMatch) postedAt = new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`).toISOString();
+
     jobs.push({
       id:           `vs_${id}`,
-      title:        title.slice(0, 100),
+      title:        title.slice(0, 120),
       level:        detectLevel(title, ''),
       company:      company || 'Unknown',
       location,
       country:      countryInfo.code,
       flag:         COUNTRY_FLAGS[countryInfo.code] || '🌍',
       logo:         companyEmoji(company || 'V'),
-      description:  `Visa sponsorship confirmed: ${visaType}. This position offers visa sponsorship for eligible candidates.`,
+      description:  `[비자 스폰서 확정 - ${visaType}] 이 공고는 visasponsor.jobs에서 검증된 비자 스폰서 공고입니다. 지원하기 버튼을 눌러 원문에서 상세 내용을 확인하세요.`,
       url,
       salary:       null,
       postedAt,
@@ -280,6 +288,7 @@ function parseVisaSponsorHTML(html, countryInfo) {
       visaType,
     });
   }
+  console.log(`  [${countryInfo.vsName}] 파싱: ${jobs.length}개`);
   return jobs;
 }
 
