@@ -1864,6 +1864,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
+let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
   // 현재 세션 확인
@@ -1888,20 +1889,22 @@ async function onLogin(user) {
   currentUser = user;
   isAdmin = user.email === ADMIN_EMAIL;
 
-  // 사용자 정보를 DB에 기록 (접속 추적)
-  await sb.from('users').upsert({
+  // DB에 기록 + role 읽기
+  const { data: upserted } = await sb.from('users').upsert({
     id: user.id,
     email: user.email,
     name: user.user_metadata?.full_name || '',
     avatar: user.user_metadata?.avatar_url || '',
     last_seen: new Date().toISOString(),
-  }, { onConflict: 'id' }).select();
+  }, { onConflict: 'id' }).select().single();
+
+  // role 확인 — 'beta' 또는 'admin' 이면 전체 메뉴 오픈
+  const role = upserted?.role || '';
+  isBeta = (role === 'beta' || role === 'admin') && !isAdmin;
 
   if (isAdmin) {
-    // 관리자 → 관리자 대시보드 표시
     showAdminDashboard();
   } else {
-    // 일반 사용자 → 앱 표시
     showMain();
   }
 }
@@ -1923,6 +1926,7 @@ async function signOut() {
   await sb.auth.signOut();
   currentUser = null;
   isAdmin = false;
+  isBeta = false;
   showLanding();
 }
 
@@ -1954,7 +1958,7 @@ function showMain() {
           ${avatar ? `<img src="${avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div class="avatar">${name[0]}</div>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
-            <div style="font-size:11px;color:var(--text3)">${isAdmin ? '👑 관리자' : '일반 사용자'}</div>
+            <div style="font-size:11px;color:var(--text3)">${isAdmin ? '👑 관리자' : isBeta ? '⭐ 베타 멤버' : '일반 사용자'}</div>
           </div>
           <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
         </div>
@@ -1962,17 +1966,18 @@ function showMain() {
     }
   }
 
-  // 관리자 전용 메뉴 표시/숨김
+  // 관리자/베타 전용 메뉴 표시/숨김
+  const canSeeAll = isAdmin || isBeta;
   const settingsNav = document.getElementById('nav-settings');
-const adminBarEl = document.getElementById('adminBar');
-if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
-if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
+  const adminBarEl = document.getElementById('adminBar');
+  if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
+  if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
 
-  const adminOnlyIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat'];
-  adminOnlyIds.forEach(id => {
+  const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat'];
+  extendedMenuIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.style.display = isAdmin ? (id.startsWith('nav-section') ? 'block' : 'flex') : 'none';
+    el.style.display = canSeeAll ? (id.startsWith('nav-section') ? 'block' : 'flex') : 'none';
   });
 
 } // ← showMain 닫는 괄호
@@ -2003,24 +2008,46 @@ async function loadAdminStats() {
 
     const { data: users } = await sb
       .from('users')
-      .select('email, name, last_seen')
+      .select('id, email, name, last_seen, role')
       .order('last_seen', { ascending: false })
-      .limit(5);
+      .limit(20);
 
     if (users?.length) {
-      document.getElementById('adminUsers').innerHTML = users.map(u => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+      document.getElementById('adminUsers').innerHTML = users.map(u => {
+        const role = u.role || 'user';
+        const isBetaUser = role === 'beta';
+        const roleColor = isBetaUser ? 'var(--warn)' : 'var(--text3)';
+        const roleLabel = isBetaUser ? '⭐ 베타' : '일반';
+        return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
           <div>
             <div style="font-size:13px;font-weight:500">${u.name || u.email}</div>
             <div style="font-size:11px;color:var(--text3)">${u.email}</div>
           </div>
-          <div style="font-size:11px;color:var(--text3)">${new Date(u.last_seen).toLocaleDateString('ko-KR')}</div>
-        </div>`).join('');
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:${roleColor};font-weight:600">${roleLabel}</span>
+            <button onclick="toggleUserRole('${u.id}','${role}')"
+              style="font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;border:1px solid ${isBetaUser ? 'rgba(240,100,100,.35)' : 'rgba(62,207,160,.35)'};background:${isBetaUser ? 'rgba(240,100,100,.08)' : 'rgba(62,207,160,.08)'};color:${isBetaUser ? '#f06464' : '#3ecfa0'}">
+              ${isBetaUser ? '해제' : '베타 부여'}
+            </button>
+          </div>
+        </div>`;
+      }).join('');
     } else {
       document.getElementById('adminUsers').textContent = '아직 가입한 사용자가 없어요';
     }
   } catch(e) {
     document.getElementById('adminUsers').textContent = 'DB 연결 후 확인 가능';
+  }
+}
+
+async function toggleUserRole(userId, currentRole) {
+  const newRole = currentRole === 'beta' ? 'user' : 'beta';
+  try {
+    await sb.from('users').update({ role: newRole }).eq('id', userId);
+    loadAdminStats(); // 목록 새로고침
+  } catch(e) {
+    alert('역할 변경 실패: ' + e.message);
   }
 }
 
