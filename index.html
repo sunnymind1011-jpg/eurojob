@@ -541,6 +541,7 @@ textarea::placeholder{color:var(--text3);}
       </div>
       <div class="filter-row">
         <span class="f-lbl">⚡</span>
+        <div class="chip" data-f="visa:true" onclick="toggleChip(this)">🛂 비자 스폰서</div>
         <div class="chip" data-f="relocation:true" onclick="toggleChip(this)">🚀 Relocation</div>
         <div class="chip" data-f="remote:Remote" onclick="toggleChip(this)">🏠 원격</div>
         <div class="chip" data-f="remote:Hybrid" onclick="toggleChip(this)">🏗️ 하이브리드</div>
@@ -1109,7 +1110,7 @@ function normalizeJSearch(r) {
     postedAt:     r.job_posted_at_datetime_utc || new Date().toISOString(),
     source:       r.job_publisher || 'JSearch',
     skills:       (r.job_required_skills || []).slice(0,6),
-    visaSponsored: false,
+    visaSponsored: detectVisaSponsorship(desc),
     relocation:   detectRelocation(desc),
     remoteType:   r.job_is_remote ? 'Remote' : detectRemote(desc),
     languageReqs: detectLangs(desc),
@@ -1162,7 +1163,30 @@ function detectCountry(l) {
 }
 function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱'}[c]||'🌍';}
 function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드'}[c]||c;}
-function detectRelocation(d){return /relocation (package|support|assistance|allowance)|we (will|can) relocate|relocation provided/i.test(d);}
+function detectVisaSponsorship(d) {
+  if (!d) return false;
+  const text = d.toLowerCase();
+
+  // 부정 표현이 앞에 있는지 먼저 확인 (50자 이내 앞에 not/no/without/unable 등)
+  const negPattern = /\b(no|not|without|unable to|cannot|can't|won't|do not|don't|never|unfortunately|unable)\b.{0,60}(visa|sponsor|work permit|right to work)/i;
+  const noSponsor = /no visa sponsorship|not able to sponsor|unable to (provide|offer|support) (visa|sponsorship)|visa sponsorship (is not|not) (available|provided|offered)|we do not sponsor|cannot sponsor|won't sponsor|does not (offer|provide) (visa|work permit)|must (already |)(have|hold|possess) (the |)(right to work|valid visa|work authorization)|only (candidates|applicants).{0,40}(right to work|eu|eligible to work)/i;
+
+  if (noSponsor.test(text)) return false;
+  if (negPattern.test(text)) return false;
+
+  // 긍정 표현
+  const yesPattern = /visa sponsorship (available|provided|offered|supported|possible|considered)|we (will|can|do) sponsor|sponsor(ing|ed|ship for) (non-eu|non eu|international|overseas|foreign|candidates|applicants)|skilled worker visa|work permit (provided|supported|assistance|included)|relocation (package|support|assistance|allowance|provided)|we (will|can) relocate|right to work (provided|sponsored|supported)|eu blue card|tier 2 (visa|sponsor)|sponsorship (available|provided|offered)|open to sponsoring|happy to sponsor|able to sponsor/i;
+
+  return yesPattern.test(text);
+}
+
+function detectRelocation(d) {
+  if (!d) return false;
+  const text = d.toLowerCase();
+  // 부정 먼저 체크
+  if (/no relocation|relocation (not|is not) (provided|offered|available|supported)/i.test(text)) return false;
+  return /relocation (package|support|assistance|allowance|provided|offered)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)/i.test(text);
+}
 function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
 const COUNTRY_LANG = {
   GB:'English', IE:'English', DE:'German', AT:'German', CH:'German',
@@ -1240,6 +1264,7 @@ function filterJobs() {
     for (const f of activeFilters) {
       const [k,v] = f.split(':');
       if (k==='country') continue;
+      if (k==='visa' && !j.visaSponsored) return false;
       if (k==='relocation' && !j.relocation) return false;
       if (k==='remote' && j.remoteType!==v) return false;
       if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
@@ -1290,6 +1315,7 @@ function buildCard(j, showFeat) {
     <div class="jc-meta">
       <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
       <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
+      ${j.visaSponsored?'<span class="badge b-blue">🛂 비자 스폰서</span>':''}
       ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
       ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
       <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
