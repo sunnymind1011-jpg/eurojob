@@ -1383,7 +1383,9 @@ function updateAll() {
 
 function updateHomeStats() {
   document.getElementById('hs-total').textContent = allJobs.length;
-  document.getElementById('hs-visa').textContent = allJobs.filter(j => j.visaSponsored || j.relocation).length;
+  document.getElementById('hs-visa').textContent = (isAdmin || isBeta)
+    ? allJobs.filter(j => j.visaSponsored || j.relocation).length
+    : allJobs.filter(j => (j.visaSponsored || j.relocation) && j.source !== 'VisaSponsor').length;
   document.getElementById('hs-remote').textContent = allJobs.filter(j=>j.remoteType!=='On-site').length;
   document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
   const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,5);
@@ -1413,6 +1415,8 @@ function filterJobs() {
     .map(f => f.split(':')[1]);
 
   let jobs = allJobs.filter(j=>{
+    // 일반 유저는 비자스폰서 확정 공고(VisaSponsor 소스) 숨김
+    if (!isAdmin && !isBeta && j.source === 'VisaSponsor') return false;
     if (q && !`${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase().includes(q)) return false;
     // 국가 OR 조건
     if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
