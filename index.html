@@ -336,31 +336,197 @@ textarea::placeholder{color:var(--text3);}
 
 
 <!-- ══ LANDING PAGE (로그인 전) ══════════════════════ -->
-<div id="landingPage" style="display:none;min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;">
-  <div style="text-align:center;max-width:500px;padding:40px 24px;">
-    <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff;margin:0 auto 24px;">E</div>
-    <h1 style="font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;">EuroJob</h1>
-    <p style="font-size:16px;color:var(--text2);margin-bottom:8px;">유럽 해외취업 플랫폼</p>
-    <p style="font-size:14px;color:var(--text3);margin-bottom:36px;line-height:1.7">스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>구글 계정으로 로그인하고 시작하세요.</p>
+<div id="landingPage" style="display:none">
 
-    <button onclick="signInWithGoogle()" style="width:100%;max-width:320px;padding:14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 12px;transition:all .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='var(--bg2)'">
+<!-- BG EFFECTS -->
+<div style="position:fixed;inset:0;background:#080b12;z-index:-2"></div>
+<div style="position:fixed;inset:0;background-image:linear-gradient(rgba(79,142,247,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:-1"></div>
+<div style="position:fixed;width:500px;height:500px;border-radius:50%;background:var(--accent);filter:blur(120px);opacity:0.08;top:-100px;left:-100px;pointer-events:none;animation:orbF 8s ease-in-out infinite;z-index:-1"></div>
+<div style="position:fixed;width:400px;height:400px;border-radius:50%;background:var(--accent2);filter:blur(120px);opacity:0.08;bottom:-100px;right:-100px;pointer-events:none;animation:orbF 8s ease-in-out infinite;animation-delay:-4s;z-index:-1"></div>
+<div style="position:fixed;width:300px;height:300px;border-radius:50%;background:var(--accent3);filter:blur:100px;opacity:0.06;top:50%;left:50%;pointer-events:none;animation:orbF 10s ease-in-out infinite;animation-delay:-7s;z-index:-1"></div>
+
+<style>
+@keyframes orbF{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-30px)}}
+@keyframes lFadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes lBlink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes lGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes lCardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes lFloat{from{transform:translateY(100vh) rotate(0deg)}to{transform:translateY(-120px) rotate(360deg)}}
+@keyframes lReveal{to{opacity:1;transform:translateY(0)}}
+.l-reveal{opacity:0;transform:translateY(30px);transition:opacity 0.7s ease,transform 0.7s ease}
+.l-reveal.on{opacity:1;transform:translateY(0)}
+</style>
+
+<!-- SCENE 1: HERO -->
+<section style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;overflow:hidden">
+
+  <!-- 베타 뱃지 -->
+  <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid rgba(62,207,160,0.3);background:rgba(62,207,160,0.08);color:var(--accent3);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:28px;opacity:0;animation:lFadeUp 0.6s ease forwards 0.3s">
+    ✨ 베타 오픈 중
+  </div>
+
+  <!-- 타이틀 -->
+  <h1 style="font-size:clamp(38px,6vw,72px);font-weight:800;line-height:1.1;letter-spacing:-2px;margin-bottom:20px;opacity:0;animation:lFadeUp 0.8s ease forwards 0.6s">
+    <span style="display:block;color:var(--text)">유럽 취업,</span>
+    <span style="display:block;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 100%;animation:lGrad 3s ease infinite 1.5s">이제 다르게</span>
+  </h1>
+
+  <!-- 서브 -->
+  <p style="font-size:16px;color:var(--text2);line-height:1.8;max-width:500px;margin:0 auto 32px;font-weight:300;opacity:0;animation:lFadeUp 0.8s ease forwards 0.9s">
+    스페인·독일·네덜란드·영국 등 유럽 전역<br>비자 스폰서 확정 공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.
+  </p>
+
+  <!-- 타이프라이터 -->
+  <div style="font-family:'Courier New',monospace;font-size:12px;color:var(--accent3);background:rgba(62,207,160,0.06);border:1px solid rgba(62,207,160,0.15);border-radius:8px;padding:9px 16px;margin-bottom:40px;opacity:0;animation:lFadeUp 0.6s ease forwards 1.2s">
+    $ <span id="lTypewriter" style="border-right:2px solid var(--accent3);padding-right:2px;animation:lBlink 0.8s step-end infinite"></span>
+  </div>
+
+  <!-- 통계 -->
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:48px;opacity:0;animation:lFadeUp 0.8s ease forwards 1.5s">
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 26px;text-align:center;cursor:default;transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--accent)" id="lC1">0</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">수집 채용공고</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 26px;text-align:center;cursor:default;transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--accent3)" id="lC2">0</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">비자 스폰서 확정</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 26px;text-align:center;cursor:default;transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--warn)" id="lC3">0</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">커버 국가</div>
+    </div>
+  </div>
+
+  <!-- 앱 목업 -->
+  <div style="width:min(860px,95vw);border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:#0f1420;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,0.6);opacity:0;transform:translateY(40px) scale(0.97);animation:lFadeUp 1s ease forwards 1.8s">
+    <!-- 윈도우 바 -->
+    <div style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.06);padding:10px 14px;display:flex;align-items:center;gap:6px">
+      <div style="width:11px;height:11px;border-radius:50%;background:#ff5f57"></div>
+      <div style="width:11px;height:11px;border-radius:50%;background:#ffbd2e"></div>
+      <div style="width:11px;height:11px;border-radius:50%;background:#28c840"></div>
+      <div style="margin-left:10px;font-size:11px;color:var(--text2);font-family:'Courier New',monospace">eurojob-dreams.vercel.app</div>
+    </div>
+    <!-- 앱 바디 -->
+    <div style="display:flex">
+      <!-- 사이드바 -->
+      <div style="width:180px;border-right:1px solid rgba(255,255,255,0.06);padding:12px 0;flex-shrink:0">
+        <div style="padding:0 14px 12px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700">EuroJob</div>
+          <div style="font-size:9px;color:var(--text2)">유럽 해외취업 플랫폼</div>
+        </div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--text2)">🏠 홈</div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--accent);border-left:2px solid var(--accent);background:rgba(79,142,247,0.06);font-weight:600;display:flex;align-items:center;justify-content:space-between">💼 채용공고<span style="background:var(--accent);color:#fff;font-size:8px;padding:1px 5px;border-radius:8px">1764</span></div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--text2)">🔖 저장목록</div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--text2)">🤖 AI 이력서 매칭</div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--text2)">📊 직종 트렌드</div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--text2)">🎯 직종별 스킬맵</div>
+        <div style="padding:7px 14px;font-size:10px;color:var(--text2)">☕ 커피챗 신청</div>
+      </div>
+      <!-- 메인 -->
+      <div style="flex:1;padding:16px;overflow:hidden">
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:7px 11px;font-size:10px;color:var(--text2);margin-bottom:10px">🔍 직무, 회사, 도시, 스킬 검색...</div>
+        <!-- 필터 칩 -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px" id="lChips"></div>
+        <!-- 공고 그리드 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="lCards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 스크롤 힌트 -->
+  <div style="margin-top:48px;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:0;animation:lFadeUp 0.6s ease forwards 3s" id="lScrollHint">
+    <span style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">scroll</span>
+    <div style="width:16px;height:16px;border-right:1.5px solid var(--text3);border-bottom:1.5px solid var(--text3);transform:rotate(45deg);animation:lBounce 1.5s ease-in-out infinite"></div>
+  </div>
+</section>
+
+<style>
+@keyframes lBounce{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(5px)}}
+</style>
+
+<!-- SCENE 2: 기능 소개 -->
+<section style="padding:100px 20px;text-align:center;overflow:hidden">
+  <div class="l-reveal" style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:14px">✦ 주요 기능</div>
+  <h2 class="l-reveal" style="font-size:clamp(26px,4vw,46px);font-weight:800;letter-spacing:-1px;margin-bottom:52px;transition-delay:0.1s">유럽 취업에 필요한<br>모든 것</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:860px;margin:0 auto 80px">
+    ${[
+      ['🛂','비자 스폰서 확정 공고','visasponsor.jobs 검증 공고만 별도 수집. EU Blue Card, Skilled Worker 등 비자 종류까지 표시.'],
+      ['📊','직종별 스킬맵','데이터·마케팅·개발·HR 직군별 유럽 채용 시장 필수 스킬 Top 10 분석.'],
+      ['💬','Reddit 후기 연동','공고 클릭 시 해당 회사 Reddit 면접·근무 후기 자동 표시.'],
+      ['🤖','AI 이력서 매칭','Claude.ai와 연동해 이력서 적합도 분석 & 맞춤 커버레터 생성.'],
+      ['🌍','유럽 11개국 커버','국가·직종·근무형태·비자 필터로 원하는 공고만 정확하게.'],
+      ['☕','1:1 커피챗','스페인 현지 취업 경험자와 직접 대화. 30분에 핵심만.'],
+    ].map(([icon,title,desc],i)=>`
+    <div class="l-reveal" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px 20px;text-align:left;transition:all 0.3s,opacity 0.7s ease,transform 0.7s ease;transition-delay:${i*0.08}s;cursor:default" onmouseover="this.style.borderColor='rgba(79,142,247,0.3)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform=''">
+      <div style="font-size:26px;margin-bottom:12px">${icon}</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:7px">${title}</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.7">${desc}</div>
+    </div>`).join('')}
+  </div>
+</section>
+
+<!-- SCENE 3: CTA (로그인) -->
+<section style="padding:60px 20px 120px;text-align:center;position:relative;overflow:hidden">
+  <!-- 떠다니는 국기 -->
+  <div id="lFlags" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+
+  <div class="l-reveal" style="max-width:560px;margin:0 auto;background:linear-gradient(135deg,rgba(79,142,247,0.08),rgba(124,106,240,0.08));border:1px solid rgba(79,142,247,0.2);border-radius:22px;padding:56px 36px;position:relative">
+    <h2 style="font-size:clamp(24px,3.5vw,36px);font-weight:800;letter-spacing:-1px;margin-bottom:12px">지금 바로 시작하세요</h2>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:32px;line-height:1.8">구글 계정으로 로그인하면 바로 사용 가능해요.<br>유럽 취업을 꿈꾼다면, 첫 걸음은 여기서.</p>
+
+    <!-- 구글 로그인 버튼 -->
+    <button onclick="signInWithGoogle()" style="width:100%;max-width:320px;padding:15px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 14px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.transform=''">
       <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Google 계정으로 시작하기
     </button>
 
-    <div style="margin-top:28px;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;text-align:left">
-      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">무엇을 할 수 있나요?</div>
-      <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--text2)">
-        <div>💼 유럽 10개국 채용공고 실시간 수집</div>
-        <div>🔍 국가·직군·근무형태 필터링</div>
-        <div>🤖 AI 이력서 매칭 & 커버레터 생성</div>
-        <div>🔖 관심 공고 저장 & 관리</div>
-        <div>✍️ <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--accent3);text-decoration:none">해외취업 꿀팁 블로그</a> 연동</div>
-      </div>
-    </div>
-
-    <div id="loginError" style="display:none;margin-top:14px;color:var(--red);font-size:13px"></div>
+    <div style="font-size:11px;color:var(--text3)">무료 · 광고 없음 · 유럽 현지 경험자 운영</div>
+    <div id="loginError" style="display:none;margin-top:12px;color:var(--red);font-size:12px"></div>
   </div>
+</section>
+
+<script>
+(function() {
+  // ── 타이프라이터
+  const lines = ['유럽 채용공고 1,764개 수집 완료 ✓','비자 스폰서 공고 709개 확인 ✓','독일 EU Blue Card 공고 발견 ✓','Reddit 면접 후기 로드 완료 ✓'];
+  let li=0,ci=0,del=false;
+  const tw=document.getElementById('lTypewriter');
+  if(tw){function type(){const line=lines[li];if(!del){tw.textContent=line.slice(0,++ci);if(ci>=line.length){del=true;setTimeout(type,2000);return;}}else{tw.textContent=line.slice(0,--ci);if(ci===0){del=false;li=(li+1)%lines.length;}}setTimeout(type,del?30:60);}setTimeout(type,1800);}
+
+  // ── 카운터
+  function counter(el,target,dur=1800){let s=null;function step(ts){if(!s)s=ts;const p=Math.min((ts-s)/dur,1);const e=1-Math.pow(1-p,3);el.textContent=Math.round(e*target).toLocaleString();if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
+  setTimeout(()=>{counter(document.getElementById('lC1'),1764);counter(document.getElementById('lC2'),709);counter(document.getElementById('lC3'),11);},2000);
+
+  // ── 필터 칩
+  const chipData=[{l:'🛂 비자 스폰서',c:'var(--accent)'},{l:'🇩🇪 독일',c:'var(--accent3)'},{l:'🇳🇱 네덜란드',c:'var(--accent3)'},{l:'💻 개발',c:'var(--warn)'},{l:'🏠 원격',c:'var(--accent)'}];
+  const cf=document.getElementById('lChips');
+  if(cf)chipData.forEach((c,i)=>{const d=document.createElement('div');d.style.cssText=`padding:3px 10px;border-radius:20px;font-size:9px;font-weight:600;border:1px solid ${c.c}44;color:${c.c};background:${c.c}11;opacity:0;animation:lCardIn 0.3s ease forwards;animation-delay:${2.5+i*0.12}s`;d.textContent=c.l;cf.appendChild(d);});
+
+  // ── 공고 카드
+  const jobData=[
+    {logo:'🔬',title:'Senior Data Analyst',co:'ASML · 🇳🇱 Eindhoven',badges:[{t:'EU Blue Card',c:'#ff4500'},{t:'Remote',c:'var(--accent)'}],sal:'€65K–85K',new:true},
+    {logo:'⚡',title:'Data Engineer',co:'Siemens · 🇩🇪 Munich',badges:[{t:'EU Blue Card',c:'#ff4500'},{t:'Relocation',c:'var(--accent2)'}],sal:'€60K–80K',new:true},
+    {logo:'🏨',title:'Marketing Analytics',co:'Booking.com · 🇳🇱 Amsterdam',badges:[{t:'Skilled Worker',c:'#ff4500'},{t:'Hybrid',c:'var(--accent)'}],sal:'€55K–75K',new:false},
+    {logo:'💸',title:'Backend Engineer',co:'Wise · 🇬🇧 London',badges:[{t:'Skilled Worker',c:'#ff4500'},{t:'Remote',c:'var(--accent)'}],sal:'£70K–95K',new:true},
+  ];
+  const cg=document.getElementById('lCards');
+  if(cg)jobData.forEach((j,i)=>{const d=document.createElement('div');d.style.cssText=`background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:9px;padding:10px;opacity:0;animation:lCardIn 0.5s ease forwards;animation-delay:${2.8+i*0.1}s;cursor:pointer;transition:border-color 0.2s`;d.onmouseover=()=>d.style.borderColor='rgba(79,142,247,0.3)';d.onmouseout=()=>d.style.borderColor='rgba(255,255,255,0.06)';d.innerHTML=`<div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:7px"><div style="width:26px;height:26px;border-radius:5px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${j.logo}</div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:600;margin-bottom:1px">${j.title}</div><div style="font-size:9px;color:var(--text2)">${j.co}</div></div>${j.new?'<span style="background:rgba(62,207,160,0.12);color:var(--accent3);border:1px solid rgba(62,207,160,0.25);font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px">NEW</span>':''}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${j.badges.map(b=>`<span style="font-size:8px;padding:1px 6px;border-radius:4px;font-weight:600;background:${b.c}18;color:${b.c}">${b.t}</span>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text2);border-top:1px solid rgba(255,255,255,0.05);padding-top:6px"><span style="color:var(--accent3);font-weight:700">${j.sal}</span><span>방금 전</span></div>`;cg.appendChild(d);});
+
+  // ── 떠다니는 국기
+  const flags=['🇩🇪','🇳🇱','🇪🇸','🇬🇧','🇫🇷','🇵🇹','🇮🇪','🇧🇪','🇨🇭','🇮🇹'];
+  const ff=document.getElementById('lFlags');
+  if(ff)flags.forEach((f,i)=>{const d=document.createElement('div');d.style.cssText=`position:absolute;font-size:22px;opacity:0.1;left:${8+i*9}%;animation:lFloat ${9+Math.random()*5}s linear infinite;animation-delay:${Math.random()*5}s`;d.textContent=f;ff.appendChild(d);});
+
+  // ── 스크롤 reveal
+  const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('on');}),{threshold:0.15});
+  document.querySelectorAll('.l-reveal').forEach(el=>obs.observe(el));
+
+  // ── 스크롤 시 힌트 숨기기
+  window.addEventListener('scroll',()=>{const h=document.getElementById('lScrollHint');if(h)h.style.opacity=window.scrollY>60?'0':'1';},{passive:true});
+})();
+</script>
+
 </div>
 
 <!-- ══ ADMIN DASHBOARD ═══════════════════════════════ -->
