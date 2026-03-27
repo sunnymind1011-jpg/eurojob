@@ -2299,15 +2299,32 @@ function showLanding() {
 }
 
 function showMain() {
-  document.getElementById('landingPage').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'flex';
-  document.getElementById('adminDashboard').style.display = 'none';
+  try {
+    console.log("showMain 시작");
 
-  // 저장된 ID 복원 ← 이 줄 추가
-  savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
 
-  // 공고 불러오기
-  startJSearch();
+    try {
+      savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
+    } catch (e) {
+      console.error("localStorage 파싱 에러", e);
+      savedIds = new Set();
+    }
+
+    try {
+      startJSearch();
+    } catch (e) {
+      console.error("startJSearch 에러", e);
+    }
+
+    console.log("showMain 완료");
+
+  } catch (e) {
+    console.error("showMain 전체 에러", e);
+    showLanding(); // fallback
+  }
+}
 
   // 사이드바 사용자 정보 표시
   if (currentUser) {
