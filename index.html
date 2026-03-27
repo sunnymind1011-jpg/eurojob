@@ -2202,7 +2202,7 @@ async function initAuth() {
     window.location.search.includes('code=');
 
   if (hasToken) {
-    //document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('landingPage').style.display = 'none';
     document.getElementById('mainApp').style.display = 'none';
 
     const { data } = await sb.auth.getSession();
