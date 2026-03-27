@@ -56,6 +56,8 @@ async function scrapePage(page, url) {
           company = 'Unknown Company';
         }
 
+        const dateMatch = fullText.match(/Publish date\s+(\d{2})-(\d{2})-(\d{4})/);
+
         results.push({
           id: idMatch[1],
           title: title,
@@ -130,12 +132,13 @@ async function main() {
 
         allJobs.push({
           id:         j.id,
-          title:      j.title.split('\n')[0].trim(), // 무조건 첫 줄만
-          company:    j.company.replace('View all jobs and profile', '').trim(), // 쓰레기 문구 제거
-          location:   j.location || country.vsName.replace(/-/g, ' '), // 비어있으면 국가명이라도 넣기
+          title:      j.title.split('\n')[0].trim(),
+          company:    j.company.replace('View all jobs and profile', '').trim(),
+          location:   j.location || country.vsName.replace(/-/g, ' '),
           country:    country.code,
           visa_type:  j.visa_type,
           url:        j.url,
+          posted_at:  j.date_str ? new Date(j.date_str).toISOString() : new Date().toISOString(),
           scraped_at: new Date().toISOString(),
         });
         countryTotal++;
