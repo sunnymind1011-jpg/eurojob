@@ -2196,8 +2196,31 @@ let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
+  // 리다이렉트 후 URL에 토큰이 있는 경우 (모바일 로그인)
+  // Supabase가 자동으로 처리하도록 잠시 대기
+  const hasToken = window.location.hash.includes('access_token') ||
+                   window.location.hash.includes('error_description') ||
+                   window.location.search.includes('code=');
 
-  // 🔥 반드시 제일 먼저 실행
+  if (hasToken) {
+    // 로딩 표시 (토큰 처리 중)
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
+    // Supabase가 URL 해시에서 세션을 추출할 때까지 대기
+    await new Promise(r => setTimeout(r, 1500));
+    // URL 정리
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  // 현재 세션 확인
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await onLogin(session.user);
+  } else {
+    showLanding();
+  }
+
+  // 로그인/로그아웃 상태 변경 감지
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       await onLogin(session.user);
@@ -2205,31 +2228,6 @@ async function initAuth() {
       showLanding();
     }
   });
-
-  const hasToken =
-    window.location.hash.includes('access_token') ||
-    window.location.hash.includes('error_description') ||
-    window.location.search.includes('code=');
-
-  if (hasToken) {
-    document.getElementById('landingPage').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'none';
-
-    await sb.auth.getSession();
-
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    return;
-  }
-
-  // 일반 진입
-  const { data: { session } } = await sb.auth.getSession();
-
-  if (session?.user) {
-    await onLogin(session.user);
-  } else {
-    showLanding();
-  }
 }
 
 async function onLogin(user) {
@@ -2299,32 +2297,15 @@ function showLanding() {
 }
 
 function showMain() {
-  try {
-    console.log("showMain 시작");
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('adminDashboard').style.display = 'none';
 
-    document.getElementById('landingPage').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'flex';
+  // 저장된 ID 복원 ← 이 줄 추가
+  savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
 
-    try {
-      savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
-    } catch (e) {
-      console.error("localStorage 파싱 에러", e);
-      savedIds = new Set();
-    }
-
-    try {
-      startJSearch();
-    } catch (e) {
-      console.error("startJSearch 에러", e);
-    }
-
-    console.log("showMain 완료");
-
-  } catch (e) {
-    console.error("showMain 전체 에러", e);
-    showLanding(); // fallback
-  }
-}
+  // 공고 불러오기
+  startJSearch();
 
   // 사이드바 사용자 정보 표시
   if (currentUser) {
