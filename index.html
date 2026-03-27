@@ -2226,37 +2226,24 @@ async function initAuth() {
   const shell = document.querySelector('.shell');
 
   if (session) {
-    // 세션이 확인되면 메인 표시
-    if (landing) landing.style.display = 'none';
-    if (shell) shell.style.display = 'flex';
+    // 세션이 확인되는 즉시(0.1초든 1초 뒤든) 무조건 메인으로 보냅니다.
+    landing.style.display = 'none';
+    shell.style.display = 'flex';
 
-    // 유저 정보 업데이트
-    const emailEl = document.getElementById('userEmail');
-    if (emailEl) emailEl.textContent = session.user.email;
-    
-    const avatarEl = document.getElementById('userAvatar');
-    if (avatarEl && session.user.user_metadata && session.user.user_metadata.avatar_url) {
-      avatarEl.src = session.user.user_metadata.avatar_url;
+    if (document.getElementById('userEmail')) {
+      document.getElementById('userEmail').textContent = session.user.email;
     }
-    
     if (typeof fetchJobs === 'function') fetchJobs();
   } else {
-    // [핵심] 로그인 페이지에서 돌아올 때 튕김 방지
-    if (event === 'SIGNED_OUT') {
-      if (landing) landing.style.display = 'block';
-      if (shell) shell.style.display = 'none';
-    } else if (event === 'INITIAL_SESSION') {
-      // 첫 로드 시 세션 확인까지 1.5초 대기
-      setTimeout(async () => {
-        const { data } = await sb.auth.getSession();
-        if (!data || !data.session) {
-          if (landing) landing.style.display = 'block';
-          if (shell) shell.style.display = 'none';
-        }
-      }, 1500);
+    // 세션이 없을 때, '로그아웃'을 눌렀거나 처음 들어온 게 확실할 때만 랜딩을 보여줍니다.
+    // 'INITIAL_SESSION'일 때 아무것도 안 하고 가만히 있으면, 
+    // 나중에 세션이 로드되자마자 위쪽 if (session)이 알아서 실행됩니다.
+    if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+      landing.style.display = 'block';
+      shell.style.display = 'none';
     }
   }
-}); 
+});
 }  // <--- 여기서 정확히 끝나야 합니다. 뒤에 추가 }가 붙으면 안 됩니다.
 
 async function onLogin(user) {
