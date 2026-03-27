@@ -113,10 +113,12 @@ function detectLangs(d) {
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
-    // VisaSponsor 공고는 ID 기준으로 중복 제거 (title 파싱 오류 방지)
+    if (!j) return false; // j가 null이나 undefined면 건너뜀 (에러 방지 핵심)
+    
     const key = j.source === 'VisaSponsor'
       ? j.id
       : `${j.title}__${j.company}`.toLowerCase();
+    
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -451,20 +453,23 @@ export default async function handler(req, res) {
 
   // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
-    for (const cat of CATEGORIES) {
-      const jobs = await fetchAdzuna(country.code, cat.tag);
-      allJobs.push(...jobs.map(j => normalizeAdzuna(j, country.code)).filter(Boolean));
-      await new Promise(r => setTimeout(r, 150));
-    }
+  for (const cat of CATEGORIES) {
+    const jobs = await fetchAdzuna(country.code, cat.tag);
+    // .filter(Boolean)을 추가해서 null인 항목을 제거합니다.
+    allJobs.push(...jobs.map(j => normalizeAdzuna(j, country.code)).filter(Boolean));
+    await new Promise(r => setTimeout(r, 150));
   }
+}
 
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
-    for (const kw of DATA_KEYWORDS) {
-      allJobs.push(...await fetchAdzunaKeyword(country, kw));
-      await new Promise(r => setTimeout(r, 150));
-    }
+  for (const kw of DATA_KEYWORDS) {
+    const kwJobs = await fetchAdzunaKeyword(country, kw);
+    // 여기도 마찬가지로 null 필터링을 거칩니다.
+    allJobs.push(...kwJobs.filter(Boolean)); 
+    await new Promise(r => setTimeout(r, 150));
   }
+}
 
   // Remotive 수집
   allJobs.push(...await fetchRemotive());
