@@ -2248,11 +2248,18 @@ async function initAuth() {
 }
 
 async function onLogin(user) {
+  // 임시 디버그
+  const d1 = document.createElement('div');
+  d1.style.cssText = 'position:fixed;top:0;left:0;right:0;background:blue;color:white;font-size:14px;font-weight:700;padding:15px;z-index:99999;text-align:center';
+  d1.textContent = '🔵 onLogin 시작 — ' + (user?.email || '없음');
+  document.body.appendChild(d1);
+
   try {
     currentUser = user;
     isAdmin = user.email === ADMIN_EMAIL;
 
-    // DB에 접속 기록 upsert (role은 건드리지 않음)
+    d1.textContent = '🔵 DB upsert 시도 중...';
+
     try {
       await sb.from('users').upsert({
         id: user.id,
@@ -2263,7 +2270,8 @@ async function onLogin(user) {
       }, { onConflict: 'id', ignoreDuplicates: false });
     } catch(e) { console.log('upsert 오류(무시):', e.message); }
 
-    // role은 별도로 읽기
+    d1.textContent = '🔵 role 읽는 중...';
+
     let role = '';
     try {
       const { data: userData } = await sb
@@ -2276,14 +2284,18 @@ async function onLogin(user) {
 
     isBeta = (role === 'beta') && !isAdmin;
 
+    d1.textContent = '🔵 showMain 호출 직전...';
+    setTimeout(() => d1.remove(), 3000);
+
     if (isAdmin) {
       showAdminDashboard();
     } else {
       showMain();
     }
   } catch(e) {
+    d1.textContent = '🔴 onLogin 에러: ' + e.message;
     console.error('onLogin 오류:', e);
-    // 에러 나도 메인으로 보내기
+    setTimeout(() => d1.remove(), 5000);
     showMain();
   }
 }
