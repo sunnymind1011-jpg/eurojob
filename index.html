@@ -2196,37 +2196,38 @@ let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
-  // 리다이렉트 후 URL에 토큰이 있는 경우 (모바일 로그인)
-  // Supabase가 자동으로 처리하도록 잠시 대기
-  const hasToken = window.location.hash.includes('access_token') ||
-                   window.location.hash.includes('error_description') ||
-                   window.location.search.includes('code=');
+  const hasToken =
+    window.location.hash.includes('access_token') ||
+    window.location.hash.includes('error_description') ||
+    window.location.search.includes('code=');
 
   if (hasToken) {
-  document.getElementById('landingPage').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
 
-  // 핵심: Supabase가 URL에서 세션 읽게 함
-  const { data, error } = await sb.auth.getSession();
+    const { data } = await sb.auth.getSession();
 
-  // URL 정리
-  window.history.replaceState({}, document.title, window.location.pathname);
+    // URL 정리
+    window.history.replaceState({}, document.title, window.location.pathname);
 
-  if (data?.session?.user) {
-    await onLogin(data.session.user);
-    return;
+    if (data?.session?.user) {
+      await onLogin(data.session.user);
+    } else {
+      showLanding();
+    }
+
+    return; // 🔥🔥🔥 이거 필수
   }
 
-
-  // 현재 세션 확인
+  // 👇 일반 진입은 여기서만 처리
   const { data: { session } } = await sb.auth.getSession();
+
   if (session?.user) {
     await onLogin(session.user);
   } else {
     showLanding();
   }
 
-  // 로그인/로그아웃 상태 변경 감지
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       await onLogin(session.user);
