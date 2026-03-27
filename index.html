@@ -2260,25 +2260,22 @@ async function onLogin(user) {
 
     d1.textContent = '🔵 DB upsert 시도 중...';
 
-    try {
-      await sb.from('users').upsert({
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.full_name || '',
-        avatar: user.user_metadata?.avatar_url || '',
-        last_seen: new Date().toISOString(),
-      }, { onConflict: 'id', ignoreDuplicates: false });
-    } catch(e) { console.log('upsert 오류(무시):', e.message); }
+    // upsert는 백그라운드로 (await 없이) — 모바일 hang 방지
+    sb.from('users').upsert({
+      id: user.id,
+      email: user.email,
+      name: user.user_metadata?.full_name || '',
+      avatar: user.user_metadata?.avatar_url || '',
+      last_seen: new Date().toISOString(),
+    }, { onConflict: 'id', ignoreDuplicates: false }).catch(e => console.log('upsert 오류:', e.message));
 
     d1.textContent = '🔵 role 읽는 중...';
 
     let role = '';
     try {
-      const { data: userData } = await sb
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+      const rolePromise = sb.from('users').select('role').eq('id', user.id).single();
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000));
+      const { data: userData } = await Promise.race([rolePromise, timeoutPromise]);
       role = (userData?.role || '').toLowerCase();
     } catch(e) { role = ''; }
 
@@ -3310,5 +3307,4 @@ function closeSkillDrawer(e) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   
 </body>
-</html>  
-
+</html> 
