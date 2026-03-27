@@ -2226,30 +2226,29 @@ async function initAuth() {
   const shell = document.querySelector('.shell');
 
   if (session) {
-    // 세션이 있으면 무조건 메인 화면 표시
+    // 세션이 확인되면 메인 표시
     landing.style.display = 'none';
     shell.style.display = 'flex';
 
-    // 유저 정보 업데이트
-    const userEmailEl = document.getElementById('userEmail');
-    if (userEmailEl) userEmailEl.textContent = session.user.email;
-
-    const userAvatarEl = document.getElementById('userAvatar');
-    if (userAvatarEl && session.user.user_metadata && session.user.user_metadata.avatar_url) {
-      userAvatarEl.src = session.user.user_metadata.avatar_url;
+    const emailEl = document.getElementById('userEmail');
+    if (emailEl) emailEl.textContent = session.user.email;
+    
+    const avatarEl = document.getElementById('userAvatar');
+    if (avatarEl && session.user.user_metadata && session.user.user_metadata.avatar_url) {
+      avatarEl.src = session.user.user_metadata.avatar_url;
     }
-
-    // 데이터 로드
+    
     if (typeof fetchJobs === 'function') fetchJobs();
   } else {
-    // 모바일 튕김 방지: INITIAL_SESSION일 때는 1.5초간 기다렸다가 랜딩 표시
+    // 모바일 튕김 방지 핵심: SIGNED_OUT이 아닐 때는 화면을 바로 바꾸지 않음
     if (event === 'SIGNED_OUT') {
       landing.style.display = 'block';
       shell.style.display = 'none';
     } else if (event === 'INITIAL_SESSION') {
+      // 1.5초 대기 후에도 세션이 없으면 그때 랜딩 페이지 노출
       setTimeout(async () => {
         const { data } = await sb.auth.getSession();
-        if (!data.session) {
+        if (!data || !data.session) {
           landing.style.display = 'block';
           shell.style.display = 'none';
         }
