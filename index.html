@@ -2204,9 +2204,6 @@ let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 async function initAuth() {
   let handled = false;
 
-  // pkce 리다이렉트 콜백인지 확인
-  const isCallback = window.location.search.includes('code=');
-
   // onAuthStateChange 먼저 등록
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user && !handled) {
@@ -2218,14 +2215,34 @@ async function initAuth() {
     }
   });
 
-  // 현재 세션 확인
+  // PKCE code 파라미터가 있으면 명시적으로 세션 교환
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+
+  if (code) {
+    // URL 정리
+    window.history.replaceState({}, document.title, window.location.pathname);
+    try {
+      const { data, error } = await sb.auth.exchangeCodeForSession(code);
+      if (data?.session?.user && !handled) {
+        handled = true;
+        await onLogin(data.session.user);
+        return;
+      }
+    } catch(e) {
+      console.log('code exchange 오류:', e.message);
+    }
+  }
+
+  // 일반 세션 확인
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user && !handled) {
     handled = true;
     await onLogin(session.user);
-  } else if (!session?.user && !isCallback) {
-    // 리다이렉트 콜백이 아닐 때만 랜딩 표시
-    // 콜백일 때는 onAuthStateChange가 처리할 때까지 대기
+  } else if (!session?.user && !code) {
+    showLanding();
+  } else if (!handled) {
+    // code는 있었지만 교환 실패 → 랜딩으로
     showLanding();
   }
 }
