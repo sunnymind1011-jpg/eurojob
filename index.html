@@ -1139,6 +1139,7 @@ function navWithFilter(id, filters) {
 // ════════════════════════════════════════
 function setStatus(type, msg, pct) {
   const bar = document.getElementById('statusBar');
+  if (!bar) return;
   if (type==='loading') {
     bar.innerHTML = `<div class="spinner"></div><span style="font-size:12px;color:var(--warn)">${msg}</span><div class="prog-bar"><div class="prog-fill" style="width:${Math.round((pct||0)*100)}%"></div></div>`;
   } else {
@@ -2308,11 +2309,11 @@ function showMain() {
   document.getElementById('mainApp').style.display = 'flex';
   document.getElementById('adminDashboard').style.display = 'none';
 
-  // 저장된 ID 복원 ← 이 줄 추가
+  // 저장된 ID 복원
   savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
 
-  // 공고 불러오기
-  startJSearch();
+  // DOM 렌더링 후 공고 불러오기 (모바일 대응)
+  setTimeout(() => startJSearch(), 100);
 
   // 사이드바 사용자 정보 표시
   if (currentUser) {
