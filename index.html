@@ -2220,21 +2220,16 @@ async function initAuth() {
     showLanding();
   }
 
-  // 1. 페이지 로드 시 처음에는 아무것도 보여주지 않거나 로딩 상태를 유지합니다.
-// (HTML 상에서 landingPage와 shell의 스타일을 처음부터 display: none으로 두는 것이 가장 좋습니다.)
-
-sb.auth.onAuthStateChange(async (event, session) => {
+sb.auth.onAuthStateChange((event, session) => {
   const landing = document.getElementById('landingPage');
   const shell = document.querySelector('.shell');
 
-  console.log("인증 이벤트 발생:", event, "세션 존재여부:", !!session);
-
+  // 1. 세션이 있으면 무조건 메인을 보여주고 끝냅니다. (이벤트가 뭐든 상관없음)
   if (session) {
-    // [성공] 세션이 확인되면 즉시 메인으로 전환
     landing.style.display = 'none';
     shell.style.display = 'flex';
-
-    // 유저 정보 업데이트 로직 (기존 유지)
+    
+    // 유저 정보 업데이트
     if (document.getElementById('userEmail')) {
       document.getElementById('userEmail').textContent = session.user.email;
     }
@@ -2243,26 +2238,20 @@ sb.auth.onAuthStateChange(async (event, session) => {
       avatarImg.src = session.user.user_metadata.avatar_url;
     }
     if (typeof fetchJobs === 'function') fetchJobs();
-
-  } else {
-    // [핵심] 세션이 없을 때, 'INITIAL_SESSION'인 경우는 아직 확인 중일 수 있으므로 
-    // 화면을 바꾸지 않고 대기합니다. 오직 'SIGNED_OUT'일 때만 랜딩을 보여줍니다.
-    if (event === 'SIGNED_OUT') {
-      landing.style.display = 'block';
-      shell.style.display = 'none';
-    } 
     
-    // 페이지 첫 진입 시 세션이 진짜 없는 경우를 위한 1초 안전장치
-    if (event === 'INITIAL_SESSION') {
-      setTimeout(async () => {
-        const { data } = await sb.auth.getSession();
-        if (!data.session) {
-          landing.style.display = 'block';
-          shell.style.display = 'none';
-        }
-      }, 1000);
-    }
+    return; // 세션이 있으면 여기서 로직 종료
   }
+
+  // 2. 세션이 없을 때의 처리
+  // 'SIGNED_OUT'(로그아웃 클릭)이거나, 
+  // 'INITIAL_SESSION'(첫 로드)인데 세션이 진짜 없는 경우에만 랜딩을 보여줍니다.
+  if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+    landing.style.display = 'block';
+    shell.style.display = 'none';
+  }
+  
+  // 핵심: 그 외의 상태(예: 로그인 후 돌아오는 중)에서는 아무것도 안 하고 가만히 둡니다.
+  // 그러면 잠시 후 세션이 잡히면서 위쪽의 'if (session)'이 실행됩니다.
 });
 }  // <--- 여기서 정확히 끝나야 합니다. 뒤에 추가 }가 붙으면 안 됩니다.
 
