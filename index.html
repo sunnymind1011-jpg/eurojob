@@ -2221,28 +2221,38 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
-  sb.auth.onAuthStateChange(async (event, session) => {
+  // 1. 페이지 로드 즉시 세션을 한 번 체크 (이게 핵심입니다)
+async function checkInitialSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  handleAuthUI(session);
+}
+checkInitialSession();
+
+// 2. 인증 상태가 바뀔 때 실행될 공통 UI 함수
+function handleAuthUI(session) {
   const landing = document.getElementById('landingPage');
   const shell = document.querySelector('.shell');
-
+  
   if (session) {
-    // 세션이 확인되는 즉시(0.1초든 1초 뒤든) 무조건 메인으로 보냅니다.
+    // 세션이 있으면 무조건 메인
     landing.style.display = 'none';
     shell.style.display = 'flex';
-
+    
     if (document.getElementById('userEmail')) {
       document.getElementById('userEmail').textContent = session.user.email;
     }
     if (typeof fetchJobs === 'function') fetchJobs();
   } else {
-    // 세션이 없을 때, '로그아웃'을 눌렀거나 처음 들어온 게 확실할 때만 랜딩을 보여줍니다.
-    // 'INITIAL_SESSION'일 때 아무것도 안 하고 가만히 있으면, 
-    // 나중에 세션이 로드되자마자 위쪽 if (session)이 알아서 실행됩니다.
-    if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
-      landing.style.display = 'block';
-      shell.style.display = 'none';
-    }
+    // 세션이 없으면 무조건 랜딩
+    landing.style.display = 'block';
+    shell.style.display = 'none';
   }
+}
+
+// 3. 이벤트 리스너는 이제 감시만 합니다.
+sb.auth.onAuthStateChange((event, session) => {
+  console.log("Auth Event:", event); // 디버깅용
+  handleAuthUI(session);
 });
 }  // <--- 여기서 정확히 끝나야 합니다. 뒤에 추가 }가 붙으면 안 됩니다.
 
