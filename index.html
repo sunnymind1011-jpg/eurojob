@@ -2203,6 +2203,9 @@ let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 async function initAuth() {
   let handled = false;
 
+  // pkce 리다이렉트 콜백인지 확인
+  const isCallback = window.location.search.includes('code=');
+
   // onAuthStateChange 먼저 등록
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user && !handled) {
@@ -2219,40 +2222,50 @@ async function initAuth() {
   if (session?.user && !handled) {
     handled = true;
     await onLogin(session.user);
-  } else if (!session?.user) {
+  } else if (!session?.user && !isCallback) {
+    // 리다이렉트 콜백이 아닐 때만 랜딩 표시
+    // 콜백일 때는 onAuthStateChange가 처리할 때까지 대기
     showLanding();
   }
 }
 
 async function onLogin(user) {
-  currentUser = user;
-  isAdmin = user.email === ADMIN_EMAIL;
-
-  // DB에 접속 기록 upsert (role은 건드리지 않음)
-  await sb.from('users').upsert({
-    id: user.id,
-    email: user.email,
-    name: user.user_metadata?.full_name || '',
-    avatar: user.user_metadata?.avatar_url || '',
-    last_seen: new Date().toISOString(),
-  }, { onConflict: 'id', ignoreDuplicates: false });
-
-  // role은 별도로 읽기 (upsert 반환값 신뢰 안 함)
-  let role = '';
   try {
-    const { data: userData } = await sb
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    role = (userData?.role || '').toLowerCase();
-  } catch(e) { role = ''; }
+    currentUser = user;
+    isAdmin = user.email === ADMIN_EMAIL;
 
-  isBeta = (role === 'beta') && !isAdmin;
+    // DB에 접속 기록 upsert (role은 건드리지 않음)
+    try {
+      await sb.from('users').upsert({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || '',
+        avatar: user.user_metadata?.avatar_url || '',
+        last_seen: new Date().toISOString(),
+      }, { onConflict: 'id', ignoreDuplicates: false });
+    } catch(e) { console.log('upsert 오류(무시):', e.message); }
 
-  if (isAdmin) {
-    showAdminDashboard();
-  } else {
+    // role은 별도로 읽기
+    let role = '';
+    try {
+      const { data: userData } = await sb
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      role = (userData?.role || '').toLowerCase();
+    } catch(e) { role = ''; }
+
+    isBeta = (role === 'beta') && !isAdmin;
+
+    if (isAdmin) {
+      showAdminDashboard();
+    } else {
+      showMain();
+    }
+  } catch(e) {
+    console.error('onLogin 오류:', e);
+    // 에러 나도 메인으로 보내기
     showMain();
   }
 }
