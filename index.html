@@ -2221,43 +2221,38 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
-  sb.auth.onAuthStateChange((event, session) => {
+  sb.auth.onAuthStateChange(async (event, session) => {
   const landing = document.getElementById('landingPage');
   const shell = document.querySelector('.shell');
 
   if (session) {
-    // 세션이 확인되면 무조건 메인(shell)을 보여줌
+    // 세션이 있으면 무조건 메인 화면 표시
     landing.style.display = 'none';
     shell.style.display = 'flex';
-    
-    // 유저 정보 표시
-    if (document.getElementById('userEmail')) {
-      document.getElementById('userEmail').textContent = session.user.email;
+
+    // 유저 정보 업데이트
+    const userEmailEl = document.getElementById('userEmail');
+    if (userEmailEl) userEmailEl.textContent = session.user.email;
+
+    const userAvatarEl = document.getElementById('userAvatar');
+    if (userAvatarEl && session.user.user_metadata && session.user.user_metadata.avatar_url) {
+      userAvatarEl.src = session.user.user_metadata.avatar_url;
     }
-    const avatarImg = document.getElementById('userAvatar');
-    if (avatarImg && session.user.user_metadata && session.user.user_metadata.avatar_url) {
-      avatarImg.src = session.user.user_metadata.avatar_url;
-    }
-    // 데이터 로딩 함수 (기존에 정의된 함수 호출)
+
+    // 데이터 로드
     if (typeof fetchJobs === 'function') fetchJobs();
-    
   } else {
-    // [중요] 모바일 튕김 방지 핵심 로직
-    // INITIAL_SESSION(첫 로딩)일 때는 세션을 찾는 중일 수 있으므로 
-    // 화면을 바꾸지 않고 대기합니다.
+    // 모바일 튕김 방지: INITIAL_SESSION일 때는 1.5초간 기다렸다가 랜딩 표시
     if (event === 'SIGNED_OUT') {
       landing.style.display = 'block';
       shell.style.display = 'none';
     } else if (event === 'INITIAL_SESSION') {
-      // 1.5초 후에도 세션이 안 잡히면 그때 랜딩 페이지를 보여주는 안전장치
-      setTimeout(() => {
-        const currentSession = sb.auth.getSession();
-        currentSession.then(({data}) => {
-          if (!data.session) {
-            landing.style.display = 'block';
-            shell.style.display = 'none';
-          }
-        });
+      setTimeout(async () => {
+        const { data } = await sb.auth.getSession();
+        if (!data.session) {
+          landing.style.display = 'block';
+          shell.style.display = 'none';
+        }
       }, 1500);
     }
   }
