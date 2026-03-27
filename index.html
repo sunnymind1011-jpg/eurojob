@@ -2220,40 +2220,15 @@ async function initAuth() {
     showLanding();
   }
 
-sb.auth.onAuthStateChange((event, session) => {
-  const landing = document.getElementById('landingPage');
-  const shell = document.querySelector('.shell');
-
-  // 1. 세션이 있으면 무조건 메인을 보여주고 끝냅니다. (이벤트가 뭐든 상관없음)
-  if (session) {
-    landing.style.display = 'none';
-    shell.style.display = 'flex';
-    
-    // 유저 정보 업데이트
-    if (document.getElementById('userEmail')) {
-      document.getElementById('userEmail').textContent = session.user.email;
+  // 로그인/로그아웃 상태 변경 감지
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await onLogin(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showLanding();
     }
-    const avatarImg = document.getElementById('userAvatar');
-    if (avatarImg && session.user.user_metadata?.avatar_url) {
-      avatarImg.src = session.user.user_metadata.avatar_url;
-    }
-    if (typeof fetchJobs === 'function') fetchJobs();
-    
-    return; // 세션이 있으면 여기서 로직 종료
-  }
-
-  // 2. 세션이 없을 때의 처리
-  // 'SIGNED_OUT'(로그아웃 클릭)이거나, 
-  // 'INITIAL_SESSION'(첫 로드)인데 세션이 진짜 없는 경우에만 랜딩을 보여줍니다.
-  if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
-    landing.style.display = 'block';
-    shell.style.display = 'none';
-  }
-  
-  // 핵심: 그 외의 상태(예: 로그인 후 돌아오는 중)에서는 아무것도 안 하고 가만히 둡니다.
-  // 그러면 잠시 후 세션이 잡히면서 위쪽의 'if (session)'이 실행됩니다.
-});
-}  // <--- 여기서 정확히 끝나야 합니다. 뒤에 추가 }가 붙으면 안 됩니다.
+  });
+}
 
 async function onLogin(user) {
   currentUser = user;
