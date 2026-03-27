@@ -2226,10 +2226,11 @@ async function initAuth() {
   const shell = document.querySelector('.shell');
 
   if (session) {
+    // 세션이 확인되면 무조건 메인(shell)을 보여줌
     landing.style.display = 'none';
     shell.style.display = 'flex';
     
-    // 유저 정보 업데이트
+    // 유저 정보 표시
     if (document.getElementById('userEmail')) {
       document.getElementById('userEmail').textContent = session.user.email;
     }
@@ -2237,23 +2238,31 @@ async function initAuth() {
     if (avatarImg && session.user.user_metadata && session.user.user_metadata.avatar_url) {
       avatarImg.src = session.user.user_metadata.avatar_url;
     }
-    // 데이터 로드 함수 호출
+    // 데이터 로딩 함수 (기존에 정의된 함수 호출)
     if (typeof fetchJobs === 'function') fetchJobs();
+    
   } else {
-    // INITIAL_SESSION이 아닐 때(즉, 실제 로그아웃 등)만 랜딩 페이지 표시
-    if (event !== 'INITIAL_SESSION') {
+    // [중요] 모바일 튕김 방지 핵심 로직
+    // INITIAL_SESSION(첫 로딩)일 때는 세션을 찾는 중일 수 있으므로 
+    // 화면을 바꾸지 않고 대기합니다.
+    if (event === 'SIGNED_OUT') {
       landing.style.display = 'block';
       shell.style.display = 'none';
-    } else {
-      // 2초 뒤에도 세션이 없으면 안전장치로 랜딩 표시
+    } else if (event === 'INITIAL_SESSION') {
+      // 1.5초 후에도 세션이 안 잡히면 그때 랜딩 페이지를 보여주는 안전장치
       setTimeout(() => {
-        if (shell.style.display !== 'flex') {
-          landing.style.display = 'block';
-        }
-      }, 2000);
+        const currentSession = sb.auth.getSession();
+        currentSession.then(({data}) => {
+          if (!data.session) {
+            landing.style.display = 'block';
+            shell.style.display = 'none';
+          }
+        });
+      }, 1500);
     }
   }
 });
+  
 async function onLogin(user) {
   currentUser = user;
   isAdmin = user.email === ADMIN_EMAIL;
@@ -2287,11 +2296,10 @@ async function onLogin(user) {
   }
 }
 
-async function signInWithGoogle() { // 함수 이름 틀리지 않게 수정했습니다.
+async function signInWithGoogle() {
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      // 이 옵션을 추가해야 모바일에서 로그인 후 랜딩으로 튕기지 않습니다.
       redirectTo: window.location.origin
     }
   });
