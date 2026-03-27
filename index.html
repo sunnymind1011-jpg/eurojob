@@ -2326,10 +2326,20 @@ function showMain() {
   document.getElementById('mainApp').style.display = 'flex';
   document.getElementById('adminDashboard').style.display = 'none';
 
+  // 임시 디버그 배너 (모바일 확인용)
+  const debugEl = document.getElementById('mobileDebug');
+  if (debugEl) debugEl.remove();
+  const debug = document.createElement('div');
+  debug.id = 'mobileDebug';
+  debug.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:16px;font-weight:700;padding:20px;z-index:99999;text-align:center';
+  debug.textContent = '✅ showMain 실행됨 — ' + (currentUser?.email || '유저없음');
+  document.body.appendChild(debug);
+  setTimeout(() => { if (debug) debug.remove(); }, 5000);
+
   // 저장된 ID 복원
   savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
 
-  // DOM 렌더링 후 공고 불러오기 (모바일 대응)
+  // DOM 렌더링 후 공고 불러오기
   setTimeout(() => startJSearch(), 100);
 
   // 사이드바 사용자 정보 표시
