@@ -2222,20 +2222,38 @@ async function initAuth() {
 
   // 로그인/로그아웃 상태 변경 감지
   sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' || session) {
-    document.getElementById('landingPage').style.display = 'none';
-    document.querySelector('.shell').style.display = 'flex';
-    // ... (이하 유저 정보 업데이트 로직)
+  const landing = document.getElementById('landingPage');
+  const shell = document.querySelector('.shell');
+
+  if (session) {
+    landing.style.display = 'none';
+    shell.style.display = 'flex';
+    
+    // 유저 정보 업데이트
+    if (document.getElementById('userEmail')) {
+      document.getElementById('userEmail').textContent = session.user.email;
+    }
+    const avatarImg = document.getElementById('userAvatar');
+    if (avatarImg && session.user.user_metadata && session.user.user_metadata.avatar_url) {
+      avatarImg.src = session.user.user_metadata.avatar_url;
+    }
+    // 데이터 로드 함수 호출
+    if (typeof fetchJobs === 'function') fetchJobs();
   } else {
-    // [중요] 모바일 튕김 방지: 
-    // SIGNED_OUT(로그아웃 클릭)일 때만 랜딩을 보여주도록 변경합니다.
-    if (event === 'SIGNED_OUT') {
-      document.getElementById('landingPage').style.display = 'block';
-      document.querySelector('.shell').style.display = 'none';
+    // INITIAL_SESSION이 아닐 때(즉, 실제 로그아웃 등)만 랜딩 페이지 표시
+    if (event !== 'INITIAL_SESSION') {
+      landing.style.display = 'block';
+      shell.style.display = 'none';
+    } else {
+      // 2초 뒤에도 세션이 없으면 안전장치로 랜딩 표시
+      setTimeout(() => {
+        if (shell.style.display !== 'flex') {
+          landing.style.display = 'block';
+        }
+      }, 2000);
     }
   }
 });
-
 async function onLogin(user) {
   currentUser = user;
   isAdmin = user.email === ADMIN_EMAIL;
