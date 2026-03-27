@@ -2189,7 +2189,12 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
 let currentUser = null;
 let isAdmin = false;
@@ -2203,14 +2208,20 @@ async function initAuth() {
                    window.location.search.includes('code=');
 
   if (hasToken) {
-    // 로딩 표시 (토큰 처리 중)
-    document.getElementById('landingPage').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'none';
-    // Supabase가 URL 해시에서 세션을 추출할 때까지 대기
-    await new Promise(r => setTimeout(r, 1500));
-    // URL 정리
-    window.history.replaceState({}, document.title, window.location.pathname);
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+
+  // 핵심: Supabase가 URL에서 세션 읽게 함
+  const { data, error } = await sb.auth.getSession();
+
+  // URL 정리
+  window.history.replaceState({}, document.title, window.location.pathname);
+
+  if (data?.session?.user) {
+    await onLogin(data.session.user);
+    return;
   }
+
 
   // 현재 세션 확인
   const { data: { session } } = await sb.auth.getSession();
