@@ -2248,29 +2248,20 @@ async function initAuth() {
 }
 
 async function onLogin(user) {
-  // 임시 디버그
-  const d1 = document.createElement('div');
-  d1.style.cssText = 'position:fixed;top:0;left:0;right:0;background:blue;color:white;font-size:14px;font-weight:700;padding:15px;z-index:99999;text-align:center';
-  d1.textContent = '🔵 onLogin 시작 — ' + (user?.email || '없음');
-  document.body.appendChild(d1);
-
   try {
     currentUser = user;
     isAdmin = user.email === ADMIN_EMAIL;
 
-    d1.textContent = '🔵 DB upsert 시도 중...';
-
-    // upsert는 백그라운드로 (await 없이) — 모바일 hang 방지
+    // upsert 백그라운드 실행 (await 없이)
     sb.from('users').upsert({
       id: user.id,
       email: user.email,
       name: user.user_metadata?.full_name || '',
       avatar: user.user_metadata?.avatar_url || '',
       last_seen: new Date().toISOString(),
-    }, { onConflict: 'id', ignoreDuplicates: false }).catch(e => console.log('upsert 오류:', e.message));
+    }, { onConflict: 'id', ignoreDuplicates: false }).then(() => {}).catch(e => console.log('upsert 오류:', e.message));
 
-    d1.textContent = '🔵 role 읽는 중...';
-
+    // role 읽기 (3초 타임아웃)
     let role = '';
     try {
       const rolePromise = sb.from('users').select('role').eq('id', user.id).single();
@@ -2281,18 +2272,13 @@ async function onLogin(user) {
 
     isBeta = (role === 'beta') && !isAdmin;
 
-    d1.textContent = '🔵 showMain 호출 직전...';
-    setTimeout(() => d1.remove(), 3000);
-
     if (isAdmin) {
       showAdminDashboard();
     } else {
       showMain();
     }
   } catch(e) {
-    d1.textContent = '🔴 onLogin 에러: ' + e.message;
     console.error('onLogin 오류:', e);
-    setTimeout(() => d1.remove(), 5000);
     showMain();
   }
 }
@@ -2334,16 +2320,6 @@ function showMain() {
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('mainApp').style.display = 'flex';
   document.getElementById('adminDashboard').style.display = 'none';
-
-  // 임시 디버그 배너 (모바일 확인용)
-  const debugEl = document.getElementById('mobileDebug');
-  if (debugEl) debugEl.remove();
-  const debug = document.createElement('div');
-  debug.id = 'mobileDebug';
-  debug.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:16px;font-weight:700;padding:20px;z-index:99999;text-align:center';
-  debug.textContent = '✅ showMain 실행됨 — ' + (currentUser?.email || '유저없음');
-  document.body.appendChild(debug);
-  setTimeout(() => { if (debug) debug.remove(); }, 5000);
 
   // 저장된 ID 복원
   savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
