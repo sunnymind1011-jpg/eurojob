@@ -113,12 +113,10 @@ function detectLangs(d) {
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
-    if (!j) return false; // j가 null이나 undefined면 건너뜀 (에러 방지 핵심)
-    
+    // VisaSponsor 공고는 ID 기준으로 중복 제거 (title 파싱 오류 방지)
     const key = j.source === 'VisaSponsor'
       ? j.id
       : `${j.title}__${j.company}`.toLowerCase();
-    
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -293,7 +291,7 @@ function fetchRemotive() {
 // 무료 공개 API, 인증 불필요, 유럽 국가별 원격 공고 수집
 
 const HIMALAYAS_COUNTRIES = ['Germany','Netherlands','Spain','United Kingdom','France','Portugal','Ireland','Belgium','Switzerland','Italy'];
-const HIMALAYAS_TWO_WEEKS = 14; // 최근 2주 필터 (일)
+const HIMALAYAS_TWO_WEEKS = 30; // 30일로 넉넉하게
 
 async function fetchHimalayas() {
   const allJobs = [];
@@ -341,13 +339,15 @@ async function fetchHimalayas() {
       const code = COUNTRY_CODE_MAP[country] || 'EU';
 
       for (const j of jobs) {
-        if (seen.has(String(j.id))) continue;
+        const seenKey = `${j.id}_${code}`;
+        if (seen.has(seenKey)) continue;
 
-        // 2주 이내 공고만
-        const posted = new Date(j.createdAt || j.updatedAt || 0);
+        // 날짜 필드 — Himalayas API 응답에 따라 다를 수 있음
+        const dateStr = j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || null;
+        const posted = dateStr ? new Date(dateStr) : new Date();
         if (posted < twoWeeksAgo) continue;
 
-        seen.add(String(j.id));
+        seen.add(seenKey);
         allJobs.push({
           id:           `hm_${j.id}`,
           title:        j.title || '',
@@ -360,7 +360,7 @@ async function fetchHimalayas() {
           description:  j.description || '',
           url:          j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
           salary:       j.salary ? `${j.salary}` : null,
-          postedAt:     j.createdAt || new Date().toISOString(),
+          postedAt:     dateStr || new Date().toISOString(),
           source:       'Himalayas',
           skills:       (j.categories || []).slice(0, 5),
           visaSponsored: false,
@@ -453,23 +453,20 @@ export default async function handler(req, res) {
 
   // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
-  for (const cat of CATEGORIES) {
-    const jobs = await fetchAdzuna(country.code, cat.tag);
-    // .filter(Boolean)을 추가해서 null인 항목을 제거합니다.
-    allJobs.push(...jobs.map(j => normalizeAdzuna(j, country.code)).filter(Boolean));
-    await new Promise(r => setTimeout(r, 150));
+    for (const cat of CATEGORIES) {
+      const jobs = await fetchAdzuna(country.code, cat.tag);
+      allJobs.push(...jobs.map(j => normalizeAdzuna(j, country.code)).filter(Boolean));
+      await new Promise(r => setTimeout(r, 150));
+    }
   }
-}
 
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
-  for (const kw of DATA_KEYWORDS) {
-    const kwJobs = await fetchAdzunaKeyword(country, kw);
-    // 여기도 마찬가지로 null 필터링을 거칩니다.
-    allJobs.push(...kwJobs.filter(Boolean)); 
-    await new Promise(r => setTimeout(r, 150));
+    for (const kw of DATA_KEYWORDS) {
+      allJobs.push(...await fetchAdzunaKeyword(country, kw));
+      await new Promise(r => setTimeout(r, 150));
+    }
   }
-}
 
   // Remotive 수집
   allJobs.push(...await fetchRemotive());
