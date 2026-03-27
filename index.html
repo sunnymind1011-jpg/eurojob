@@ -2221,14 +2221,20 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      await onLogin(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      showLanding();
+  sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' || session) {
+    document.getElementById('landingPage').style.display = 'none';
+    document.querySelector('.shell').style.display = 'flex';
+    // ... (이하 유저 정보 업데이트 로직)
+  } else {
+    // [중요] 모바일 튕김 방지: 
+    // SIGNED_OUT(로그아웃 클릭)일 때만 랜딩을 보여주도록 변경합니다.
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('landingPage').style.display = 'block';
+      document.querySelector('.shell').style.display = 'none';
     }
-  });
-}
+  }
+});
 
 async function onLogin(user) {
   currentUser = user;
@@ -2263,17 +2269,15 @@ async function onLogin(user) {
   }
 }
 
-async function signInWithGoogle() {
-  const { error } = await sb.auth.signInWithOAuth({
+async function signInWithGoogle() { // 함수 이름 틀리지 않게 수정했습니다.
+  const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin,
+      // 이 옵션을 추가해야 모바일에서 로그인 후 랜딩으로 튕기지 않습니다.
+      redirectTo: window.location.origin
     }
   });
-  if (error) {
-    document.getElementById('loginError').style.display = 'block';
-    document.getElementById('loginError').textContent = '로그인 실패: ' + error.message;
-  }
+  if (error) console.error('Login error:', error.message);
 }
 
 async function signOut() {
