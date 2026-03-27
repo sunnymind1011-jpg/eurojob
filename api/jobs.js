@@ -113,7 +113,7 @@ function detectLangs(d) {
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
-    // VisaSponsor 공고는 ID 기준으로 중복 제거 (title 파싱 오류 방지)
+    if (!j) return false; // null 체크
     const key = j.source === 'VisaSponsor'
       ? j.id
       : `${j.title}__${j.company}`.toLowerCase();
@@ -342,10 +342,7 @@ async function fetchHimalayas() {
         const seenKey = `${j.id}_${code}`;
         if (seen.has(seenKey)) continue;
 
-        // 날짜 필드 — Himalayas API 응답에 따라 다를 수 있음
         const dateStr = j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || null;
-        const posted = dateStr ? new Date(dateStr) : new Date();
-        if (posted < twoWeeksAgo) continue;
 
         seen.add(seenKey);
         allJobs.push({
@@ -369,7 +366,7 @@ async function fetchHimalayas() {
           languageReqs: ['English'],
         });
       }
-      console.log(`  Himalayas ${country}: ${jobs.length}개`);
+      console.log(`  Himalayas ${country}: ${jobs.length}개 (누적: ${allJobs.length}개)`);
     } catch(e) {
       console.log(`  Himalayas ${country} 오류: ${e.message}`);
     }
