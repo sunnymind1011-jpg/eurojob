@@ -1,11 +1,11 @@
 // api/jobs.js — Adzuna + Remotive + visasponsor.jobs 유럽 채용공고 수집
 import https from 'https';
- 
+
 export const maxDuration = 60;
- 
+
 const ADZUNA_APP_ID  = '22308f32';
 const ADZUNA_APP_KEY = '4902733d7210f0c75a0ad5a8d38a3c17';
- 
+
 const COUNTRIES = [
   { code: 'gb', name: 'United Kingdom', flag: '🇬🇧' },
   { code: 'de', name: 'Germany',        flag: '🇩🇪' },
@@ -19,17 +19,17 @@ const COUNTRIES = [
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
   { code: 'ie', name: 'Ireland',        flag: '🇮🇪' },
 ];
- 
+
 const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
 const MAJOR_COUNTRIES = ['gb', 'de', 'es', 'nl', 'fr'];
- 
+
 const CATEGORIES = [
   { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
   { tag: 'pr-advertising-marketing-jobs', label: '마케팅 / 광고 / PR' },
   { tag: 'hr-jobs',                       label: 'HR / 채용'          },
   { tag: 'scientific-qa-jobs',            label: '데이터 / 분석 / 과학' },
 ];
- 
+
 const COUNTRY_INFO = {
   gb: { name: 'United Kingdom', flag: '🇬🇧', code: 'GB' },
   de: { name: 'Germany',        flag: '🇩🇪', code: 'DE' },
@@ -43,14 +43,14 @@ const COUNTRY_INFO = {
   ch: { name: 'Switzerland',    flag: '🇨🇭', code: 'CH' },
   ie: { name: 'Ireland',        flag: '🇮🇪', code: 'IE' },
 };
- 
+
 function companyEmoji(name) {
   const e = ['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];
   return e[(name.charCodeAt(0) || 0) % e.length] || '🏢';
 }
- 
+
 // ── 개선된 감지 함수들 ──────────────────────────────────────
- 
+
 function detectVisaSponsorship(d) {
   if (!d) return false;
   const text = d.toLowerCase();
@@ -61,20 +61,20 @@ function detectVisaSponsorship(d) {
   // 긍정 표현
   return /visa sponsorship (available|provided|offered|supported|possible|considered)|we (will|can|do) sponsor|sponsor(ing|ed|ship for) (non-eu|non eu|international|overseas|foreign|candidates|applicants)|skilled worker visa|work permit (provided|supported|assistance|included)|right to work (provided|sponsored|supported)|eu blue card|tier 2 (visa|sponsor)|sponsorship (available|provided|offered)|open to sponsoring|happy to sponsor|able to sponsor|(visa|sponsorship|work permit).{0,50}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,50}(visa|sponsorship|work permit)/i.test(text);
 }
- 
+
 function detectRelocation(d) {
   if (!d) return false;
   const text = d.toLowerCase();
   if (/no relocation|relocation (not|is not) (provided|offered|available|supported)/i.test(text)) return false;
   return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)|(relocation|moving).{0,40}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,40}(relocation|moving)|(package|support|assistance).{0,30}relocation|relo (package|support|benefit)/i.test(text);
 }
- 
+
 function detectRemote(t) {
   if (/remote/i.test(t)) return 'Remote';
   if (/hybrid/i.test(t)) return 'Hybrid';
   return 'On-site';
 }
- 
+
 function detectLevel(title, desc) {
   const t = (title + ' ' + desc).toLowerCase();
   if (/\bdirector\b|\bvp\b|\bvice president\b|\bhead of\b/i.test(t)) return 'Director';
@@ -86,7 +86,7 @@ function detectLevel(title, desc) {
   if (/\bmid.level\b|\bmedior\b/i.test(t)) return 'Mid';
   return '';
 }
- 
+
 function detectWritingLang(d) {
   if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) &&
       (d.match(/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour)\b/gi)||[]).length > 3) return 'French';
@@ -100,7 +100,7 @@ function detectWritingLang(d) {
       (d.match(/\b(wij|ons|onze|voor|met|een|van)\b/g)||[]).length > 3) return 'Dutch';
   return 'English';
 }
- 
+
 function detectLangs(d) {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
@@ -109,7 +109,7 @@ function detectLangs(d) {
   if (/korean|한국어/i.test(d)) l.push('Korean');
   return l;
 }
- 
+
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
@@ -122,9 +122,9 @@ function removeDups(jobs) {
     return true;
   });
 }
- 
+
 // ── Adzuna ────────────────────────────────────────────────
- 
+
 const COUNTRY_LOCATION_KEYWORDS = {
   gb: ['united kingdom','england','scotland','wales','northern ireland','london','manchester','birmingham','edinburgh','glasgow','bristol','leeds','liverpool'],
   de: ['germany','deutschland','berlin','munich','münchen','hamburg','frankfurt','cologne','köln','düsseldorf','stuttgart','dortmund'],
@@ -138,21 +138,21 @@ const COUNTRY_LOCATION_KEYWORDS = {
   ch: ['switzerland','schweiz','zurich','zürich','geneva','genève','basel','bern','lausanne'],
   ie: ['ireland','dublin','cork','galway','limerick','waterford'],
 };
- 
+
 function isLocationMatch(location, countryCode) {
   if (!location) return true; // 위치 정보 없으면 통과
   const loc = location.toLowerCase();
   const keywords = COUNTRY_LOCATION_KEYWORDS[countryCode] || [];
   return keywords.some(kw => loc.includes(kw));
 }
- 
+
 function normalizeAdzuna(raw, countryCode) {
   const info = COUNTRY_INFO[countryCode] || { name: countryCode, flag: '🌍', code: countryCode.toUpperCase() };
   const location = raw.location?.display_name || info.name;
- 
+
   // 위치가 해당 국가와 맞지 않으면 null 반환 (호출부에서 필터링)
   if (!isLocationMatch(location, countryCode)) return null;
- 
+
   const desc = raw.description || '';
   const salary = raw.salary_min && raw.salary_max
     ? `${raw.currency || '€'}${Math.round(raw.salary_min).toLocaleString()}–${Math.round(raw.salary_max).toLocaleString()}/yr`
@@ -178,7 +178,7 @@ function normalizeAdzuna(raw, countryCode) {
     languageReqs: detectLangs(desc),
   };
 }
- 
+
 function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
@@ -206,7 +206,7 @@ function fetchAdzuna(countryCode, categoryTag) {
     req.end();
   });
 }
- 
+
 function fetchAdzunaKeyword(countryCode, keyword) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
@@ -234,9 +234,9 @@ function fetchAdzunaKeyword(countryCode, keyword) {
     req.end();
   });
 }
- 
+
 // ── Remotive ──────────────────────────────────────────────
- 
+
 function fetchRemotive() {
   return new Promise((resolve) => {
     const categories = ['marketing', 'data', 'hr'];
@@ -286,18 +286,18 @@ function fetchRemotive() {
     });
   });
 }
- 
+
 // ── Himalayas ─────────────────────────────────────────────
 // 무료 공개 API, 인증 불필요, 유럽 국가별 원격 공고 수집
- 
+
 const HIMALAYAS_COUNTRIES = ['Germany','Netherlands','Spain','United Kingdom','France','Portugal','Ireland','Belgium','Switzerland','Italy'];
 const HIMALAYAS_TWO_WEEKS = 30; // 30일로 넉넉하게
- 
+
 async function fetchHimalayas() {
   const allJobs = [];
   const seen = new Set();
   const twoWeeksAgo = new Date(Date.now() - HIMALAYAS_TWO_WEEKS * 24 * 3600 * 1000);
- 
+
   const COUNTRY_CODE_MAP = {
     'Germany':'DE','Netherlands':'NL','Spain':'ES','United Kingdom':'GB',
     'France':'FR','Portugal':'PT','Ireland':'IE','Belgium':'BE',
@@ -307,7 +307,7 @@ async function fetchHimalayas() {
     DE:'🇩🇪',NL:'🇳🇱',ES:'🇪🇸',GB:'🇬🇧',FR:'🇫🇷',
     PT:'🇵🇹',IE:'🇮🇪',BE:'🇧🇪',CH:'🇨🇭',IT:'🇮🇹',
   };
- 
+
   for (const country of HIMALAYAS_COUNTRIES) {
     await new Promise(r => setTimeout(r, 300));
     try {
@@ -334,13 +334,13 @@ async function fetchHimalayas() {
         req.setTimeout(10000, () => { req.destroy(); resolve({}); });
         req.end();
       });
- 
+
       const jobs = data.jobs || [];
       const code = COUNTRY_CODE_MAP[country] || 'EU';
- 
+
       for (const j of jobs) {
         const dateStr = j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || null;
- 
+
         allJobs.push({
           id:           `hm_${j.id}_${code}`,
           title:        j.title || '',
@@ -355,7 +355,7 @@ async function fetchHimalayas() {
           salary:       j.salary ? `${j.salary}` : null,
           postedAt:     dateStr || new Date().toISOString(),
           source:       'Himalayas',
-          skills:       (j.categories || []).slice(0, 5),
+          skills:       (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
           visaSponsored: false,
           relocation:   false,
           remoteType:   'Remote',
@@ -372,10 +372,10 @@ async function fetchHimalayas() {
 }
 // GitHub Actions가 매일 스크래핑 → Supabase visa_jobs 테이블에 저장
 // jobs.js는 그냥 읽어오기만 함
- 
+
 const SUPABASE_URL = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
- 
+
 async function fetchVisaSponsorFromSupabase() {
   try {
     const res = await fetch(
@@ -390,9 +390,9 @@ async function fetchVisaSponsorFromSupabase() {
     if (!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
     const rows = await res.json();
     if (!Array.isArray(rows) || rows.length === 0) return [];
- 
+
     console.log(`  visasponsor (Supabase): ${rows.length}개`);
- 
+
     return rows.map(r => ({
       id:           `vs_${r.id}`,
       title:        r.title || '',
@@ -419,31 +419,31 @@ async function fetchVisaSponsorFromSupabase() {
     return [];
   }
 }
- 
+
 // ── 메모리 캐시 ───────────────────────────────────────────
- 
+
 let cache = { jobs: [], fetchedAt: null };
- 
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
- 
+
   const { refresh } = req.query;
   const cacheAgeHours = cache.fetchedAt
     ? (Date.now() - new Date(cache.fetchedAt)) / 3600000
     : 999;
- 
+
   if (cache.jobs.length > 0 && cacheAgeHours < 12 && refresh !== '1') {
     return res.status(200).json({
       ok: true, count: cache.jobs.length,
       fetchedAt: cache.fetchedAt, cached: true, jobs: cache.jobs,
     });
   }
- 
+
   console.log('🔄 수집 시작 (Adzuna + Remotive + Himalayas + VisaSponsor)...');
   let allJobs = [];
- 
+
   // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
@@ -452,7 +452,7 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
- 
+
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
@@ -460,22 +460,22 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
- 
+
   // Remotive 수집
   allJobs.push(...await fetchRemotive());
- 
+
   // Himalayas 수집 (최근 2주, 유럽 국가별 원격 공고)
   console.log('🏔️ Himalayas 수집 시작...');
   allJobs.push(...await fetchHimalayas());
- 
+
   // visasponsor.jobs — Supabase에서 읽기 (GitHub Actions가 매일 채움)
   console.log('🛂 visasponsor.jobs (Supabase) 로드...');
   allJobs.push(...await fetchVisaSponsorFromSupabase());
- 
+
   cache.jobs = removeDups(allJobs);
   cache.fetchedAt = new Date().toISOString();
   console.log(`✅ 완료: ${cache.jobs.length}개 (비자스폰서 확정: ${cache.jobs.filter(j=>j.visaSponsored).length}개)`);
- 
+
   res.status(200).json({
     ok: true, count: cache.jobs.length,
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
