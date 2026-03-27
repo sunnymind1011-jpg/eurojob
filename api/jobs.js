@@ -339,14 +339,10 @@ async function fetchHimalayas() {
       const code = COUNTRY_CODE_MAP[country] || 'EU';
 
       for (const j of jobs) {
-        const seenKey = `${j.id}_${code}`;
-        if (seen.has(seenKey)) continue;
-
         const dateStr = j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || null;
 
-        seen.add(seenKey);
         allJobs.push({
-          id:           `hm_${j.id}`,
+          id:           `hm_${j.id}_${code}`,
           title:        j.title || '',
           level:        detectLevel(j.title || '', j.description || ''),
           company:      j.company?.name || '',
