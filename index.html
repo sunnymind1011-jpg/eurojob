@@ -2196,6 +2196,16 @@ let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
+
+  // 🔥 반드시 제일 먼저 실행
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await onLogin(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showLanding();
+    }
+  });
+
   const hasToken =
     window.location.hash.includes('access_token') ||
     window.location.hash.includes('error_description') ||
@@ -2205,21 +2215,14 @@ async function initAuth() {
     document.getElementById('landingPage').style.display = 'none';
     document.getElementById('mainApp').style.display = 'none';
 
-    const { data } = await sb.auth.getSession();
+    await sb.auth.getSession();
 
-    // URL 정리
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    if (data?.session?.user) {
-      await onLogin(data.session.user);
-    } else {
-      showLanding();
-    }
-
-    return; // 🔥🔥🔥 이거 필수
+    return;
   }
 
-  // 👇 일반 진입은 여기서만 처리
+  // 일반 진입
   const { data: { session } } = await sb.auth.getSession();
 
   if (session?.user) {
@@ -2227,14 +2230,6 @@ async function initAuth() {
   } else {
     showLanding();
   }
-
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      await onLogin(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      showLanding();
-    }
-  });
 }
 
 async function onLogin(user) {
