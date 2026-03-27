@@ -2222,41 +2222,14 @@ async function initAuth() {
 
   // 로그인/로그아웃 상태 변경 감지
   sb.auth.onAuthStateChange(async (event, session) => {
-  const landing = document.getElementById('landingPage');
-  const shell = document.querySelector('.shell');
-
-  if (session) {
-    // 세션이 확인되면 메인 표시
-    landing.style.display = 'none';
-    shell.style.display = 'flex';
-
-    const emailEl = document.getElementById('userEmail');
-    if (emailEl) emailEl.textContent = session.user.email;
-    
-    const avatarEl = document.getElementById('userAvatar');
-    if (avatarEl && session.user.user_metadata && session.user.user_metadata.avatar_url) {
-      avatarEl.src = session.user.user_metadata.avatar_url;
+    if (event === 'SIGNED_IN' && session?.user) {
+      await onLogin(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showLanding();
     }
-    
-    if (typeof fetchJobs === 'function') fetchJobs();
-  } else {
-    // 모바일 튕김 방지 핵심: SIGNED_OUT이 아닐 때는 화면을 바로 바꾸지 않음
-    if (event === 'SIGNED_OUT') {
-      landing.style.display = 'block';
-      shell.style.display = 'none';
-    } else if (event === 'INITIAL_SESSION') {
-      // 1.5초 대기 후에도 세션이 없으면 그때 랜딩 페이지 노출
-      setTimeout(async () => {
-        const { data } = await sb.auth.getSession();
-        if (!data || !data.session) {
-          landing.style.display = 'block';
-          shell.style.display = 'none';
-        }
-      }, 1500);
-    }
-  }
-});
-  
+  });
+}
+
 async function onLogin(user) {
   currentUser = user;
   isAdmin = user.email === ADMIN_EMAIL;
@@ -2291,13 +2264,16 @@ async function onLogin(user) {
 }
 
 async function signInWithGoogle() {
-  const { data, error } = await sb.auth.signInWithOAuth({
+  const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin
+      redirectTo: window.location.origin,
     }
   });
-  if (error) console.error('Login error:', error.message);
+  if (error) {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginError').textContent = '로그인 실패: ' + error.message;
+  }
 }
 
 async function signOut() {
