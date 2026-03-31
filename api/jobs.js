@@ -290,7 +290,7 @@ function fetchRemotive() {
 // ── Himalayas ─────────────────────────────────────────────
 // 무료 공개 API, 인증 불필요, 유럽 국가별 원격 공고 수집
  
-const HIMALAYAS_COUNTRIES = ['Germany','Netherlands','Spain','United Kingdom','France','Portugal','Ireland','Belgium','Switzerland','Italy','Estonia'];
+const HIMALAYAS_COUNTRIES = ['Germany','Netherlands','Spain','United Kingdom','France','Portugal','Ireland','Belgium','Switzerland','Italy'];
 const HIMALAYAS_TWO_WEEKS = 30; // 30일로 넉넉하게
  
 async function fetchHimalayas() {
@@ -301,11 +301,11 @@ async function fetchHimalayas() {
   const COUNTRY_CODE_MAP = {
     'Germany':'DE','Netherlands':'NL','Spain':'ES','United Kingdom':'GB',
     'France':'FR','Portugal':'PT','Ireland':'IE','Belgium':'BE',
-    'Switzerland':'CH','Italy':'IT','Estonia':'EE',
+    'Switzerland':'CH','Italy':'IT',
   };
   const FLAG_MAP = {
     DE:'🇩🇪',NL:'🇳🇱',ES:'🇪🇸',GB:'🇬🇧',FR:'🇫🇷',
-    PT:'🇵🇹',IE:'🇮🇪',BE:'🇧🇪',CH:'🇨🇭',IT:'🇮🇹',EE:'🇪🇪',
+    PT:'🇵🇹',IE:'🇮🇪',BE:'🇧🇪',CH:'🇨🇭',IT:'🇮🇹',
   };
  
   for (const country of HIMALAYAS_COUNTRIES) {
@@ -342,7 +342,7 @@ async function fetchHimalayas() {
         const dateStr = j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || null;
  
         allJobs.push({
-          id:           `hm_${j.id}_${code}`,
+          id:           `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
           title:        j.title || '',
           level:        detectLevel(j.title || '', j.description || ''),
           company:      j.company?.name || '',
