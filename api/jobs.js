@@ -308,65 +308,56 @@ async function fetchHimalayas() {
     PT:'🇵🇹',IE:'🇮🇪',BE:'🇧🇪',CH:'🇨🇭',IT:'🇮🇹',
   };
  
-  for (const country of HIMALAYAS_COUNTRIES) {
-    await new Promise(r => setTimeout(r, 300));
-    try {
-      const params = new URLSearchParams({
-        country,
-        limit: '20',
-        sort: 'recent',
+  const fetchOne = (country) => new Promise((resolve) => {
+    const code = COUNTRY_CODE_MAP[country] || 'EU';
+    const params = new URLSearchParams({ country, limit: '20', sort: 'recent' });
+    const req = https.request({
+      hostname: 'himalayas.app',
+      path: `/jobs/api/search?${params}`,
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+    }, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(raw);
+          const jobs = (data.jobs || []).map(j => ({
+            id:           `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
+            title:        j.title || '',
+            level:        detectLevel(j.title || '', j.description || ''),
+            company:      j.company?.name || '',
+            location:     country,
+            country:      code,
+            flag:         FLAG_MAP[code] || '🌍',
+            logo:         companyEmoji(j.company?.name || ''),
+            description:  j.description || '',
+            url:          j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
+            salary:       j.salary ? `${j.salary}` : null,
+            postedAt:     j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || new Date().toISOString(),
+            source:       'Himalayas',
+            skills:       (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+            visaSponsored: false,
+            relocation:   false,
+            remoteType:   'Remote',
+            languageReqs: ['English'],
+          }));
+          console.log(`  Himalayas ${country}: ${jobs.length}개`);
+          resolve(jobs);
+        } catch(e) {
+          console.log(`  Himalayas ${country} 파싱 오류`);
+          resolve([]);
+        }
       });
-      const data = await new Promise((resolve) => {
-        const req = https.request({
-          hostname: 'himalayas.app',
-          path: `/jobs/api/search?${params}`,
-          method: 'GET',
-          headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
-        }, res => {
-          let raw = '';
-          res.on('data', c => raw += c);
-          res.on('end', () => {
-            try { resolve(JSON.parse(raw)); }
-            catch(e) { resolve({}); }
-          });
-        });
-        req.on('error', () => resolve({}));
-        req.setTimeout(10000, () => { req.destroy(); resolve({}); });
-        req.end();
-      });
+    });
+    req.on('error', () => { console.log(`  Himalayas ${country} 요청 오류`); resolve([]); });
+    req.setTimeout(5000, () => { req.destroy(); console.log(`  Himalayas ${country} 타임아웃`); resolve([]); });
+    req.end();
+  });
  
-      const jobs = data.jobs || [];
-      const code = COUNTRY_CODE_MAP[country] || 'EU';
- 
-      for (const j of jobs) {
-        const dateStr = j.createdAt || j.publishedAt || j.posted_at || j.updatedAt || null;
- 
-        allJobs.push({
-          id:           `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
-          title:        j.title || '',
-          level:        detectLevel(j.title || '', j.description || ''),
-          company:      j.company?.name || '',
-          location:     country,
-          country:      code,
-          flag:         FLAG_MAP[code] || '🌍',
-          logo:         companyEmoji(j.company?.name || ''),
-          description:  j.description || '',
-          url:          j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
-          salary:       j.salary ? `${j.salary}` : null,
-          postedAt:     dateStr || new Date().toISOString(),
-          source:       'Himalayas',
-          skills:       (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
-          visaSponsored: false,
-          relocation:   false,
-          remoteType:   'Remote',
-          languageReqs: ['English'],
-        });
-      }
-      console.log(`  Himalayas ${country}: ${jobs.length}개 (누적: ${allJobs.length}개)`);
-    } catch(e) {
-      console.log(`  Himalayas ${country} 오류: ${e.message}`);
-    }
-  }
+  // 병렬 요청
+  const results = await Promise.all(HIMALAYAS_COUNTRIES.map(fetchOne));
+  results.forEach(jobs => allJobs.push(...jobs));
   console.log(`  Himalayas 합계: ${allJobs.length}개`);
   return allJobs;
 }
