@@ -649,6 +649,7 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="country:CH" onclick="toggleChip(this)">🇨🇭 스위스</div>
         <div class="chip" data-f="country:IT" onclick="toggleChip(this)">🇮🇹 이탈리아</div>
         <div class="chip" data-f="country:BE" onclick="toggleChip(this)">🇧🇪 벨기에</div>
+        <div class="chip" data-f="country:EE" onclick="toggleChip(this)">🇪🇪 에스토니아</div>
         <div class="chip" data-f="country:IE" onclick="toggleChip(this)">🇮🇪 아일랜드</div>
         <div class="chip" data-f="country:EU" onclick="toggleChip(this)">🌍 기타유럽/글로벌</div>
       </div>
@@ -1306,7 +1307,7 @@ function detectCountry(l) {
   return 'EU';
 }
 function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱'}[c]||'🌍';}
-function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드'}[c]||c;}
+function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드',EE:'에스토니아'}[c]||c;}
 function detectVisaSponsorship(d) {
   if (!d) return false;
   const text = d.toLowerCase();
@@ -3284,5 +3285,4 @@ function closeSkillDrawer(e) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   
 </body>
-</html>  
-
+</html>
