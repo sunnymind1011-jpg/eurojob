@@ -254,7 +254,16 @@ function fetchRemotive() {
         res.on('end', () => {
           try {
             const desc = '';
-            const jobs = (JSON.parse(data).jobs || []).map(r => ({
+            const jobs = (JSON.parse(data).jobs || [])
+              .filter(r => {
+                const loc = (r.candidate_required_location || '').toLowerCase();
+                // USA 전용 공고 제외
+                if (loc === 'usa' || loc === 'us' || loc === 'united states') return false;
+                if (loc === 'usa only' || loc === 'us only' || loc === 'united states only') return false;
+                if (/^usa?\s*only$/i.test(loc)) return false;
+                return true;
+              })
+              .map(r => ({
               id:           String(r.id),
               title:        r.title || '',
               level:        detectLevel(r.title || '', r.description || ''),
