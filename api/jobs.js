@@ -299,7 +299,7 @@ function fetchRemotive() {
 // ── Himalayas ─────────────────────────────────────────────
 // 무료 공개 API, 인증 불필요, 유럽 국가별 원격 공고 수집
  
-const HIMALAYAS_COUNTRIES = ['Germany','Netherlands','Spain','United Kingdom','France','Portugal','Ireland','Belgium','Switzerland','Italy'];
+const HIMALAYAS_COUNTRIES = ['Germany','Netherlands','Spain','United Kingdom','France','Portugal','Ireland','Belgium','Switzerland','Italy','Norway','Sweden','Denmark','Finland'];
 const HIMALAYAS_TWO_WEEKS = 30; // 30일로 넉넉하게
  
 async function fetchHimalayas() {
@@ -311,10 +311,12 @@ async function fetchHimalayas() {
     'Germany':'DE','Netherlands':'NL','Spain':'ES','United Kingdom':'GB',
     'France':'FR','Portugal':'PT','Ireland':'IE','Belgium':'BE',
     'Switzerland':'CH','Italy':'IT',
+    'Norway':'NO','Sweden':'SE','Denmark':'DK','Finland':'FI',
   };
   const FLAG_MAP = {
     DE:'🇩🇪',NL:'🇳🇱',ES:'🇪🇸',GB:'🇬🇧',FR:'🇫🇷',
     PT:'🇵🇹',IE:'🇮🇪',BE:'🇧🇪',CH:'🇨🇭',IT:'🇮🇹',
+    NO:'🇳🇴',SE:'🇸🇪',DK:'🇩🇰',FI:'🇫🇮',
   };
  
   const fetchOne = (country) => new Promise((resolve) => {
