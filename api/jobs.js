@@ -267,10 +267,11 @@ function fetchRemotive() {
             const jobs = (JSON.parse(data).jobs || [])
               .filter(r => {
                 const loc = (r.candidate_required_location || '').toLowerCase();
+                // 비어있거나 전세계/원격이면 무조건 통과
                 if (!loc || loc === 'remote' || loc === 'worldwide' || loc === 'anywhere') return true;
-                // 유럽 관련 표현이 있으면 통과
-                if (loc.includes('europe') || loc.includes('eu ')) return true;
-                // 비유럽 국가 전용이면 제외
+                // 유럽 관련 표현이 있으면 무조건 통과
+                if (loc.includes('europe') || loc.includes('eu ') || loc.includes('worldwide')) return true;
+                // 비유럽 국가만 있는 경우 제외
                 const isNonEu = NON_EU_REMOTIVE.some(n => loc.includes(n));
                 return !isNonEu;
               })
