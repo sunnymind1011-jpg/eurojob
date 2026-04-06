@@ -255,15 +255,24 @@ function fetchRemotive() {
         res.on('data', c => data += c);
         res.on('end', () => {
           try {
-            const desc = '';
+            const NON_EU_REMOTIVE = [
+              'united states','usa','us only','canada','australia','new zealand',
+              'latin america','south america','africa','asia',
+              'india','china','japan','brazil','mexico','argentina','colombia',
+              'chile','peru','venezuela','ecuador','bolivia','paraguay','uruguay',
+              'nigeria','kenya','south africa','egypt','pakistan','bangladesh',
+              'philippines','indonesia','vietnam','thailand','malaysia',
+              'south korea','taiwan','hong kong','middle east','gulf',
+            ];
             const jobs = (JSON.parse(data).jobs || [])
               .filter(r => {
                 const loc = (r.candidate_required_location || '').toLowerCase();
-                // USA 전용 공고 제외
-                if (loc === 'usa' || loc === 'us' || loc === 'united states') return false;
-                if (loc === 'usa only' || loc === 'us only' || loc === 'united states only') return false;
-                if (/^usa?\s*only$/i.test(loc)) return false;
-                return true;
+                if (!loc || loc === 'remote' || loc === 'worldwide' || loc === 'anywhere') return true;
+                // 유럽 관련 표현이 있으면 통과
+                if (loc.includes('europe') || loc.includes('eu ')) return true;
+                // 비유럽 국가 전용이면 제외
+                const isNonEu = NON_EU_REMOTIVE.some(n => loc.includes(n));
+                return !isNonEu;
               })
               .map(r => ({
               id:           String(r.id),
@@ -274,7 +283,7 @@ function fetchRemotive() {
               country:      'EU',
               flag:         '🌍',
               logo:         '🚀',
-              description:  r.description || '',
+              description:  (r.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
               url:          r.url || '#',
               salary:       r.salary || null,
               postedAt:     r.publication_date || new Date().toISOString(),
@@ -348,7 +357,15 @@ function fetchHimalayasCountry(country, code) {
       res.on('end', () => {
         try {
           const data = JSON.parse(raw);
-          const NON_EU = ['united states','usa','us only','canada','australia','new zealand','latin america','south america','africa','asia','india','china','japan','brazil','mexico'];
+          const NON_EU = [
+            'united states','usa','us only','canada','australia','new zealand',
+            'latin america','south america','africa','asia',
+            'india','china','japan','brazil','mexico','argentina','colombia',
+            'chile','peru','venezuela','ecuador','bolivia','paraguay','uruguay',
+            'nigeria','kenya','south africa','egypt','pakistan','bangladesh',
+            'philippines','indonesia','vietnam','thailand','malaysia',
+            'south korea','taiwan','hong kong','middle east','gulf',
+          ];
 
           const jobs = (data.jobs || []).filter(j => {
             const restrictions = j.locationRestrictions || [];
