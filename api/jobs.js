@@ -474,7 +474,12 @@ export default async function handler(req, res) {
  
   console.log('🔄 수집 시작 (Adzuna + Remotive + Himalayas + VisaSponsor)...');
   let allJobs = [];
- 
+
+  // Himalayas + Remotive 먼저 (빠르게 끝남)
+  console.log('🏔️ Himalayas 수집 시작...');
+  allJobs.push(...await fetchHimalayas());
+  allJobs.push(...await fetchRemotive());
+
   // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
@@ -483,7 +488,7 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
- 
+
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
@@ -500,13 +505,6 @@ export default async function handler(req, res) {
     }
   }
  
-  // Remotive 수집
-  allJobs.push(...await fetchRemotive());
- 
-  // Himalayas 수집 (최근 2주, 유럽 국가별 원격 공고)
-  console.log('🏔️ Himalayas 수집 시작...');
-  allJobs.push(...await fetchHimalayas());
- 
   // visasponsor.jobs — Supabase에서 읽기 (GitHub Actions가 매일 채움)
   console.log('🛂 visasponsor.jobs (Supabase) 로드...');
   allJobs.push(...await fetchVisaSponsorFromSupabase());
@@ -520,3 +518,4 @@ export default async function handler(req, res) {
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
   });
 }
+
