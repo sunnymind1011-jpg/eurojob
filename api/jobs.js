@@ -341,9 +341,14 @@ async function fetchHimalayas() {
   // 최근 5페이지 병렬로 가져오기 (100개 공고)
   const offsets = [0, 20, 40, 60, 80];
   const pages = await Promise.all(offsets.map(o => fetchHimalayasPage(o)));
+
+  let totalRaw = 0;
+  let skipped = 0;
  
   for (const data of pages) {
-    for (const j of (data.jobs || [])) {
+    const jobs = data.jobs || [];
+    totalRaw += jobs.length;
+    for (const j of jobs) {
       if (seen.has(j.id)) continue;
  
       // 위치 제한 확인 — 유럽 국가인지 체크
@@ -352,7 +357,6 @@ async function fetchHimalayas() {
       let matched = false;
  
       if (restrictions.length === 0) {
-        // Worldwide — 기타유럽/글로벌로
         matched = true;
         code = 'EU';
       } else {
@@ -363,7 +367,6 @@ async function fetchHimalayas() {
             matched = true;
             break;
           }
-          // 유럽 전체 허용 표현
           if (key.includes('europe') || key.includes('eu') || key.includes('worldwide') || key === 'anywhere') {
             matched = true;
             code = 'EU';
@@ -372,7 +375,7 @@ async function fetchHimalayas() {
         }
       }
  
-      if (!matched) continue; // 유럽 아닌 지역 전용 공고 제외
+      if (!matched) { skipped++; continue; }
  
       seen.add(j.id);
       allJobs.push({
@@ -397,8 +400,11 @@ async function fetchHimalayas() {
       });
     }
   }
- 
-  console.log(`  Himalayas 합계: ${allJobs.length}개`);
+
+  // 첫 번째 공고의 locationRestrictions 샘플 출력
+  const sample = pages[0]?.jobs?.[0];
+  if (sample) console.log(`  Himalayas 샘플: ${sample.title} | restrictions: ${JSON.stringify(sample.locationRestrictions)}`);
+  console.log(`  Himalayas 원본: ${totalRaw}개, 필터 통과: ${allJobs.length}개, 제외: ${skipped}개`);
   return allJobs;
 }
 // GitHub Actions가 매일 스크래핑 → Supabase visa_jobs 테이블에 저장
@@ -518,4 +524,3 @@ export default async function handler(req, res) {
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
   });
 }
-
