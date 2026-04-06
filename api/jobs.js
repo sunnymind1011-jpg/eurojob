@@ -386,7 +386,8 @@ function fetchHimalayasCountry(country, code) {
             const allNonEu = keys.every(k => NON_EU.some(n => k.includes(n)));
             return !allNonEu;
           }).map(j => ({
-            id:       `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
+            const jobId = j.id || j.slug || j.uuid || Math.random().toString(36).slice(2);
+            id:       `hm_${String(jobId).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
             title:    j.title || '',
             level:    detectLevel(j.title || '', j.description || ''),
             company:  j.company?.name || '',
