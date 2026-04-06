@@ -359,7 +359,8 @@ function fetchHimalayasCountry(country, code) {
 
 async function fetchHimalayas() {
   const targets = [
-    ['Germany','DE'], ['Spain','ES'], ['United Kingdom','GB'],
+    ['Germany','DE'], ['Spain','ES'], ['Netherlands','NL'],
+    ['United Kingdom','GB'], ['France','FR'], ['Ireland','IE'],
   ];
   try {
     const results = await Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code)));
