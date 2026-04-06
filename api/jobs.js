@@ -334,74 +334,57 @@ function fetchHimalayasPage(page) {
   });
 }
  
-async function fetchHimalayas() {
-  const allJobs = [];
-  const seen = new Set();
- 
-  // 5페이지 병렬로 가져오기
-  const pages = await Promise.all([1,2,3,4,5].map(p => fetchHimalayasPage(p)));
-
-  let totalRaw = 0;
-  let skipped = 0;
- 
-  for (const data of pages) {
-    const jobs = data.jobs || [];
-    totalRaw += jobs.length;
-    for (const j of jobs) {
-      if (seen.has(j.id)) continue;
- 
-      // 위치 제한 확인 — 미국 전용만 제외, 나머지는 통과
-      const restrictions = j.locationRestrictions || [];
-      let code = 'EU';
-      let matched = true; // 기본 통과
-
-      if (restrictions.length > 0) {
-        // 미국/캐나다 전용인지 체크
-        const nonEuOnly = restrictions.every(r => {
-          const key = r.toLowerCase();
-          return key.includes('united states') || key.includes('usa') || key === 'us' ||
-                 key.includes('canada') || key.includes('australia') || key.includes('latin america');
-        });
-        if (nonEuOnly) { skipped++; continue; }
-
-        // 유럽 국가 매칭 시도
-        for (const r of restrictions) {
-          const key = r.toLowerCase();
-          if (HIMALAYAS_COUNTRY_MAP[key]) {
-            code = HIMALAYAS_COUNTRY_MAP[key];
-            break;
-          }
-        }
-      }
- 
-      seen.add(j.id);
-      allJobs.push({
-        id:           `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}`,
-        title:        j.title || '',
-        level:        detectLevel(j.title || '', j.description || ''),
-        company:      j.company?.name || '',
-        location:     code === 'EU' ? 'Europe / Global' : j.locationRestrictions?.[0] || code,
-        country:      code,
-        flag:         HIMALAYAS_FLAG[code] || '🌍',
-        logo:         companyEmoji(j.company?.name || ''),
-        description:  j.description || '',
-        url:          j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
-        salary:       j.salary ? `${j.salary}` : null,
-        postedAt:     j.createdAt || j.publishedAt || new Date().toISOString(),
-        source:       'Himalayas',
-        skills:       (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
-        visaSponsored: false,
-        relocation:   false,
-        remoteType:   'Remote',
-        languageReqs: ['English'],
+function fetchHimalayasCountry(country, code) {
+  return new Promise((resolve) => {
+    const params = new URLSearchParams({ country, limit: '20', sort: 'recent' });
+    const req = https.request({
+      hostname: 'himalayas.app',
+      path: `/jobs/api/search?${params}`,
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+    }, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(raw);
+          const jobs = (data.jobs || []).map(j => ({
+            id:       `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
+            title:    j.title || '',
+            level:    detectLevel(j.title || '', j.description || ''),
+            company:  j.company?.name || '',
+            location: country,
+            country:  code,
+            flag:     HIMALAYAS_FLAG[code] || '🌍',
+            logo:     companyEmoji(j.company?.name || ''),
+            description: j.description || '',
+            url:      j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
+            salary:   j.salary ? `${j.salary}` : null,
+            postedAt: j.createdAt || j.publishedAt || new Date().toISOString(),
+            source:   'Himalayas',
+            skills:   (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+            visaSponsored: false, relocation: false, remoteType: 'Remote', languageReqs: ['English'],
+          }));
+          console.log(`  Himalayas ${country}: ${jobs.length}개`);
+          resolve(jobs);
+        } catch(e) { resolve([]); }
       });
-    }
-  }
-
-  // 첫 번째 공고의 locationRestrictions 샘플 출력
-  const sample = pages[0]?.jobs?.[0];
-  if (sample) console.log(`  Himalayas 샘플: ${sample.title} | restrictions: ${JSON.stringify(sample.locationRestrictions)}`);
-  console.log(`  Himalayas 원본: ${totalRaw}개, 필터 통과: ${allJobs.length}개, 제외: ${skipped}개`);
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(6000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
+ 
+async function fetchHimalayas() {
+  // 주요 유럽 6개국만 — 병렬 요청 (타임아웃 방지)
+  const targets = [
+    ['Germany','DE'], ['Spain','ES'], ['Netherlands','NL'],
+    ['United Kingdom','GB'], ['France','FR'], ['Ireland','IE'],
+  ];
+  const results = await Promise.all(targets.map(([country, code]) => fetchHimalayasCountry(country, code)));
+  const allJobs = results.flat();
+  console.log(`  Himalayas 합계: ${allJobs.length}개`);
   return allJobs;
 }
 // GitHub Actions가 매일 스크래핑 → Supabase visa_jobs 테이블에 저장
@@ -477,12 +460,12 @@ export default async function handler(req, res) {
  
   console.log('🔄 수집 시작 (Adzuna + Remotive + Himalayas + VisaSponsor)...');
   let allJobs = [];
-
+ 
   // Himalayas + Remotive 먼저 (빠르게 끝남)
   console.log('🏔️ Himalayas 수집 시작...');
   allJobs.push(...await fetchHimalayas());
   allJobs.push(...await fetchRemotive());
-
+ 
   // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
@@ -491,7 +474,7 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
-
+ 
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
@@ -499,7 +482,7 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
-
+ 
   // Business Development / Logistics / Project Management — 스페인 한정
   for (const country of BIZ_COUNTRIES) {
     for (const kw of BIZ_KEYWORDS) {
@@ -521,3 +504,4 @@ export default async function handler(req, res) {
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
   });
 }
+ 
