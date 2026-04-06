@@ -536,6 +536,7 @@ textarea::placeholder{color:var(--text3);}
     <div class="nav-item active" onclick="nav('home',this)"><span class="nav-icon">🏠</span>홈</div>
     <div class="nav-item" onclick="nav('jobs',this)"><span class="nav-icon">💼</span>채용공고<span class="nav-badge" id="nb-jobs">0</span></div>
     <div class="nav-item" onclick="nav('saved',this)"><span class="nav-icon">🔖</span>저장목록<span class="nav-badge warn" id="nb-saved">0</span></div>
+    <div class="nav-item" id="nav-tracker" style="display:none" onclick="nav('tracker',this)"><span class="nav-icon">📋</span>지원 트래커</div>
     <div class="nav-section" id="nav-section-ai" style="display:none">AI 도구</div>
 <div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>AI 이력서 매칭</div>
 <div class="nav-item" id="nav-coverletter" style="display:none" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>커버레터 생성</div>
@@ -691,6 +692,87 @@ textarea::placeholder{color:var(--text3);}
     </div>
   </div>
 </div>
+
+<!-- ★ 지원 트래커 ─────────────────────────────────── -->
+<div class="page" id="page-tracker">
+  <div class="sec-hd" style="margin-bottom:20px">
+    <div><div class="sec-title">📋 지원 트래커</div><div class="sec-sub">저장한 공고의 지원 현황을 관리하세요</div></div>
+  </div>
+
+  <!-- 알림 배너 -->
+  <div id="tracker-alerts" style="margin-bottom:16px"></div>
+
+  <!-- 칸반 보드 -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:start">
+
+    <!-- 컬럼: 저장됨 -->
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        🔖 저장됨 <span id="tk-count-saved" style="background:var(--bg3);border-radius:10px;padding:2px 8px;font-size:11px">0</span>
+      </div>
+      <div id="tk-col-saved" class="tk-col"></div>
+    </div>
+
+    <!-- 컬럼: 지원완료 -->
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px">
+      <div style="font-size:12px;font-weight:700;color:#4f8ef7;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        📤 지원완료 <span id="tk-count-applied" style="background:rgba(79,142,247,.15);border-radius:10px;padding:2px 8px;font-size:11px;color:#4f8ef7">0</span>
+      </div>
+      <div id="tk-col-applied" class="tk-col"></div>
+    </div>
+
+    <!-- 컬럼: 서류통과 -->
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px">
+      <div style="font-size:12px;font-weight:700;color:#f5a623;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        📄 서류통과 <span id="tk-count-screening" style="background:rgba(245,166,35,.15);border-radius:10px;padding:2px 8px;font-size:11px;color:#f5a623">0</span>
+      </div>
+      <div id="tk-col-screening" class="tk-col"></div>
+    </div>
+
+    <!-- 컬럼: 면접 -->
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px">
+      <div style="font-size:12px;font-weight:700;color:#7c6af0;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        🎤 면접 <span id="tk-count-interview" style="background:rgba(124,106,240,.15);border-radius:10px;padding:2px 8px;font-size:11px;color:#7c6af0">0</span>
+      </div>
+      <div id="tk-col-interview" class="tk-col"></div>
+    </div>
+
+    <!-- 컬럼: 최종결과 -->
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px">
+      <div style="font-size:12px;font-weight:700;color:#3ecfa0;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        🏁 최종결과 <span id="tk-count-result" style="background:rgba(62,207,160,.15);border-radius:10px;padding:2px 8px;font-size:11px;color:#3ecfa0">0</span>
+      </div>
+      <div id="tk-col-result" class="tk-col"></div>
+    </div>
+
+  </div>
+
+  <div id="tracker-empty" style="display:none;text-align:center;padding:60px 20px;color:var(--text3)">
+    <div style="font-size:40px;margin-bottom:12px">📋</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">저장한 공고가 없어요</div>
+    <div style="font-size:13px">공고 카드의 ♡ 버튼으로 저장하면 여기서 관리할 수 있어요</div>
+  </div>
+</div>
+
+<style>
+.tk-col { display:flex; flex-direction:column; gap:8px; min-height:60px; }
+.tk-card {
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  cursor:pointer;
+  transition:border-color .2s;
+}
+.tk-card:hover { border-color:var(--accent); }
+.tk-card-title { font-size:12px; font-weight:600; margin-bottom:4px; line-height:1.4; }
+.tk-card-company { font-size:11px; color:var(--text2); margin-bottom:6px; }
+.tk-card-meta { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.tk-badge { font-size:10px; padding:2px 7px; border-radius:6px; font-weight:600; }
+.tk-alert { background:rgba(245,166,35,.1); border:1px solid rgba(245,166,35,.3); border-radius:8px; padding:10px 14px; font-size:12px; color:#f5a623; margin-bottom:8px; }
+.tk-status-btn { font-size:10px; padding:3px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); cursor:pointer; font-family:inherit; transition:all .2s; }
+.tk-status-btn:hover { border-color:var(--accent); color:var(--accent); }
+</style>
 
     <!-- ★ AI MATCHING ───────────────────────────────── -->
     <div class="page" id="page-ai">
@@ -1110,6 +1192,7 @@ function nav(id, el) {
   if (id==='ai') updatePromptPreview();
   if (id==='trends') renderTrends();
   if (id==='skillmap') renderSkillMap();
+  if (id==='tracker') loadTracker();
 }
 
 function navWithFilter(id, filters) {
@@ -1840,9 +1923,41 @@ function fillSampleResume() {
 // ════════════════════════════════════════
 //  SAVE / FILTERS
 // ════════════════════════════════════════
+
+// Supabase에 저장 공고 upsert
+async function upsertSavedJob(job) {
+  if (!currentUser) return;
+  await sb.from('saved_jobs').upsert({
+    user_id:     currentUser.id,
+    job_id:      job.id,
+    job_title:   job.title,
+    job_company: job.company,
+    job_url:     job.url,
+    job_country: job.country,
+    job_flag:    job.flag,
+    job_source:  job.source,
+    status:      'saved',
+    saved_at:    new Date().toISOString(),
+  }, { onConflict: 'user_id,job_id', ignoreDuplicates: true }).catch(e => console.log('save err:', e.message));
+}
+
+// Supabase에서 저장 공고 삭제
+async function deleteSavedJob(jobId) {
+  if (!currentUser) return;
+  await sb.from('saved_jobs').delete().eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('delete err:', e.message));
+}
+
 function toggleSave(id, btn) {
-  if (savedIds.has(id)) { savedIds.delete(id); btn.textContent='♡'; btn.classList.remove('saved'); }
-  else { savedIds.add(id); btn.textContent='♥'; btn.classList.add('saved'); }
+  if (savedIds.has(id)) {
+    savedIds.delete(id);
+    btn.textContent='♡'; btn.classList.remove('saved');
+    deleteSavedJob(id);
+  } else {
+    savedIds.add(id);
+    btn.textContent='♥'; btn.classList.add('saved');
+    const job = allJobs.find(j => j.id === id);
+    if (job) upsertSavedJob(job);
+  }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
   renderSaved();
@@ -1853,10 +1968,13 @@ function toggleSaveFromDrawer(id, btn) {
     savedIds.delete(id);
     btn.textContent = "♡ 저장하기";
     btn.style.color = "var(--text2)";
+    deleteSavedJob(id);
   } else {
     savedIds.add(id);
     btn.textContent = "♥ 저장됨";
     btn.style.color = "var(--warn)";
+    const job = allJobs.find(j => j.id === id);
+    if (job) upsertSavedJob(job);
   }
   localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
   document.getElementById("nb-saved").textContent = savedIds.size;
@@ -1866,6 +1984,107 @@ function toggleSaveFromDrawer(id, btn) {
     savedIds.has(id) ? cardBtn.classList.add("saved") : cardBtn.classList.remove("saved");
   }
   renderSaved();
+}
+
+// ════════════════════════════════════════
+//  지원 트래커
+// ════════════════════════════════════════
+let trackerJobs = []; // Supabase saved_jobs 데이터
+
+const STATUS_CONFIG = {
+  saved:      { label:'🔖 저장됨',   color:'var(--text2)',  bg:'var(--bg3)' },
+  applied:    { label:'📤 지원완료', color:'#4f8ef7',       bg:'rgba(79,142,247,.12)' },
+  screening:  { label:'📄 서류통과', color:'#f5a623',       bg:'rgba(245,166,35,.12)' },
+  interview:  { label:'🎤 면접',     color:'#7c6af0',       bg:'rgba(124,106,240,.12)' },
+  result:     { label:'🏁 최종결과', color:'#3ecfa0',       bg:'rgba(62,207,160,.12)' },
+};
+const STATUS_ORDER = ['saved','applied','screening','interview','result'];
+const STATUS_NEXT = { saved:'applied', applied:'screening', screening:'interview', interview:'result' };
+
+async function loadTracker() {
+  if (!currentUser) return;
+  const { data, error } = await sb.from('saved_jobs').select('*').eq('user_id', currentUser.id).order('saved_at', { ascending: false });
+  if (error) { console.log('tracker load err:', error.message); return; }
+  trackerJobs = data || [];
+  renderTracker();
+}
+
+async function updateTrackerStatus(jobId, newStatus) {
+  if (!currentUser) return;
+  const updates = { status: newStatus };
+  if (newStatus === 'applied') updates.applied_at = new Date().toISOString();
+  await sb.from('saved_jobs').update(updates).eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('update err:', e.message));
+  const item = trackerJobs.find(j => j.job_id === jobId);
+  if (item) { item.status = newStatus; if (newStatus === 'applied') item.applied_at = updates.applied_at; }
+  renderTracker();
+}
+
+async function updateTrackerResult(jobId, result) {
+  if (!currentUser) return;
+  await sb.from('saved_jobs').update({ result }).eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('result err:', e.message));
+  const item = trackerJobs.find(j => j.job_id === jobId);
+  if (item) item.result = result;
+  renderTracker();
+}
+
+function renderTracker() {
+  if (!trackerJobs.length) {
+    document.getElementById('tracker-empty').style.display = 'block';
+    STATUS_ORDER.forEach(s => {
+      document.getElementById(`tk-col-${s}`).innerHTML = '';
+      document.getElementById(`tk-count-${s}`).textContent = '0';
+    });
+    return;
+  }
+  document.getElementById('tracker-empty').style.display = 'none';
+
+  // 컬럼별 분류
+  const cols = { saved:[], applied:[], screening:[], interview:[], result:[] };
+  trackerJobs.forEach(j => { if (cols[j.status]) cols[j.status].push(j); });
+
+  // 14일 경과 알림
+  const now = Date.now();
+  const alerts = trackerJobs.filter(j => {
+    const days = (now - new Date(j.saved_at)) / 86400000;
+    return days >= 14 && j.status === 'saved';
+  });
+  const alertEl = document.getElementById('tracker-alerts');
+  alertEl.innerHTML = alerts.map(j => `
+    <div class="tk-alert">⚠️ <b>${j.job_title}</b> — 저장한 지 14일 이상 지났어요. 지원 여부를 확인하세요!</div>
+  `).join('');
+
+  // 각 컬럼 렌더링
+  STATUS_ORDER.forEach(status => {
+    const items = cols[status];
+    document.getElementById(`tk-count-${status}`).textContent = items.length;
+    const cfg = STATUS_CONFIG[status];
+    document.getElementById(`tk-col-${status}`).innerHTML = items.map(j => {
+      const days = Math.floor((now - new Date(j.saved_at)) / 86400000);
+      const nextStatus = STATUS_NEXT[status];
+      const resultBtns = status === 'interview' ? `
+        <div style="display:flex;gap:4px;margin-top:6px">
+          <button class="tk-status-btn" style="color:#3ecfa0;border-color:rgba(62,207,160,.3)" onclick="updateTrackerStatus('${j.job_id}','result');updateTrackerResult('${j.job_id}','pass')">✅ 합격</button>
+          <button class="tk-status-btn" style="color:#ef4444;border-color:rgba(239,68,68,.3)" onclick="updateTrackerStatus('${j.job_id}','result');updateTrackerResult('${j.job_id}','fail')">❌ 불합격</button>
+          <button class="tk-status-btn" onclick="updateTrackerStatus('${j.job_id}','result');updateTrackerResult('${j.job_id}','pending')">⏳ 대기</button>
+        </div>` : '';
+      const resultBadge = status === 'result' ? `
+        <span class="tk-badge" style="background:${j.result==='pass'?'rgba(62,207,160,.15)':j.result==='fail'?'rgba(239,68,68,.15)':'rgba(245,166,35,.15)'};color:${j.result==='pass'?'#3ecfa0':j.result==='fail'?'#ef4444':'#f5a623'}">
+          ${j.result==='pass'?'✅ 합격':j.result==='fail'?'❌ 불합격':'⏳ 대기'}
+        </span>` : '';
+      return `
+        <div class="tk-card">
+          <div class="tk-card-title">${j.job_title || '제목 없음'}</div>
+          <div class="tk-card-company">${j.job_flag||''} ${j.job_company || ''}</div>
+          <div class="tk-card-meta">
+            <span style="font-size:10px;color:var(--text3)">${days}일 전 저장</span>
+            ${resultBadge}
+            <a href="${j.job_url}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-left:auto">공고 →</a>
+          </div>
+          ${nextStatus ? `<button class="tk-status-btn" style="margin-top:8px;width:100%" onclick="updateTrackerStatus('${j.job_id}','${nextStatus}')">→ ${STATUS_CONFIG[nextStatus].label}</button>` : ''}
+          ${resultBtns}
+        </div>`;
+    }).join('') || `<div style="font-size:11px;color:var(--text3);text-align:center;padding:16px">없음</div>`;
+  });
 }
 
 function setBottomNav(el) {
@@ -2318,7 +2537,7 @@ function showMain() {
   if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
   if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
 
-  const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat'];
+  const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat','nav-tracker'];
   extendedMenuIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
