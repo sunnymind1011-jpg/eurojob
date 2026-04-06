@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EuroGate — 유럽 커리어 파트너</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23080b12'/><text x='16' y='23' font-size='18' text-anchor='middle' font-family='serif' fill='%234f8ef7'>✦</text></svg>">
+<title>EuroMate — 유럽 커리어 파트너</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -394,7 +393,7 @@ textarea::placeholder{color:var(--text3);}
     </div>
     <div style="display:flex">
       <div style="width:170px;border-right:1px solid rgba(255,255,255,0.06);padding:12px 0;flex-shrink:0">
-        <div style="padding:0 14px 12px;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:#f0f2f7">🌍 EuroGate</div><div style="font-size:9px;color:#8b92a8">유럽 커리어 파트너</div></div>
+        <div style="padding:0 14px 12px;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:#f0f2f7">🌍 EuroMate</div><div style="font-size:9px;color:#8b92a8">유럽 커리어 파트너</div></div>
         <div style="padding:7px 14px;font-size:10px;color:#8b92a8">🏠 홈</div>
         <div style="padding:7px 14px;font-size:10px;color:#4f8ef7;border-left:2px solid #4f8ef7;background:rgba(79,142,247,0.06);font-weight:600;display:flex;align-items:center;justify-content:space-between">💼 채용공고<span style="background:#4f8ef7;color:#fff;font-size:8px;padding:1px 5px;border-radius:8px">1764</span></div>
         <div style="padding:7px 14px;font-size:10px;color:#8b92a8">🤖 AI 매칭</div>
@@ -480,7 +479,7 @@ textarea::placeholder{color:var(--text3);}
 <div id="adminDashboard" style="display:none;min-height:100vh;background:var(--bg);">
   <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;gap:12px;">
     <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">E</div>
-    <div style="font-size:16px;font-weight:700;">EuroGate 관리자</div>
+    <div style="font-size:16px;font-weight:700;">EuroMate 관리자</div>
     <div style="margin-left:auto;display:flex;gap:8px;">
       <button onclick="showMain()" style="background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">앱으로 이동</button>
       <button onclick="signOut()" style="background:transparent;color:var(--text2);border:1px solid var(--border2);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">로그아웃</button>
@@ -529,7 +528,7 @@ textarea::placeholder{color:var(--text3);}
   <div class="logo-area">
     <div class="logo">
       <div style="font-size:24px;line-height:1">🌍</div>
-      <div><div class="logo-text">EuroGate</div><div class="logo-sub">유럽 커리어 파트너</div></div>
+      <div><div class="logo-text">EuroMate</div><div class="logo-sub">유럽 커리어 파트너</div></div>
     </div>
   </div>
   <div class="nav">
@@ -636,7 +635,7 @@ textarea::placeholder{color:var(--text3);}
       </div>
       <!-- 이 줄 추가 -->
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px">
-      📡 Adzuna · Remotive · Himalayas API를 통해 수집된 채용공고입니다.
+      📡 Adzuna · Remotive API를 통해 수집된 채용공고입니다.
       </div>
       <div class="filter-row">
         <span class="f-lbl">🌍</span>
@@ -1140,7 +1139,6 @@ function navWithFilter(id, filters) {
 // ════════════════════════════════════════
 function setStatus(type, msg, pct) {
   const bar = document.getElementById('statusBar');
-  if (!bar) return;
   if (type==='loading') {
     bar.innerHTML = `<div class="spinner"></div><span style="font-size:12px;color:var(--warn)">${msg}</span><div class="prog-bar"><div class="prog-fill" style="width:${Math.round((pct||0)*100)}%"></div></div>`;
   } else {
@@ -1306,7 +1304,7 @@ function detectCountry(l) {
   return 'EU';
 }
 function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱'}[c]||'🌍';}
-function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드',EE:'에스토니아'}[c]||c;}
+function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드'}[c]||c;}
 function detectVisaSponsorship(d) {
   if (!d) return false;
   const text = d.toLowerCase();
@@ -1385,9 +1383,7 @@ function updateAll() {
 
 function updateHomeStats() {
   document.getElementById('hs-total').textContent = allJobs.length;
-  document.getElementById('hs-visa').textContent = (isAdmin || isBeta)
-    ? allJobs.filter(j => j.visaSponsored || j.relocation).length
-    : allJobs.filter(j => (j.visaSponsored || j.relocation) && j.source !== 'VisaSponsor').length;
+  document.getElementById('hs-visa').textContent = allJobs.filter(j => j.visaSponsored || j.relocation).length;
   document.getElementById('hs-remote').textContent = allJobs.filter(j=>j.remoteType!=='On-site').length;
   document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
   const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,5);
@@ -1417,8 +1413,6 @@ function filterJobs() {
     .map(f => f.split(':')[1]);
 
   let jobs = allJobs.filter(j=>{
-    // 일반 유저는 비자스폰서 확정 공고(VisaSponsor 소스) 숨김
-    if (!isAdmin && !isBeta && j.source === 'VisaSponsor') return false;
     if (q && !`${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase().includes(q)) return false;
     // 국가 OR 조건
     if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
@@ -2191,95 +2185,65 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-  }
-});
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
-  let handled = false;
+  // 현재 세션 확인
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await onLogin(session.user);
+  } else {
+    showLanding();
+  }
 
-  // onAuthStateChange 먼저 등록
+  // 로그인/로그아웃 상태 변경 감지
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user && !handled) {
-      handled = true;
+    if (event === 'SIGNED_IN' && session?.user) {
       await onLogin(session.user);
     } else if (event === 'SIGNED_OUT') {
-      handled = false;
       showLanding();
     }
   });
-
-  // PKCE code 파라미터가 있으면 명시적으로 세션 교환
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-
-  if (code) {
-    // URL 정리
-    window.history.replaceState({}, document.title, window.location.pathname);
-    try {
-      const { data, error } = await sb.auth.exchangeCodeForSession(code);
-      if (data?.session?.user && !handled) {
-        handled = true;
-        await onLogin(data.session.user);
-        return;
-      }
-    } catch(e) {
-      console.log('code exchange 오류:', e.message);
-    }
-  }
-
-  // 일반 세션 확인
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user && !handled) {
-    handled = true;
-    await onLogin(session.user);
-  } else if (!session?.user && !code) {
-    showLanding();
-  } else if (!handled) {
-    // code는 있었지만 교환 실패 → 랜딩으로
-    showLanding();
-  }
 }
 
 async function onLogin(user) {
+  currentUser = user;
+  isAdmin = user.email === ADMIN_EMAIL;
+
+  // DB에 접속 기록 — role 덮어쓰지 않음
+  // insert는 신규 유저만, 기존 유저는 last_seen만 별도 업데이트
+  sb.from('users').upsert({
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.full_name || '',
+    avatar: user.user_metadata?.avatar_url || '',
+    last_seen: new Date().toISOString(),
+  }, { onConflict: 'id', ignoreDuplicates: true })
+  .then(() => {
+    sb.from('users').update({ last_seen: new Date().toISOString() }).eq('id', user.id).catch(() => {});
+  })
+  .catch(e => console.log('upsert 오류:', e.message));
+
+  // role은 별도로 읽기 (upsert 반환값 신뢰 안 함)
+  let role = '';
   try {
-    currentUser = user;
-    isAdmin = user.email === ADMIN_EMAIL;
+    const { data: userData } = await sb
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    role = (userData?.role || '').toLowerCase();
+  } catch(e) { role = ''; }
 
-    // upsert 백그라운드 실행 (await 없이)
-    sb.from('users').upsert({
-      id: user.id,
-      email: user.email,
-      name: user.user_metadata?.full_name || '',
-      avatar: user.user_metadata?.avatar_url || '',
-      last_seen: new Date().toISOString(),
-    }, { onConflict: 'id', ignoreDuplicates: false }).then(() => {}).catch(e => console.log('upsert 오류:', e.message));
+  isBeta = (role === 'beta') && !isAdmin;
 
-    // role 읽기 (3초 타임아웃)
-    let role = '';
-    try {
-      const rolePromise = sb.from('users').select('role').eq('id', user.id).single();
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000));
-      const { data: userData } = await Promise.race([rolePromise, timeoutPromise]);
-      role = (userData?.role || '').toLowerCase();
-    } catch(e) { role = ''; }
-
-    isBeta = (role === 'beta') && !isAdmin;
-
-    if (isAdmin) {
-      showAdminDashboard();
-    } else {
-      showMain();
-    }
-  } catch(e) {
-    console.error('onLogin 오류:', e);
+  if (isAdmin) {
+    showAdminDashboard();
+  } else {
     showMain();
   }
 }
@@ -2322,11 +2286,11 @@ function showMain() {
   document.getElementById('mainApp').style.display = 'flex';
   document.getElementById('adminDashboard').style.display = 'none';
 
-  // 저장된 ID 복원
+  // 저장된 ID 복원 ← 이 줄 추가
   savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved') || '[]'));
 
-  // DOM 렌더링 후 공고 불러오기
-  setTimeout(() => startJSearch(), 100);
+  // 공고 불러오기
+  startJSearch();
 
   // 사이드바 사용자 정보 표시
   if (currentUser) {
@@ -3285,3 +3249,4 @@ function closeSkillDrawer(e) {
   
 </body>
 </html>  
+
