@@ -2003,6 +2003,16 @@ const STATUS_NEXT = { saved:'applied', applied:'screening', screening:'interview
 
 async function loadTracker() {
   if (!currentUser) return;
+
+  // localStorage에 저장된 공고를 Supabase로 마이그레이션
+  const localIds = [...savedIds];
+  if (localIds.length > 0) {
+    for (const id of localIds) {
+      const job = allJobs.find(j => j.id === id);
+      if (job) await upsertSavedJob(job);
+    }
+  }
+
   const { data, error } = await sb.from('saved_jobs').select('*').eq('user_id', currentUser.id).order('saved_at', { ascending: false });
   if (error) { console.log('tracker load err:', error.message); return; }
   trackerJobs = data || [];
