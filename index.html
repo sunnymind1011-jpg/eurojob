@@ -1916,21 +1916,21 @@ async function deleteSavedJob(jobId) {
   await sb.from('saved_jobs').delete().eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('delete err:', e.message));
 }
 
-async function toggleSave(id, btn) {
+function toggleSave(id, btn) {
   if (savedIds.has(id)) {
     savedIds.delete(id); btn.textContent='♡'; btn.classList.remove('saved');
     deleteSavedJob(id);
   } else {
     savedIds.add(id); btn.textContent='♥'; btn.classList.add('saved');
     const job = allJobs.find(j => j.id === id);
-    if (job) await upsertSavedJob(job);
+    if (job) upsertSavedJob(job);
   }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
   renderSaved();
 }
 
-async function toggleSaveFromDrawer(id, btn) {
+function toggleSaveFromDrawer(id, btn) {
   if (savedIds.has(id)) {
     savedIds.delete(id);
     btn.textContent = "♡ 저장하기"; btn.style.color = "var(--text2)";
@@ -1939,7 +1939,7 @@ async function toggleSaveFromDrawer(id, btn) {
     savedIds.add(id);
     btn.textContent = "♥ 저장됨"; btn.style.color = "var(--warn)";
     const job = allJobs.find(j => j.id === id);
-    if (job) await upsertSavedJob(job);
+    if (job) upsertSavedJob(job);
   }
   localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
   document.getElementById("nb-saved").textContent = savedIds.size;
