@@ -22,6 +22,8 @@ const COUNTRIES = [
  
 const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
 const MAJOR_COUNTRIES = ['gb', 'de', 'es', 'nl', 'fr'];
+const BIZ_KEYWORDS = ['business development', 'project manager', 'logistics manager'];
+const BIZ_COUNTRIES = ['es']; // 스페인 한정
  
 const CATEGORIES = [
   { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
@@ -485,6 +487,14 @@ export default async function handler(req, res) {
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
+      allJobs.push(...await fetchAdzunaKeyword(country, kw));
+      await new Promise(r => setTimeout(r, 150));
+    }
+  }
+
+  // Business Development / Logistics / Project Management — 스페인 한정
+  for (const country of BIZ_COUNTRIES) {
+    for (const kw of BIZ_KEYWORDS) {
       allJobs.push(...await fetchAdzunaKeyword(country, kw));
       await new Promise(r => setTimeout(r, 150));
     }
