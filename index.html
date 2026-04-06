@@ -1916,7 +1916,7 @@ async function deleteSavedJob(jobId) {
   await sb.from('saved_jobs').delete().eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('delete err:', e.message));
 }
 
-function toggleSave(id, btn) {
+async function toggleSave(id, btn) {
   if (savedIds.has(id)) {
     savedIds.delete(id); btn.textContent='♡'; btn.classList.remove('saved');
     deleteSavedJob(id);
@@ -1930,7 +1930,7 @@ function toggleSave(id, btn) {
   renderSaved();
 }
 
-function toggleSaveFromDrawer(id, btn) {
+async function toggleSaveFromDrawer(id, btn) {
   if (savedIds.has(id)) {
     savedIds.delete(id);
     btn.textContent = "♡ 저장하기"; btn.style.color = "var(--text2)";
