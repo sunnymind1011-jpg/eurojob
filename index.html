@@ -1535,7 +1535,7 @@ function buildCard(j, showFeat) {
   const isNew = (Date.now()-new Date(j.postedAt))<48*3600000;
   const skills = (j.skills||[]).slice(0,4);
   return `
-  <div class="job-card${showFeat&&j.visaSponsored?' featured':''}" onclick="openDrawer('${j.id}')">
+  <div class="job-card${showFeat&&j.visaSponsored?' featured':''}" data-id="${j.id}" onclick="openDrawer(this.dataset.id)">
     ${showFeat&&j.visaSponsored?'<div class="feat-tag" style="background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.28)">추천</div>':''}
     ${isNew?`<div class="feat-tag" style="background:rgba(62,207,160,.12);color:var(--accent3);border:1px solid rgba(62,207,160,.28);top:14px;right:${showFeat&&j.visaSponsored?'60px':'14px'}">NEW</div>`:''}
     <div class="jc-top">
@@ -1544,7 +1544,7 @@ function buildCard(j, showFeat) {
         <div class="jc-title">${j.title}</div>
         <div class="jc-company">${j.company} · ${j.flag} ${j.location.split(',')[0]}</div>
       </div>
-      <button class="save-btn${saved?' saved':''}" onclick="event.stopPropagation();toggleSave('${j.id}',this)">${saved?'♥':'♡'}</button>
+      <button class="save-btn${saved?' saved':''}" data-id="${j.id}" onclick="event.stopPropagation();toggleSave(this.dataset.id,this)">${saved?'♥':'♡'}</button>
     </div>
     <div class="jc-meta">
       <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
@@ -1908,7 +1908,7 @@ async function upsertSavedJob(job) {
     job_url: job.url, job_country: job.country,
     job_flag: job.flag, job_source: job.source,
     status: 'saved', saved_at: new Date().toISOString(),
-  }, { onConflict: 'user_id,job_id', ignoreDuplicates: true }).catch(e => console.log('save err:', e.message));
+  }, { onConflict: 'user_id,job_id', ignoreDuplicates: false }).catch(e => console.log('save err:', e.message));
 }
 
 async function deleteSavedJob(jobId) {
@@ -1967,11 +1967,24 @@ const STATUS_NEXT = { saved:'applied', applied:'screening', screening:'interview
 
 async function loadTracker() {
   if (!currentUser) return;
+
   // localStorage 공고를 Supabase로 마이그레이션
   for (const id of [...savedIds]) {
     const job = allJobs.find(j => j.id === id);
-    if (job) await upsertSavedJob(job);
+    if (job) {
+      await upsertSavedJob(job);
+    } else {
+      // allJobs에 없어도 최소한 job_id만으로 저장
+      await sb.from('saved_jobs').upsert({
+        user_id: currentUser.id,
+        job_id: id,
+        job_title: '공고 정보 없음',
+        status: 'saved',
+        saved_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,job_id', ignoreDuplicates: false }).catch(() => {});
+    }
   }
+
   const { data, error } = await sb.from('saved_jobs').select('*').eq('user_id', currentUser.id).order('saved_at', { ascending: false });
   if (error) { console.log('tracker load err:', error.message); return; }
   trackerJobs = data || [];
