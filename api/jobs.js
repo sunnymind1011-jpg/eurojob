@@ -318,9 +318,13 @@ function fetchHimalayasCountry(country, code) {
               return !keys.every(k => NON_EU_HM.some(n => k.includes(n)));
             })
             .map(j => {
-              const jobId = j.id || j.slug || j.uuid || Math.random().toString(36).slice(2);
+              // 1. 공고마다 절대 겹치지 않도록 제목, 회사명, 랜덤 숫자를 조합해서 새 ID를 만듭니다.
+              const uniqueId = `${j.title}-${j.company?.name}-${Math.random().toString(36).slice(2, 9)}`;
+              const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_'); 
+
               return {
-                id:          `hm_${String(jobId).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
+                // 2. 이제 각 공고는 'hm_ES_제목_회사_랜덤값' 형태의 고유한 ID를 가집니다.
+                id:          `hm_${code}_${safeId}`,
                 title:       j.title || '',
                 level:       detectLevel(j.title || '', j.description || ''),
                 company:     j.company?.name || '',
@@ -334,7 +338,10 @@ function fetchHimalayasCountry(country, code) {
                 postedAt:    j.createdAt || j.publishedAt || new Date().toISOString(),
                 source:      'Himalayas',
                 skills:      (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
-                visaSponsored: false, relocation: false, remoteType: 'Remote', languageReqs: ['English'],
+                visaSponsored: false, 
+                relocation:   false, 
+                remoteType:   'Remote', 
+                languageReqs: ['English'],
               };
             });
           console.log(`  Himalayas ${country}: ${jobs.length}개`);
