@@ -112,15 +112,17 @@ function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
     if (!j) return false;
-    const key = j.source === 'VisaSponsor'
+    
+    // 수정된 부분: Himalayas 공고도 ID가 고유하므로 ID를 기준으로 중복을 체크하게 합니다.
+    const key = (j.source === 'VisaSponsor' || j.source === 'Himalayas')
       ? j.id
       : `${j.title}__${j.company}`.toLowerCase();
+      
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
-
 // ── Adzuna ────────────────────────────────────────────────
 
 function normalizeAdzuna(raw, countryCode) {
