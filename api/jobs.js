@@ -333,7 +333,7 @@ function fetchHimalayasPage(page) {
     req.end();
   });
 }
- 
+
 function fetchHimalayasCountry(country, code) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({ country, limit: '20', sort: 'recent' });
@@ -348,7 +348,26 @@ function fetchHimalayasCountry(country, code) {
       res.on('end', () => {
         try {
           const data = JSON.parse(raw);
-          const jobs = (data.jobs || []).map(j => ({
+          const NON_EU = ['united states','usa','us only','canada','australia','new zealand','latin america','south america','africa','asia','india','china','japan','brazil','mexico'];
+
+          const jobs = (data.jobs || []).filter(j => {
+            const restrictions = j.locationRestrictions || [];
+            if (restrictions.length === 0) return true; // Worldwide → 통과
+
+            const keys = restrictions.map(r => r.toLowerCase());
+
+            // 유럽/글로벌 허용 표현이 하나라도 있으면 통과
+            const hasEu = keys.some(k =>
+              k.includes('europe') || k.includes('worldwide') ||
+              k === 'anywhere' || k === 'remote' ||
+              HIMALAYAS_COUNTRY_MAP[k] // 유럽 국가명
+            );
+            if (hasEu) return true;
+
+            // 전부 비유럽 국가 전용이면 제외
+            const allNonEu = keys.every(k => NON_EU.some(n => k.includes(n)));
+            return !allNonEu;
+          }).map(j => ({
             id:       `hm_${String(j.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${code}`,
             title:    j.title || '',
             level:    detectLevel(j.title || '', j.description || ''),
@@ -460,12 +479,12 @@ export default async function handler(req, res) {
  
   console.log('🔄 수집 시작 (Adzuna + Remotive + Himalayas + VisaSponsor)...');
   let allJobs = [];
- 
+
   // Himalayas + Remotive 먼저 (빠르게 끝남)
   console.log('🏔️ Himalayas 수집 시작...');
   allJobs.push(...await fetchHimalayas());
   allJobs.push(...await fetchRemotive());
- 
+
   // Adzuna 카테고리별 수집
   for (const country of COUNTRIES) {
     for (const cat of CATEGORIES) {
@@ -474,7 +493,7 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
- 
+
   // Adzuna 데이터 키워드 수집
   for (const country of MAJOR_COUNTRIES) {
     for (const kw of DATA_KEYWORDS) {
@@ -482,7 +501,7 @@ export default async function handler(req, res) {
       await new Promise(r => setTimeout(r, 150));
     }
   }
- 
+
   // Business Development / Logistics / Project Management — 스페인 한정
   for (const country of BIZ_COUNTRIES) {
     for (const kw of BIZ_KEYWORDS) {
@@ -504,4 +523,3 @@ export default async function handler(req, res) {
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
   });
 }
- 
