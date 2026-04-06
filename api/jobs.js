@@ -313,11 +313,11 @@ const HIMALAYAS_FLAG = {
   AT:'🇦🇹',PL:'🇵🇱',
 };
  
-function fetchHimalayasPage(offset) {
+function fetchHimalayasPage(page) {
   return new Promise((resolve) => {
     const req = https.request({
       hostname: 'himalayas.app',
-      path: `/jobs/api?limit=20&offset=${offset}`,
+      path: `/jobs/api?limit=20&offset=${(page - 1) * 20}`,
       method: 'GET',
       headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
     }, res => {
@@ -338,9 +338,8 @@ async function fetchHimalayas() {
   const allJobs = [];
   const seen = new Set();
  
-  // 최근 5페이지 병렬로 가져오기 (100개 공고)
-  const offsets = [0, 20, 40, 60, 80];
-  const pages = await Promise.all(offsets.map(o => fetchHimalayasPage(o)));
+  // 5페이지 병렬로 가져오기
+  const pages = await Promise.all([1,2,3,4,5].map(p => fetchHimalayasPage(p)));
 
   let totalRaw = 0;
   let skipped = 0;
@@ -351,31 +350,29 @@ async function fetchHimalayas() {
     for (const j of jobs) {
       if (seen.has(j.id)) continue;
  
-      // 위치 제한 확인 — 유럽 국가인지 체크
+      // 위치 제한 확인 — 미국 전용만 제외, 나머지는 통과
       const restrictions = j.locationRestrictions || [];
       let code = 'EU';
-      let matched = false;
- 
-      if (restrictions.length === 0) {
-        matched = true;
-        code = 'EU';
-      } else {
+      let matched = true; // 기본 통과
+
+      if (restrictions.length > 0) {
+        // 미국/캐나다 전용인지 체크
+        const nonEuOnly = restrictions.every(r => {
+          const key = r.toLowerCase();
+          return key.includes('united states') || key.includes('usa') || key === 'us' ||
+                 key.includes('canada') || key.includes('australia') || key.includes('latin america');
+        });
+        if (nonEuOnly) { skipped++; continue; }
+
+        // 유럽 국가 매칭 시도
         for (const r of restrictions) {
           const key = r.toLowerCase();
           if (HIMALAYAS_COUNTRY_MAP[key]) {
             code = HIMALAYAS_COUNTRY_MAP[key];
-            matched = true;
-            break;
-          }
-          if (key.includes('europe') || key.includes('eu') || key.includes('worldwide') || key === 'anywhere') {
-            matched = true;
-            code = 'EU';
             break;
           }
         }
       }
- 
-      if (!matched) { skipped++; continue; }
  
       seen.add(j.id);
       allJobs.push({
