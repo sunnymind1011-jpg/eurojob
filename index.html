@@ -1923,7 +1923,7 @@ function toggleSave(id, btn) {
   } else {
     savedIds.add(id); btn.textContent='♥'; btn.classList.add('saved');
     const job = allJobs.find(j => j.id === id);
-    if (job) upsertSavedJob(job);
+    if (job) await upsertSavedJob(job);
   }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
@@ -1939,7 +1939,7 @@ function toggleSaveFromDrawer(id, btn) {
     savedIds.add(id);
     btn.textContent = "♥ 저장됨"; btn.style.color = "var(--warn)";
     const job = allJobs.find(j => j.id === id);
-    if (job) upsertSavedJob(job);
+    if (job) await upsertSavedJob(job);
   }
   localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
   document.getElementById("nb-saved").textContent = savedIds.size;
