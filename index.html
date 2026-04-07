@@ -1178,10 +1178,10 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //  NAV
 // ════════════════════════════════════════
 function nav(id, el) {
-  // 1. 검색창 제어: home, jobs, saved 탭에서만 표시
+  // 1. 검색창 제어: '항상' 보이도록 수정 (display: flex)
   const searchWrap = document.getElementById('topbarSearch');
   if (searchWrap) {
-    searchWrap.style.display = (id === 'home' || id === 'jobs' || id === 'saved') ? 'flex' : 'none';
+    searchWrap.style.display = 'flex'; 
   }
 
   // 2. OR 검색 힌트 제어: 채용공고(jobs) 탭에서만 표시
@@ -1190,11 +1190,10 @@ function nav(id, el) {
     hint.style.display = (id === 'jobs') ? 'block' : 'none';
   }
 
-  // 3. 관리자 바 제어: 기존 버튼들이 있던 곳 (필요 시 유지, 아니면 삭제 가능)
+  // 3. 관리자 바(버튼 영역) 제어: 채용공고 탭에서만 보이게 하되, 내부에 버튼은 제거된 상태여야 함
   const adminBar = document.getElementById('adminBar');
   if (adminBar) {
-    // 관리자이면서 jobs 페이지일 때만 표시되도록 설정되어 있음
-    adminBar.style.display = (id === 'jobs' && adminBar.dataset.isAdmin === 'true') ? 'flex' : 'none';
+    adminBar.style.display = (id === 'jobs') ? 'flex' : 'none';
   }
 
   // 페이지 전환 기본 로직
