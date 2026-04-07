@@ -2609,9 +2609,14 @@ async function loadAdminStats() {
     if (users?.length) {
       document.getElementById('adminUsers').innerHTML = users.map(u => {
         const role = (u.role || '').toLowerCase();
+        const isAdmin = role === 'admin';
         const isBetaUser = role === 'beta';
-        const roleColor = isBetaUser ? 'var(--warn)' : 'var(--text3)';
-        const roleLabel = isBetaUser ? '⭐ 베타' : '일반';
+        
+        // 색상과 라벨에 관리자(admin) 조건 추가
+        const roleColor = isAdmin ? 'var(--accent)' : (isBetaUser ? 'var(--warn)' : 'var(--text3)');
+        const roleLabel = isAdmin ? '👑 관리자' : (isBetaUser ? '⭐ 베타' : '일반');
+       
+        
         return `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
           <div>
