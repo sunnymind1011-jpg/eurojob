@@ -1480,10 +1480,19 @@ function filterJobs() {
     .filter(f => f.startsWith('cat:'))
     .map(f => f.split(':')[1]);
 
+  // 필터 버튼이 있는 국가들 (이 목록에 없는 유럽 국가는 기타유럽/글로벌로 처리)
+  const FILTER_COUNTRIES = new Set(['ES','GB','DE','NL','FR','PT','CH','IT','BE','IE']);
+
   let jobs = allJobs.filter(j=>{
     if (q && !`${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase().includes(q)) return false;
     // 국가 OR 조건
-    if (selectedCountries.length > 0 && !selectedCountries.includes(j.country)) return false;
+    if (selectedCountries.length > 0) {
+      // EU 선택 시 — 필터 버튼 없는 유럽 국가(AT, PL 등) + EU 글로벌 공고 포함
+      const euSelected = selectedCountries.includes('EU');
+      const directMatch = selectedCountries.includes(j.country);
+      const euFallback = euSelected && !FILTER_COUNTRIES.has(j.country);
+      if (!directMatch && !euFallback) return false;
+    }
     // 직종 OR 조건
     if (selectedCats.length > 0) {
       const titleLower = (j.title||'').toLowerCase();
