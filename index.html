@@ -1150,10 +1150,8 @@ textarea::placeholder{color:var(--text3);}
 <div class="bottom-nav">
   <button class="bn-item active" onclick="nav('home',null);setBottomNav(this)"><span class="bn-icon">🏠</span>홈</button>
   <button class="bn-item" onclick="nav('jobs',null);setBottomNav(this)"><span class="bn-icon">💼</span>채용공고</button>
-  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장</button>
-  <button class="bn-item" onclick="nav('ai',null);setBottomNav(this)"><span class="bn-icon">🤖</span>AI매칭</button>
-  <button class="bn-item" onclick="nav('trends',null);setBottomNav(this)"><span class="bn-icon">📊</span>트렌드</button>
-  <button class="bn-item" onclick="nav('tips',null);setBottomNav(this)"><span class="bn-icon">💡</span>꿀팁</button>
+  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장목록</button>
+  <button class="bn-item" onclick="nav('tracker',null);setBottomNav(this)"><span class="bn-icon">📋</span>지원트래커</button>
   <button class="bn-item" onclick="nav('chat',null);setBottomNav(this)"><span class="bn-icon">☕</span>커피챗</button>
 </div>
   
@@ -2419,13 +2417,31 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    flowType: 'pkce',
+    detectSessionInUrl: true,
+  }
+});
 
 let currentUser = null;
 let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
+    // 모바일 OAuth 콜백 처리 — URL에 code 파라미터가 있으면 세션 교환
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  if (code) {
+    try {
+      await sb.auth.exchangeCodeForSession(code);
+      // code 파라미터 제거 (뒤로가기 시 루프 방지)
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch(e) {
+      console.log('code exchange err:', e.message);
+    }
+  }
+
   // 현재 세션 확인
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
@@ -2462,12 +2478,11 @@ async function onLogin(user) {
   // role은 별도로 읽기 (upsert 반환값 신뢰 안 함)
   let role = '';
   try {
-    const { data: userData } = await sb
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    role = (userData?.role || '').toLowerCase();
+    const roleResult = await Promise.race([
+      sb.from('users').select('role').eq('id', user.id).single(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ]);
+    role = (roleResult.data?.role || '').toLowerCase();
   } catch(e) { role = ''; }
 
   isBeta = (role === 'beta') && !isAdmin;
