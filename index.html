@@ -1178,24 +1178,44 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //  NAV
 // ════════════════════════════════════════
 function nav(id, el) {
+  // 1. 검색창 제어: home, jobs, saved 탭에서만 표시
   const searchWrap = document.getElementById('topbarSearch');
-  if (searchWrap) searchWrap.style.display = (id === 'jobs') ? 'flex' : 'none';
-  const adminBarEl2 = document.getElementById('adminBar');
-  if (adminBarEl2 && currentUser) {
-    // 관리자 여부 확인 후 채용공고 페이지에서만 표시
-    adminBarEl2.style.display = (id === 'jobs' && adminBarEl2.dataset.isAdmin === 'true') ? 'flex' : 'none';
+  if (searchWrap) {
+    searchWrap.style.display = (id === 'home' || id === 'jobs' || id === 'saved') ? 'flex' : 'none';
   }
+
+  // 2. OR 검색 힌트 제어: 채용공고(jobs) 탭에서만 표시
   const hint = document.getElementById('orSearchHint');
-  if (hint) hint.style.display = (id === 'jobs') ? 'block' : 'none';
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if (hint) {
+    hint.style.display = (id === 'jobs') ? 'block' : 'none';
+  }
+
+  // 3. 관리자 바 제어: 기존 버튼들이 있던 곳 (필요 시 유지, 아니면 삭제 가능)
+  const adminBar = document.getElementById('adminBar');
+  if (adminBar) {
+    // 관리자이면서 jobs 페이지일 때만 표시되도록 설정되어 있음
+    adminBar.style.display = (id === 'jobs' && adminBar.dataset.isAdmin === 'true') ? 'flex' : 'none';
+  }
+
+  // 페이지 전환 기본 로직
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const targetPage = document.getElementById('page-' + id);
+  if (targetPage) targetPage.classList.add('active');
+
+  // 네비게이션 아이템 활성화 상태 업데이트
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (el) el.classList.add('active');
-  if (id==='coverletter') syncResumeToCL();
-  if (id==='ai') updatePromptPreview();
-  if (id==='trends') renderTrends();
-  if (id==='skillmap') renderSkillMap();
-  if (id==='tracker') loadTracker();
+
+  // 각 페이지별 초기화 함수 호출
+  if (id === 'jobs') renderJobs();
+  if (id === 'home') updateHomeDashboard();
+  if (id === 'coverletter') syncResumeToCL();
+  if (id === 'ai') updatePromptPreview();
+  if (id === 'trends') renderTrends();
+  if (id === 'skillmap') renderSkillMap();
+  if (id === 'tracker') loadTracker();
+  
+  window.scrollTo(0, 0);
 }
 
 function navWithFilter(id, filters) {
