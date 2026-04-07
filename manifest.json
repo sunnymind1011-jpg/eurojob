@@ -3,7 +3,7 @@
   "name": "EuroGate - 유럽 커리어 파트너",
   "icons": [
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23080b12'/><path d='M60 160 L60 105 A30 30 0 0 1 120 105 L120 160 Z' fill='%234f8ef7' stroke='%234f8ef7' stroke-width='2' stroke-linejoin='round'/><g fill='%23FFD700'><path d='M35 100 l4 9 h10 l-8 6 l3 10 l-9-7 l-9 7 l3-10 l-8-6 h10 z'/><path d='M60 65 l4 9 h10 l-8 6 l3 10 l-9-7 l-9 7 l3-10 l-8-6 h10 z'/><path d='M90 50 l4 9 h10 l-8 6 l3 10 l-9-7 l-9 7 l3-10 l-8-6 h10 z'/><path d='M120 65 l4 9 h10 l-8 6 l3 10 l-9-7 l-9 7 l3-10 l-8-6 h10 z'/><path d='M145 100 l4 9 h10 l-8 6 l3 10 l-9-7 l-9 7 l3-10 l-8-6 h10 z'/></g></svg>",
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23080b12'/><path d='M42 150 h15 v-5 q0 -55 33 -55 t33 55 v5 h15 v-10 q0 -75 -48 -75 t-48 75 z' fill='%234182ef'/><g fill='%23fbc02d'><path d='M28 75 l3 6.5 h7 l-5.5 4.5 l2 7 l-6.5 -4.5 l-6.5 4.5 l2 -7 l-5.5 -4.5 h7 z'/><path d='M55 45 l3 6.5 h7 l-5.5 4.5 l2 7 l-6.5 -4.5 l-6.5 4.5 l2 -7 l-5.5 -4.5 h7 z'/><path d='M90 32 l3 6.5 h7 l-5.5 4.5 l2 7 l-6.5 -4.5 l-6.5 4.5 l2 -7 l-5.5 -4.5 h7 z'/><path d='M125 45 l3 6.5 h7 l-5.5 4.5 l2 7 l-6.5 -4.5 l-6.5 4.5 l2 -7 l-5.5 -4.5 h7 z'/><path d='M152 75 l3 6.5 h7 l-5.5 4.5 l2 7 l-6.5 -4.5 l-6.5 4.5 l2 -7 l-5.5 -4.5 h7 z'/></g></svg>",
       "sizes": "180x180",
       "type": "image/svg+xml",
       "purpose": "any"
