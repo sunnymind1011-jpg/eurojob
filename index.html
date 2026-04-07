@@ -1150,8 +1150,8 @@ textarea::placeholder{color:var(--text3);}
 <div class="bottom-nav">
   <button class="bn-item active" onclick="nav('home',null);setBottomNav(this)"><span class="bn-icon">🏠</span>홈</button>
   <button class="bn-item" onclick="nav('jobs',null);setBottomNav(this)"><span class="bn-icon">💼</span>채용공고</button>
-  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장</button>
-  <button class="bn-item" onclick="nav('tracker',null);setBottomNav(this)"><span class="bn-icon">📋</span>지원현황</button>
+  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장목록</button>
+  <button class="bn-item" onclick="nav('tracker',null);setBottomNav(this)"><span class="bn-icon">📋</span>지원트래커</button>
   <button class="bn-item" onclick="nav('chat',null);setBottomNav(this)"><span class="bn-icon">☕</span>커피챗</button>
 </div>
   
@@ -1174,11 +1174,6 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //  NAV
 // ════════════════════════════════════════
 function nav(id, el) {
-  const loginRequired = ['tracker','chat','ai','coverletter','jdanalysis','skillmap'];
-  if (loginRequired.includes(id) && !currentUser) {
-    showToast('로그인 후 이용할 수 있어요 🔐');
-    return;
-  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1848,14 +1843,6 @@ function fallbackCopy(text) {
   el.value = text; document.body.appendChild(el);
   el.select(); document.execCommand('copy');
   document.body.removeChild(el);
-}
-
-function showToast(msg, color='#4f8ef7') {
-  const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:${color};color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
 }
 
 function showCopiedToast(type) {
