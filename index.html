@@ -1902,18 +1902,20 @@ function fillSampleResume() {
 
 async function upsertSavedJob(job) {
   if (!currentUser) return;
-  await sb.from('saved_jobs').upsert({
+  const { error } = await sb.from('saved_jobs').upsert({
     user_id: currentUser.id, job_id: job.id,
     job_title: job.title, job_company: job.company,
     job_url: job.url, job_country: job.country,
     job_flag: job.flag, job_source: job.source,
     status: 'saved', saved_at: new Date().toISOString(),
-  }, { onConflict: 'user_id,job_id', ignoreDuplicates: false }).catch(e => console.log('save err:', e.message));
+  }, { onConflict: 'user_id,job_id', ignoreDuplicates: false });
+  if (error) console.log('save err:', error.message);
 }
 
 async function deleteSavedJob(jobId) {
   if (!currentUser) return;
-  await sb.from('saved_jobs').delete().eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('delete err:', e.message));
+  const { error } = await sb.from('saved_jobs').delete().eq('user_id', currentUser.id).eq('job_id', jobId);
+  if (error) console.log('delete err:', error.message);
 }
 
 function toggleSave(id, btn) {
@@ -1981,7 +1983,7 @@ async function loadTracker() {
         job_title: '공고 정보 없음',
         status: 'saved',
         saved_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,job_id', ignoreDuplicates: false }).catch(() => {});
+      }, { onConflict: 'user_id,job_id', ignoreDuplicates: false });
     }
   }
 
@@ -1995,7 +1997,8 @@ async function updateTrackerStatus(jobId, newStatus) {
   if (!currentUser) return;
   const updates = { status: newStatus };
   if (newStatus === 'applied') updates.applied_at = new Date().toISOString();
-  await sb.from('saved_jobs').update(updates).eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('update err:', e.message));
+  const { error: updateErr } = await sb.from('saved_jobs').update(updates).eq('user_id', currentUser.id).eq('job_id', jobId);
+  if (updateErr) console.log('update err:', updateErr.message);
   const item = trackerJobs.find(j => j.job_id === jobId);
   if (item) Object.assign(item, updates);
   renderTracker();
@@ -2003,7 +2006,8 @@ async function updateTrackerStatus(jobId, newStatus) {
 
 async function updateTrackerResult(jobId, result) {
   if (!currentUser) return;
-  await sb.from('saved_jobs').update({ result }).eq('user_id', currentUser.id).eq('job_id', jobId).catch(e => console.log('result err:', e.message));
+  const { error: resultErr } = await sb.from('saved_jobs').update({ result }).eq('user_id', currentUser.id).eq('job_id', jobId);
+  if (resultErr) console.log('result err:', resultErr.message);
   const item = trackerJobs.find(j => j.job_id === jobId);
   if (item) item.result = result;
   renderTracker();
@@ -2396,18 +2400,15 @@ async function onLogin(user) {
   isAdmin = user.email === ADMIN_EMAIL;
 
   // DB에 접속 기록 — role 덮어쓰지 않음
-  // insert는 신규 유저만, 기존 유저는 last_seen만 별도 업데이트
   sb.from('users').upsert({
     id: user.id,
     email: user.email,
     name: user.user_metadata?.full_name || '',
     avatar: user.user_metadata?.avatar_url || '',
     last_seen: new Date().toISOString(),
-  }, { onConflict: 'id', ignoreDuplicates: true })
-  .then(() => {
-    sb.from('users').update({ last_seen: new Date().toISOString() }).eq('id', user.id).catch(() => {});
-  })
-  .catch(e => console.log('upsert 오류:', e.message));
+  }, { onConflict: 'id', ignoreDuplicates: true }).then(() => {
+    sb.from('users').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
+  });
 
   // role은 별도로 읽기 (upsert 반환값 신뢰 안 함)
   let role = '';
