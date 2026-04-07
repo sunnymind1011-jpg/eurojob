@@ -2,13 +2,12 @@
   "short_name": "EuroGate",
   "name": "EuroGate - 유럽 커리어 파트너",
   "icons": [
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23080b12'/><text x='16' y='23' font-size='18' text-anchor='middle' font-family='serif' fill='%234f8ef7'>✦</text></svg>",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
+  {
+    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080b12'/><path d='M16 4 L19 13 L28 16 L19 19 L16 28 L13 19 L4 16 L13 13 Z' fill='%234f8ef7'/></svg>",
+    "sizes": "any",
+    "type": "image/svg+xml"
+  }
+],
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080b12",
