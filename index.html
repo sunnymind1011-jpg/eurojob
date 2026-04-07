@@ -575,7 +575,7 @@ textarea::placeholder{color:var(--text3);}
         <span style="color:var(--text3);font-size:14px">🔍</span>
         <input type="text" id="searchInput" placeholder="직무, 회사, 스킬 검색..." oninput="filterJobs()">
       </div>
-      <div style="font-size:11px;color:var(--text3);padding-left:2px">💡 <b style="color:var(--text2)">OR</b> 로 여러 직무 동시 검색 가능 &nbsp;·&nbsp; 예: <span style="color:var(--accent)">marketing OR BD OR localization</span></div>
+      <div id="orSearchHint" style="font-size:11px;color:var(--text3);padding-left:2px;display:none">💡 <b style="color:var(--text2)">OR</b> 로 여러 직무 동시 검색 가능 &nbsp;·&nbsp; 예: <span style="color:var(--accent)">marketing OR BD OR localization</span></div>
     </div>
     <div class="topbar-right">
 
@@ -1179,6 +1179,8 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //  NAV
 // ════════════════════════════════════════
 function nav(id, el) {
+  const hint = document.getElementById('orSearchHint');
+  if (hint) hint.style.display = (id === 'jobs') ? 'block' : 'none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
