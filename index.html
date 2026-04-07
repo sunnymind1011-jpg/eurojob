@@ -570,20 +570,19 @@ textarea::placeholder{color:var(--text3);}
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div style="display:flex;flex-direction:column;gap:5px;flex:1;max-width:460px">
+    <div id="topbarSearch" style="display:none;flex-direction:column;gap:5px;flex:1;max-width:460px">
       <div class="search-bar" style="max-width:100%">
         <span style="color:var(--text3);font-size:14px">🔍</span>
         <input type="text" id="searchInput" placeholder="직무, 회사, 스킬 검색..." oninput="filterJobs()">
       </div>
-      <div id="orSearchHint" style="font-size:11px;color:var(--text3);padding-left:2px;display:none">💡 <b style="color:var(--text2)">OR</b> 로 여러 직무 동시 검색 가능 &nbsp;·&nbsp; 예: <span style="color:var(--accent)">Marketing OR Content</span></div>
+      <div id="orSearchHint" style="font-size:11px;color:var(--text3);padding-left:2px;display:none">💡 <b style="color:var(--text2)">OR</b> 로 여러 직무 동시 검색 가능 &nbsp;·&nbsp; 예: <span style="color:var(--accent)">marketing OR BD OR localization</span></div>
     </div>
     <div class="topbar-right">
-
       <div style="font-size:11px;color:var(--text3)" id="lastUpdated"></div>
     </div>
   </div>
 
-  <!-- ACTION BAR -->
+  <!-- ACTION BAR (관리자 전용 - 채용공고 페이지 내부로 이동) -->
   <div class="key-bar" id="adminBar" style="display:none">
     <button class="btn btn-primary btn-sm" onclick="startJSearch()">🔍 유럽 공고 수집</button>
     <button class="btn btn-ghost btn-sm" onclick="startJSearch(true)">🔄 강제 새로고침</button>
@@ -1179,6 +1178,13 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //  NAV
 // ════════════════════════════════════════
 function nav(id, el) {
+  const searchWrap = document.getElementById('topbarSearch');
+  if (searchWrap) searchWrap.style.display = (id === 'jobs') ? 'flex' : 'none';
+  const adminBarEl2 = document.getElementById('adminBar');
+  if (adminBarEl2 && currentUser) {
+    // 관리자 여부 확인 후 채용공고 페이지에서만 표시
+    adminBarEl2.style.display = (id === 'jobs' && adminBarEl2.dataset.isAdmin === 'true') ? 'flex' : 'none';
+  }
   const hint = document.getElementById('orSearchHint');
   if (hint) hint.style.display = (id === 'jobs') ? 'block' : 'none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -2565,7 +2571,7 @@ function showMain() {
   const settingsNav = document.getElementById('nav-settings');
   const adminBarEl = document.getElementById('adminBar');
   if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
-  if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
+  if (adminBarEl) { adminBarEl.style.display = 'none'; adminBarEl.dataset.isAdmin = isAdmin ? 'true' : 'false'; }
 
   const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat','nav-tracker'];
   extendedMenuIds.forEach(id => {
