@@ -2412,13 +2412,31 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    flowType: 'pkce',
+    detectSessionInUrl: true,
+  }
+});
 
 let currentUser = null;
 let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
+  // 모바일 OAuth 콜백 처리 — URL에 code 파라미터가 있으면 세션 교환
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  if (code) {
+    try {
+      await sb.auth.exchangeCodeForSession(code);
+      // code 파라미터 제거 (뒤로가기 시 루프 방지)
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch(e) {
+      console.log('code exchange err:', e.message);
+    }
+  }
+
   // 현재 세션 확인
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
@@ -2452,15 +2470,14 @@ async function onLogin(user) {
     sb.from('users').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
   });
 
-  // role은 별도로 읽기 (upsert 반환값 신뢰 안 함)
+  // role은 별도로 읽기 — 3초 타임아웃
   let role = '';
   try {
-    const { data: userData } = await sb
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    role = (userData?.role || '').toLowerCase();
+    const roleResult = await Promise.race([
+      sb.from('users').select('role').eq('id', user.id).single(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ]);
+    role = (roleResult.data?.role || '').toLowerCase();
   } catch(e) { role = ''; }
 
   isBeta = (role === 'beta') && !isAdmin;
