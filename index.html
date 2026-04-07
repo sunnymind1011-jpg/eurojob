@@ -2460,6 +2460,19 @@ async function onLogin(user) {
 
   isBeta = (role === 'beta') && !isAdmin;
 
+  // Supabase saved_jobs에서 저장목록 동기화 (PC/모바일 간 동기화)
+  try {
+    const { data: savedData } = await sb
+      .from('saved_jobs')
+      .select('job_id')
+      .eq('user_id', user.id);
+    if (savedData && savedData.length > 0) {
+      // Supabase에 있는 ID를 savedIds에 병합
+      savedData.forEach(r => savedIds.add(r.job_id));
+      localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
+    }
+  } catch(e) { console.log('saved_jobs sync err:', e.message); }
+
   if (isAdmin) {
     showAdminDashboard();
   } else {
