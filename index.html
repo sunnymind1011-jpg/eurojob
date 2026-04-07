@@ -570,19 +570,17 @@ textarea::placeholder{color:var(--text3);}
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div id="topbarSearch" style="display:none;flex-direction:column;gap:5px;flex:1;max-width:460px">
-      <div class="search-bar" style="max-width:100%">
-        <span style="color:var(--text3);font-size:14px">🔍</span>
-        <input type="text" id="searchInput" placeholder="직무, 회사, 스킬, OR을 통해 여러 직무 동시 검색 가능" oninput="filterJobs()">
-      </div>
-    <!-- <div id="orSearchHint" style="font-size:11px;color:var(--text3);padding-left:2px;display:none">💡 <b style="color:var(--text2)">OR</b> 로 여러 직무 동시 검색 가능 &nbsp;·&nbsp; 예: <span style="color:var(--accent)">Marketing OR Data Analyst</span></div> -->
+    <div class="search-bar">
+      <span style="color:var(--text3);font-size:14px">🔍</span>
+      <input type="text" id="searchInput" placeholder="직무, 회사, 스킬, OR을 통해 다중 검색 가능" oninput="filterJobs()">
     </div>
     <div class="topbar-right">
+
       <div style="font-size:11px;color:var(--text3)" id="lastUpdated"></div>
     </div>
   </div>
 
-  <!-- ACTION BAR (관리자 전용 - 채용공고 페이지 내부로 이동) -->
+  <!-- ACTION BAR -->
   <div class="key-bar" id="adminBar" style="display:none">
     <button class="btn btn-primary btn-sm" onclick="startJSearch()">🔍 유럽 공고 수집</button>
     <button class="btn btn-ghost btn-sm" onclick="startJSearch(true)">🔄 강제 새로고침</button>
@@ -1178,43 +1176,15 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //  NAV
 // ════════════════════════════════════════
 function nav(id, el) {
-  // 1. 검색창 제어: '항상' 보이도록 수정 (display: flex)
-  const searchWrap = document.getElementById('topbarSearch');
-  if (searchWrap) {
-    searchWrap.style.display = 'flex'; 
-  }
-
-  // 2. OR 검색 힌트 제어: 채용공고(jobs) 탭에서만 표시
-  const hint = document.getElementById('orSearchHint');
-  if (hint) {
-    hint.style.display = (id === 'jobs') ? 'block' : 'none';
-  }
-
-  // 3. 관리자 바(버튼 영역) 제어: 채용공고 탭에서만 보이게 하되, 내부에 버튼은 제거된 상태여야 함
-  const adminBar = document.getElementById('adminBar');
-  if (adminBar) {
-    adminBar.style.display = (id === 'jobs') ? 'flex' : 'none';
-  }
-
-  // 페이지 전환 기본 로직
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const targetPage = document.getElementById('page-' + id);
-  if (targetPage) targetPage.classList.add('active');
-
-  // 네비게이션 아이템 활성화 상태 업데이트
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
-
-  // 각 페이지별 초기화 함수 호출
-  if (id === 'jobs') renderJobs();
-  if (id === 'home') updateHomeDashboard();
-  if (id === 'coverletter') syncResumeToCL();
-  if (id === 'ai') updatePromptPreview();
-  if (id === 'trends') renderTrends();
-  if (id === 'skillmap') renderSkillMap();
-  if (id === 'tracker') loadTracker();
-  
-  window.scrollTo(0, 0);
+  if (id==='coverletter') syncResumeToCL();
+  if (id==='ai') updatePromptPreview();
+  if (id==='trends') renderTrends();
+  if (id==='skillmap') renderSkillMap();
+  if (id==='tracker') loadTracker();
 }
 
 function navWithFilter(id, filters) {
@@ -2590,7 +2560,7 @@ function showMain() {
   const settingsNav = document.getElementById('nav-settings');
   const adminBarEl = document.getElementById('adminBar');
   if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
-  if (adminBarEl) { adminBarEl.style.display = 'none'; adminBarEl.dataset.isAdmin = isAdmin ? 'true' : 'false'; }
+  if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
 
   const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat','nav-tracker'];
   extendedMenuIds.forEach(id => {
