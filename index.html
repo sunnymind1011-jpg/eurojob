@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EuroGate - 유럽 커리어 파트너</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23080b12'/><polygon points='50,18 58,40 82,40 63,54 71,77 50,62 29,77 37,54 18,40 42,40' fill='%23FFD700'/></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23080b12'/><polygon points='50,15 56,36 80,36 61,49 68,70 50,57 32,70 39,49 20,36 44,36' fill='%23f5c842'/></svg>#v5">
 
-<link rel="apple-touch-icon" href="/icon-180.png?v=2">
-<link rel="manifest" href="/manifest.json?v=2">
+<link rel="manifest" href="/manifest.json?v=5">
 
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23080b12'/><polygon points='50.00,7.00 51.18,10.38 54.76,10.45 51.90,12.62 52.94,16.05 50.00,14.00 47.06,16.05 48.10,12.62 45.24,10.45 48.82,10.38' fill='%23f5c842'/><polygon points='69.00,12.09 70.18,15.47 73.76,15.55 70.90,17.71 71.94,21.14 69.00,19.09 66.06,21.14 67.10,17.71 64.24,15.55 67.82,15.47' fill='%23f5c842'/><polygon points='82.91,26.00 84.08,29.38 87.66,29.45 84.81,31.62 85.85,35.05 82.91,33.00 79.97,35.05 81.01,31.62 78.15,29.45 81.73,29.38' fill='%23f5c842'/><polygon points='88.00,45.00 89.18,48.38 92.76,48.45 89.90,50.62 90.94,54.05 88.00,52.00 85.06,54.05 86.10,50.62 83.24,48.45 86.82,48.38' fill='%23f5c842'/><polygon points='82.91,64.00 84.08,67.38 87.66,67.45 84.81,69.62 85.85,73.05 82.91,71.00 79.97,73.05 81.01,69.62 78.15,67.45 81.73,67.38' fill='%23f5c842'/><polygon points='69.00,77.91 70.18,81.29 73.76,81.36 70.90,83.53 71.94,86.95 69.00,84.91 66.06,86.95 67.10,83.53 64.24,81.36 67.82,81.29' fill='%23f5c842'/><polygon points='50.00,83.00 51.18,86.38 54.76,86.45 51.90,88.62 52.94,92.05 50.00,90.00 47.06,92.05 48.10,88.62 45.24,86.45 48.82,86.38' fill='%23f5c842'/><polygon points='31.00,77.91 32.18,81.29 35.76,81.36 32.90,83.53 33.94,86.95 31.00,84.91 28.06,86.95 29.10,83.53 26.24,81.36 29.82,81.29' fill='%23f5c842'/><polygon points='17.09,64.00 18.27,67.38 21.85,67.45 18.99,69.62 20.03,73.05 17.09,71.00 14.15,73.05 15.19,69.62 12.34,67.45 15.92,67.38' fill='%23f5c842'/><polygon points='12.00,45.00 13.18,48.38 16.76,48.45 13.90,50.62 14.94,54.05 12.00,52.00 9.06,54.05 10.10,50.62 7.24,48.45 10.82,48.38' fill='%23f5c842'/><polygon points='17.09,26.00 18.27,29.38 21.85,29.45 18.99,31.62 20.03,35.05 17.09,33.00 14.15,35.05 15.19,31.62 12.34,29.45 15.92,29.38' fill='%23f5c842'/><polygon points='31.00,12.09 32.18,15.47 35.76,15.55 32.90,17.71 33.94,21.14 31.00,19.09 28.06,21.14 29.10,17.71 26.24,15.55 29.82,15.47' fill='%23f5c842'/><path d='M37 66 L37 40 Q37 26 50 26 Q63 26 63 40 L63 66 Z' fill='%234f8ef7'/><path d='M41 66 L41 41 Q41 31 50 31 Q59 31 59 41 L59 66 Z' fill='%230d1525'/><circle cx='57' cy='48' r='2.5' fill='%234f8ef7'/><rect x='33' y='66' width='34' height='5' rx='2' fill='%234f8ef7' opacity='0.6'/></svg>#v5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EuroGate">
@@ -570,9 +570,12 @@ textarea::placeholder{color:var(--text3);}
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="search-bar">
-      <span style="color:var(--text3);font-size:14px">🔍</span>
-      <input type="text" id="searchInput" placeholder="직무, 회사, 도시, 스킬 검색..." oninput="filterJobs()">
+    <div style="display:flex;flex-direction:column;gap:5px;flex:1;max-width:460px">
+      <div class="search-bar" style="max-width:100%">
+        <span style="color:var(--text3);font-size:14px">🔍</span>
+        <input type="text" id="searchInput" placeholder="직무, 회사, 스킬 검색..." oninput="filterJobs()">
+      </div>
+      <div style="font-size:11px;color:var(--text3);padding-left:2px">💡 <b style="color:var(--text2)">OR</b> 로 여러 직무 동시 검색 가능 &nbsp;·&nbsp; 예: <span style="color:var(--accent)">marketing OR BD OR localization</span></div>
     </div>
     <div class="topbar-right">
 
@@ -1150,8 +1153,10 @@ textarea::placeholder{color:var(--text3);}
 <div class="bottom-nav">
   <button class="bn-item active" onclick="nav('home',null);setBottomNav(this)"><span class="bn-icon">🏠</span>홈</button>
   <button class="bn-item" onclick="nav('jobs',null);setBottomNav(this)"><span class="bn-icon">💼</span>채용공고</button>
-  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장목록</button>
-  <button class="bn-item" onclick="nav('tracker',null);setBottomNav(this)"><span class="bn-icon">📋</span>지원트래커</button>
+  <button class="bn-item" onclick="nav('saved',null);setBottomNav(this)"><span class="bn-icon">🔖</span>저장</button>
+  <button class="bn-item" onclick="nav('ai',null);setBottomNav(this)"><span class="bn-icon">🤖</span>AI매칭</button>
+  <button class="bn-item" onclick="nav('trends',null);setBottomNav(this)"><span class="bn-icon">📊</span>트렌드</button>
+  <button class="bn-item" onclick="nav('tips',null);setBottomNav(this)"><span class="bn-icon">💡</span>꿀팁</button>
   <button class="bn-item" onclick="nav('chat',null);setBottomNav(this)"><span class="bn-icon">☕</span>커피챗</button>
 </div>
   
@@ -1489,7 +1494,12 @@ function filterJobs() {
   const FILTER_COUNTRIES = new Set(['ES','GB','DE','NL','FR','PT','CH','IT','BE','IE']);
 
   let jobs = allJobs.filter(j=>{
-    if (q && !`${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase().includes(q)) return false;
+    if (q) {
+      const haystack = `${j.title} ${j.company} ${j.location} ${j.description||''}`.toLowerCase();
+      const terms = q.split(/\s+or\s+/i).map(t => t.trim()).filter(Boolean);
+      const matched = terms.some(t => haystack.includes(t));
+      if (!matched) return false;
+    }
     // 국가 OR 조건
     if (selectedCountries.length > 0) {
       // EU 선택 시 — 필터 버튼 없는 유럽 국가(AT, PL 등) + EU 글로벌 공고 포함
@@ -2412,31 +2422,13 @@ const SUPABASE_URL  = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
 const ADMIN_EMAIL   = 'kim.minsun.sunny@gmail.com';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    flowType: 'pkce',
-    detectSessionInUrl: true,
-  }
-});
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let isAdmin = false;
 let isBeta = false;  // 베타/초대 유저 — 전체 메뉴 접근 가능
 
 async function initAuth() {
-  // 모바일 OAuth 콜백 처리 — URL에 code 파라미터가 있으면 세션 교환
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  if (code) {
-    try {
-      await sb.auth.exchangeCodeForSession(code);
-      // code 파라미터 제거 (뒤로가기 시 루프 방지)
-      window.history.replaceState({}, '', window.location.pathname);
-    } catch(e) {
-      console.log('code exchange err:', e.message);
-    }
-  }
-
   // 현재 세션 확인
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
@@ -2470,14 +2462,15 @@ async function onLogin(user) {
     sb.from('users').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
   });
 
-  // role은 별도로 읽기 — 3초 타임아웃
+  // role은 별도로 읽기 (upsert 반환값 신뢰 안 함)
   let role = '';
   try {
-    const roleResult = await Promise.race([
-      sb.from('users').select('role').eq('id', user.id).single(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-    ]);
-    role = (roleResult.data?.role || '').toLowerCase();
+    const { data: userData } = await sb
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    role = (userData?.role || '').toLowerCase();
   } catch(e) { role = ''; }
 
   isBeta = (role === 'beta') && !isAdmin;
