@@ -835,6 +835,28 @@ textarea::placeholder{color:var(--text3);}
         </div>
         <div id="promptPreview" style="background:var(--bg3);border-radius:8px;padding:14px;font-size:12px;color:var(--text2);line-height:1.8;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:'Courier New',monospace">이력서와 채용공고를 입력하면 프롬프트가 여기에 미리 보여요.</div>
       </div>
+
+      <!-- ★ TOP MATCHES ──────────────────────────────── -->
+      <div style="margin-top:28px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div class="sec-title" style="font-size:16px">🎯 나에게 맞는 공고 추천</div>
+            <div class="sec-sub" style="margin-top:3px">이력서를 저장하면 AI가 현재 공고 중 가장 잘 맞는 것을 찾아드려요</div>
+          </div>
+          <button class="btn btn-primary" id="runMatchBtn" onclick="runJobMatch()" style="gap:8px">
+            ✨ AI 매칭 시작
+          </button>
+        </div>
+
+        <!-- 상태 메시지 -->
+        <div id="matchStatus" style="display:none;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px" id="matchStatusIcon">⏳</span>
+          <span id="matchStatusText">분석 중...</span>
+        </div>
+
+        <!-- 결과 그리드 -->
+        <div id="matchResults" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
     </div>
 
     <!-- ★ COVER LETTER ──────────────────────────────── -->
@@ -1778,6 +1800,114 @@ function openClaudeWithJD(jobId, type) {
   window.open('https://claude.ai', '_blank');
   closeDrawer();
   showCopiedToast(type);
+}
+
+
+// ── AI 잡 매칭 ────────────────────────────────────────────
+async function runJobMatch() {
+  const resume = document.getElementById('resumeText').value.trim();
+  if (!resume) {
+    alert('먼저 이력서를 입력해주세요!');
+    return;
+  }
+  if (!allJobs || allJobs.length === 0) {
+    alert('채용공고를 먼저 불러와주세요!');
+    return;
+  }
+
+  // UI 상태 업데이트
+  const btn = document.getElementById('runMatchBtn');
+  const statusEl = document.getElementById('matchStatus');
+  const statusIcon = document.getElementById('matchStatusIcon');
+  const statusText = document.getElementById('matchStatusText');
+  const resultsEl = document.getElementById('matchResults');
+
+  btn.disabled = true;
+  btn.textContent = '분석 중...';
+  statusEl.style.display = 'flex';
+  statusIcon.textContent = '⏳';
+  statusText.textContent = `${allJobs.length}개 공고 중 최적 매칭을 찾는 중... (10~20초 소요)`;
+  resultsEl.innerHTML = '';
+
+  // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드만)
+  const jobList = allJobs.slice(0, 300).map((j, i) =>
+    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${(j.skills||[]).slice(0,4).join(',')} | ${(j.languageReqs||[]).join(',')}`
+  ).join('
+');
+
+  const prompt = `You are a job matching expert. Analyze this resume and find the TOP 10 best matching jobs from the list below.
+
+RESUME:
+${resume}
+
+JOB LIST (format: [index] title | company | country | skills | languages):
+${jobList}
+
+Return ONLY a JSON array with exactly 10 items. Each item must have:
+- "index": the job index number from the list
+- "score": match percentage 0-100
+- "reason": one sentence in Korean explaining why this job matches (max 30 chars)
+
+Example: [{"index":5,"score":87,"reason":"SQL·Python 스킬이 완벽히 일치"},...]
+
+Return ONLY the JSON array, no other text.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content?.[0]?.text || '';
+    // JSON 파싱
+    const jsonMatch = raw.match(/\[.*\]/s);
+    if (!jsonMatch) throw new Error('JSON 파싱 실패');
+    const matches = JSON.parse(jsonMatch[0]);
+
+    statusIcon.textContent = '✅';
+    statusText.textContent = `${matches.length}개의 맞춤 공고를 찾았어요!`;
+
+    resultsEl.innerHTML = matches.map((m, rank) => {
+      const job = allJobs[m.index];
+      if (!job) return '';
+      const score = m.score || 0;
+      const scoreColor = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--text3)';
+      const scoreBg = score >= 80 ? 'rgba(62,207,160,.12)' : score >= 60 ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.05)';
+      return `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;cursor:pointer"
+           onmouseover="this.style.borderColor='rgba(79,142,247,.35)'" onmouseout="this.style.borderColor='var(--border)'"
+           onclick="window.open('${job.url}','_blank')">
+        <div style="font-size:22px;font-weight:800;color:var(--text3);width:28px;text-align:center;flex-shrink:0">${rank+1}</div>
+        <div style="font-size:22px;flex-shrink:0">${job.logo||'🏢'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${job.title}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${job.flag||''} ${job.company} · ${job.location||job.country}</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:5px;font-style:italic">"${m.reason}"</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+          <div style="background:${scoreBg};border:1px solid ${scoreColor};border-radius:8px;padding:6px 14px;font-size:18px;font-weight:800;color:${scoreColor}">${score}%</div>
+          <div style="font-size:10px;color:var(--text3)">매칭</div>
+        </div>
+        <button onclick="event.stopPropagation();window.open('${job.url}','_blank')" 
+                style="flex-shrink:0;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:rgba(79,142,247,.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          지원하기 →
+        </button>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    statusIcon.textContent = '❌';
+    statusText.textContent = `오류: ${e.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ AI 매칭 시작';
+  }
 }
 
 function openClaudeMatch() {
