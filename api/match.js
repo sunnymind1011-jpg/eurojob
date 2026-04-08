@@ -37,30 +37,45 @@ Example: [{"index":5,"score":87,"reason":"SQL·Python 스킬이 완벽히 일치
 Return ONLY the JSON array, no other text.`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
-        }),
-      }
-    );
+    // 1. 주소에서 v1beta를 v1으로 변경하고, 모델명 뒤에 -latest를 붙여보세요.
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { 
+          temperature: 0.1, // 매칭의 정확도를 위해 온도를 낮추는 것이 좋습니다.
+          maxOutputTokens: 1000,
+          // JSON 응답을 강제하려면 아래 설정을 추가하는 것이 안전합니다.
+          responseMimeType: "application/json" 
+        },
+      }),
+    });
 
     if (!response.ok) {
-      const err = await response.text();
-      return res.status(response.status).json({ error: err });
+      const errBody = await response.json(); // text() 대신 json()으로 에러 메시지 확인
+      return res.status(response.status).json({ error: errBody.error?.message || 'API 호출 실패' });
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return res.status(500).json({ error: 'AI 응답 파싱 실패: ' + text.slice(0, 100) });
+    
+    // 2. 응답 데이터 추출 (JSON 모드를 켰으므로 더 안전하게 가져올 수 있습니다)
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // JSON 응답만 깔끔하게 파싱
+    try {
+      const matches = JSON.parse(text);
+      res.status(200).json({ ok: true, matches });
+    } catch (parseError) {
+      // 혹시라도 텍스트가 섞여 나올 경우를 대비한 기존 정규식 로직 유지
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('AI 응답 파싱 실패');
+      const matches = JSON.parse(jsonMatch[0]);
+      res.status(200).json({ ok: true, matches });
+    }
 
-    const matches = JSON.parse(jsonMatch[0]);
-    res.status(200).json({ ok: true, matches });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
