@@ -1832,8 +1832,7 @@ async function runJobMatch() {
   // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드만)
   const jobList = allJobs.slice(0, 300).map((j, i) =>
     `[${i}] ${j.title} | ${j.company} | ${j.country} | ${(j.skills||[]).slice(0,4).join(',')} | ${(j.languageReqs||[]).join(',')}`
-  ).join('
-');
+  ).join('\n');
 
   const prompt = `You are a job matching expert. Analyze this resume and find the TOP 10 best matching jobs from the list below.
 
