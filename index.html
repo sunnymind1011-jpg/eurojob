@@ -13,6 +13,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EuroGate">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -551,7 +553,8 @@ textarea::placeholder{color:var(--text3);}
     <div class="nav-item" onclick="nav('saved',this)"><span class="nav-icon">🔖</span>저장목록<span class="nav-badge warn" id="nb-saved">0</span></div>
     <div class="nav-item" id="nav-tracker" style="display:none" onclick="nav('tracker',this)"><span class="nav-icon">📋</span>지원 트래커</div>
     <div class="nav-section" id="nav-section-ai" style="display:none">AI 도구</div>
-<div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>AI 이력서 매칭</div>
+<div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>이력서 매칭</div>
+<div class="nav-item" id="nav-jobmatch" style="display:none" onclick="nav('jobmatch',this)"><span class="nav-icon">🎯</span>AI 공고 추천</div>
 <div class="nav-item" id="nav-coverletter" style="display:none" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>커버레터 생성</div>
 <div class="nav-item" id="nav-jdanalysis" style="display:none" onclick="nav('jdanalysis',this)"><span class="nav-icon">🔍</span>JD 분석</div>
 <div class="nav-section" id="nav-section-info" style="display:none">정보</div>
@@ -802,8 +805,21 @@ textarea::placeholder{color:var(--text3);}
       <div class="two-col">
         <div class="card">
           <h3>📄 내 이력서 저장</h3>
-          <div class="sub">한 번 입력하면 계속 재사용할 수 있어요</div>
-          <textarea id="resumeText" rows="12" placeholder="이력서 내용을 붙여넣으세요.&#10;&#10;예시:&#10;경력: 5년 디지털 마케팅 (스타트업)&#10;기술: Google Analytics, SEO, SEM, Meta Ads&#10;언어: 한국어(모국어), 영어(비즈니스)&#10;학력: 경영학 학사 — 연세대"></textarea>
+          <div class="sub">파일 업로드 또는 직접 붙여넣기</div>
+          <!-- 파일 업로드 영역 -->
+          <div id="resumeDropZone"
+               style="border:2px dashed var(--border2);border-radius:8px;padding:14px 16px;margin-bottom:10px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg3)"
+               onclick="document.getElementById('resumeFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+               ondragleave="this.style.borderColor='var(--border2)'"
+               ondrop="event.preventDefault();this.style.borderColor='var(--border2)';handleResumeFile(event.dataTransfer.files[0])">
+            <div style="font-size:20px;margin-bottom:4px">📎</div>
+            <div style="font-size:12px;color:var(--text2)">PDF 또는 Word(.docx) 파일 업로드</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">클릭하거나 파일을 여기에 끌어다 놓으세요</div>
+          </div>
+          <input type="file" id="resumeFileInput" accept=".pdf,.docx" style="display:none" onchange="handleResumeFile(this.files[0])">
+          <div id="resumeFileStatus" style="font-size:11px;color:var(--accent3);margin-bottom:6px;display:none"></div>
+          <textarea id="resumeText" rows="10" placeholder="이력서 내용을 붙여넣으세요.&#10;&#10;예시:&#10;경력: 5년 디지털 마케팅 (스타트업)&#10;기술: Google Analytics, SEO, SEM, Meta Ads&#10;언어: 한국어(모국어), 영어(비즈니스)&#10;학력: 경영학 학사 — 연세대"></textarea>
           <div style="margin-top:8px;display:flex;gap:7px;align-items:center">
             <button class="btn btn-ghost btn-sm" onclick="fillSampleResume()">샘플 이력서</button>
             <button class="btn btn-ghost btn-sm" onclick="saveResume()">💾 저장</button>
@@ -836,27 +852,34 @@ textarea::placeholder{color:var(--text3);}
         <div id="promptPreview" style="background:var(--bg3);border-radius:8px;padding:14px;font-size:12px;color:var(--text2);line-height:1.8;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:'Courier New',monospace">이력서와 채용공고를 입력하면 프롬프트가 여기에 미리 보여요.</div>
       </div>
 
-      <!-- ★ TOP MATCHES ──────────────────────────────── -->
-      <div style="margin-top:28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div>
-            <div class="sec-title" style="font-size:16px">🎯 나에게 맞는 공고 추천</div>
-            <div class="sec-sub" style="margin-top:3px">이력서를 저장하면 AI가 현재 공고 중 가장 잘 맞는 것을 찾아드려요</div>
-          </div>
-          <button class="btn btn-primary" id="runMatchBtn" onclick="runJobMatch()" style="gap:8px">
-            ✨ AI 매칭 시작
-          </button>
-        </div>
+    </div>
 
-        <!-- 상태 메시지 -->
-        <div id="matchStatus" style="display:none;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:18px" id="matchStatusIcon">⏳</span>
-          <span id="matchStatusText">분석 중...</span>
-        </div>
-
-        <!-- 결과 그리드 -->
-        <div id="matchResults" style="display:flex;flex-direction:column;gap:12px"></div>
+    <!-- ★ AI 공고 추천 ──────────────────────────────── -->
+    <div class="page" id="page-jobmatch">
+      <div class="sec-hd" style="margin-bottom:18px">
+        <div><div class="sec-title">🎯 AI 공고 추천</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 가장 잘 맞는 공고를 찾아드려요</div></div>
       </div>
+
+      <div style="background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;font-size:13px;color:var(--text2)">
+        💡 <strong style="color:var(--text)">이력서 매칭</strong> 메뉴에서 이력서를 먼저 저장해두면 바로 사용할 수 있어요.
+        <span id="jobmatchResumeCheck" style="margin-left:8px"></span>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:13px;color:var(--text2)" id="jobmatchJobCount"></div>
+        <button class="btn btn-primary" id="runMatchBtn" onclick="runJobMatch()" style="gap:8px">
+          ✨ AI 매칭 시작
+        </button>
+      </div>
+
+      <!-- 상태 메시지 -->
+      <div id="matchStatus" style="display:none;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--text2);margin-bottom:16px;align-items:center;gap:10px">
+        <span style="font-size:18px" id="matchStatusIcon">⏳</span>
+        <span id="matchStatusText">분석 중...</span>
+      </div>
+
+      <!-- 결과 -->
+      <div id="matchResults" style="display:flex;flex-direction:column;gap:12px"></div>
     </div>
 
     <!-- ★ COVER LETTER ──────────────────────────────── -->
@@ -1199,6 +1222,10 @@ textarea::placeholder{color:var(--text3);}
 // ════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════
+// PDF.js worker 설정
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
 let allJobs = [];
 let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
 let activeFilters = new Set();
@@ -1221,6 +1248,13 @@ function nav(id, el) {
   if (id==='trends') renderTrends();
   if (id==='skillmap') renderSkillMap();
   if (id==='tracker') loadTracker();
+  if (id==='jobmatch') {
+    const resume = document.getElementById('resumeText').value.trim() || localStorage.getItem('eurogate_resume') || '';
+    const checkEl = document.getElementById('jobmatchResumeCheck');
+    const countEl = document.getElementById('jobmatchJobCount');
+    if (checkEl) checkEl.innerHTML = resume ? '<span style="color:var(--accent3)">✅ 이력서 저장됨</span>' : '<span style="color:var(--warn)">⚠️ 이력서 매칭 메뉴에서 이력서를 먼저 저장해주세요</span>';
+    if (countEl) countEl.textContent = allJobs.length ? `현재 ${allJobs.length}개 공고 분석 대상` : '공고를 먼저 불러오세요';
+  }
 }
 
 function navWithFilter(id, filters) {
@@ -2032,6 +2066,51 @@ function copyPrompt(type) {
   showCopiedToast(type);
 }
 
+
+// ── 이력서 파일 업로드 ──────────────────────────────────
+async function handleResumeFile(file) {
+  if (!file) return;
+  const statusEl = document.getElementById('resumeFileStatus');
+  const textarea = document.getElementById('resumeText');
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--text3)';
+  statusEl.textContent = `⏳ ${file.name} 읽는 중...`;
+
+  try {
+    let text = '';
+    if (file.name.endsWith('.docx')) {
+      // Word 파일
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      text = result.value;
+    } else if (file.name.endsWith('.pdf')) {
+      // PDF 파일
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        pages.push(content.items.map(item => item.str).join(' '));
+      }
+      text = pages.join('\n');
+    } else {
+      throw new Error('PDF 또는 .docx 파일만 지원해요');
+    }
+
+    if (!text.trim()) throw new Error('텍스트를 추출할 수 없어요 (이미지 기반 PDF일 수 있어요)');
+
+    textarea.value = text.trim();
+    statusEl.style.color = 'var(--accent3)';
+    statusEl.textContent = `✅ ${file.name} 업로드 완료! 내용을 확인하고 저장해주세요.`;
+    // 프롬프트 미리보기 업데이트
+    try { updatePromptPreview(); } catch(e) {}
+  } catch(e) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = `❌ 오류: ${e.message}`;
+  }
+}
+
 function saveResume() {
   const r = document.getElementById('resumeText').value.trim();
   if (!r) { alert('이력서를 입력해주세요.'); return; }
@@ -2717,7 +2796,7 @@ function showMain() {
   if (settingsNav) settingsNav.style.display = isAdmin ? 'flex' : 'none';
   if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
 
-  const extendedMenuIds = ['nav-section-ai','nav-ai','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat','nav-tracker'];
+  const extendedMenuIds = ['nav-section-ai','nav-ai','nav-jobmatch','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat','nav-tracker'];
   extendedMenuIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
