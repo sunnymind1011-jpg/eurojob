@@ -1,10 +1,11 @@
-// api/jobs.js — Adzuna + Remotive + Himalayas + VisaSponsor
+// api/jobs.js — Adzuna + Remotive + Himalayas + WorldJob + VisaSponsor
 import https from 'https';
 
 export const maxDuration = 60;
 
-const ADZUNA_APP_ID  = '22308f32';
-const ADZUNA_APP_KEY = '4902733d7210f0c75a0ad5a8d38a3c17';
+const ADZUNA_APP_ID  = process.env.ADZUNA_APP_ID  || '22308f32';
+const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY || '4902733d7210f0c75a0ad5a8d38a3c17';
+const WORLDJOB_API_KEY = process.env.WORLDJOB_API_KEY || '';
 
 const COUNTRIES = [
   { code: 'gb', name: 'United Kingdom', flag: '🇬🇧' },
@@ -379,6 +380,113 @@ async function fetchHimalayas() {
   }
 }
 
+
+// ── WorldJob (공공데이터포털) ─────────────────────────────
+
+const WORLDJOB_EU_NATIONS = [
+  '독일', '영국', '프랑스', '스페인', '네덜란드', '아일랜드',
+  '벨기에', '스위스', '이탈리아', '폴란드', '오스트리아',
+  '포르투갈', '스웨덴', '덴마크', '핀란드', '노르웨이',
+];
+
+const WORLDJOB_COUNTRY_MAP = {
+  '독일': 'DE', '영국': 'GB', '프랑스': 'FR', '스페인': 'ES',
+  '네덜란드': 'NL', '아일랜드': 'IE', '벨기에': 'BE', '스위스': 'CH',
+  '이탈리아': 'IT', '폴란드': 'PL', '오스트리아': 'AT', '포르투갈': 'PT',
+  '스웨덴': 'SE', '덴마크': 'DK', '핀란드': 'FI', '노르웨이': 'NO',
+};
+
+const WORLDJOB_FLAG_MAP = {
+  'DE':'🇩🇪','GB':'🇬🇧','FR':'🇫🇷','ES':'🇪🇸','NL':'🇳🇱','IE':'🇮🇪',
+  'BE':'🇧🇪','CH':'🇨🇭','IT':'🇮🇹','PL':'🇵🇱','AT':'🇦🇹','PT':'🇵🇹',
+  'SE':'🇸🇪','DK':'🇩🇰','FI':'🇫🇮','NO':'🇳🇴',
+};
+
+function fetchWorldJobNation(nationNm) {
+  return new Promise((resolve) => {
+    if (!WORLDJOB_API_KEY) return resolve([]);
+    const params = new URLSearchParams({
+      serviceKey: WORLDJOB_API_KEY,
+      searchNationNm: nationNm,
+      numOfRows: '100',
+      pageNo: '1',
+    });
+    const req = https.request({
+      hostname: 'apis.data.go.kr',
+      path: `/B490007/worldjob31/openApi31?${params}`,
+      method: 'GET',
+      headers: { 'Accept': 'application/xml' },
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const countryCode = WORLDJOB_COUNTRY_MAP[nationNm] || 'EU';
+          const flag = WORLDJOB_FLAG_MAP[countryCode] || '🌍';
+          // XML 파싱 (정규식으로 간단히)
+          const items = [...data.matchAll(/<ITEM>([\s\S]*?)<\/ITEM>/g)];
+          const jobs = items.map(m => {
+            const xml = m[1];
+            const get = tag => {
+              const match = xml.match(new RegExp(`<${tag}>(.*?)<\/${tag}>`));
+              return match ? match[1].trim() : '';
+            };
+            const endDe = get('rctntcEndDe');
+            // 마감된 공고 제외
+            if (endDe && new Date(endDe) < new Date()) return null;
+            const title = get('rctntcSj');
+            const company = get('entNm');
+            return {
+              id:           `wj_${countryCode}_${title}_${company}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80),
+              title,
+              level:        detectLevel(title, ''),
+              company,
+              location:     nationNm,
+              country:      countryCode,
+              flag,
+              logo:         companyEmoji(company),
+              description:  `직종: ${get('rctntcKscoNm')} | 업종: ${get('lplcKscoNm')} | 경력: ${get('careerStleNm')} | 필수언어: ${get('rctntcLang')} | 모집인원: ${get('rctntcNmprCo')}명`,
+              url:          'https://www.worldjob.or.kr/advnc/epmtList.do?menuId=1000006335',
+              salary:       null,
+              postedAt:     get('rctntcBgnDe') || new Date().toISOString(),
+              source:       'WorldJob',
+              skills:       [],
+              visaSponsored: get('rctntcVisaNm').includes('취업비자'),
+              relocation:   false,
+              remoteType:   'On-site',
+              languageReqs: get('rctntcLang').includes('한국어') ? ['Korean', 'English'] : ['English'],
+            };
+          }).filter(Boolean);
+          console.log(`  WorldJob ${nationNm}: ${jobs.length}개`);
+          resolve(jobs);
+        } catch(e) {
+          console.log(`  WorldJob ${nationNm} 파싱 실패: ${e.message}`);
+          resolve([]);
+        }
+      });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
+
+async function fetchWorldJob() {
+  if (!WORLDJOB_API_KEY) {
+    console.log('  WorldJob: API 키 없음, 스킵');
+    return [];
+  }
+  // 주요 유럽 국가만 병렬 요청 (rate limit 고려해 순차)
+  const results = [];
+  for (const nation of WORLDJOB_EU_NATIONS) {
+    const jobs = await fetchWorldJobNation(nation);
+    results.push(...jobs);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  console.log(`  WorldJob 합계: ${results.length}개`);
+  return results;
+}
+
 // ── VisaSponsor (Supabase) ────────────────────────────────
 
 const SUPABASE_URL = 'https://rorckellupiapjrfaqsp.supabase.co';
@@ -490,6 +598,10 @@ export default async function handler(req, res) {
   console.log(`  Adzuna: ${adzunaJobs.length}개, Himalayas: ${himalayasJobs.length}개, Remotive: ${remotiveJobs.length}개`);
 
   let allJobs = [...adzunaJobs, ...himalayasJobs, ...remotiveJobs];
+
+  // WorldJob
+  console.log('🇰🇷 WorldJob (공공데이터포털) 로드...');
+  allJobs.push(...await fetchWorldJob());
 
   // VisaSponsor
   console.log('🛂 visasponsor.jobs (Supabase) 로드...');
