@@ -1,4 +1,4 @@
-// api/match.js — AI 잡 매칭 프록시
+// api/match.js — AI 잡 매칭 (Gemini API)
 
 export const maxDuration = 30;
 
@@ -14,9 +14,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '이력서와 공고 목록이 필요해요' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API 키가 설정되지 않았어요' });
+    return res.status(500).json({ error: 'GEMINI_API_KEY가 설정되지 않았어요' });
   }
 
   const prompt = `You are a job matching expert. Analyze this resume and find the TOP 10 best matching jobs from the list below.
@@ -37,19 +37,17 @@ Example: [{"index":5,"score":87,"reason":"SQL·Python 스킬이 완벽히 일치
 Return ONLY the JSON array, no other text.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const err = await response.text();
@@ -57,9 +55,9 @@ Return ONLY the JSON array, no other text.`;
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return res.status(500).json({ error: 'AI 응답 파싱 실패' });
+    if (!jsonMatch) return res.status(500).json({ error: 'AI 응답 파싱 실패: ' + text.slice(0, 100) });
 
     const matches = JSON.parse(jsonMatch[0]);
     res.status(200).json({ ok: true, matches });
