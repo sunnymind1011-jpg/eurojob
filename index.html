@@ -60,7 +60,7 @@ body{font-family:'Sora','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .search-bar input::placeholder{color:var(--text3);}
 .search-tip-icon{position:relative;font-size:13px;color:var(--text3);cursor:default;user-select:none;flex-shrink:0;padding:2px 3px;border-radius:4px;transition:color .15s;}
 .search-tip-icon:hover,.search-tip-icon:focus{color:var(--accent);outline:none;}
-.search-tip-popup{display:none;position:absolute;top:calc(100% + 8px);right:0;width:260px;background:#1e2230;border:1px solid rgba(79,142,247,.35);border-radius:10px;padding:13px 15px;font-size:12px;color:var(--text2);line-height:1.8;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4);white-space:normal;}
+.search-tip-popup{display:none;position:absolute;top:calc(100%% + 8px);right:0;width:260px;background:#1e2230;border:1px solid rgba(79,142,247,.35);border-radius:10px;padding:13px 15px;font-size:12px;color:var(--text2);line-height:1.8;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4);white-space:normal;}
 .search-tip-popup::before{content:'';position:absolute;top:-6px;right:8px;width:10px;height:10px;background:#1e2230;border-left:1px solid rgba(79,142,247,.35);border-top:1px solid rgba(79,142,247,.35);transform:rotate(45deg);}
 .search-tip-icon:hover .search-tip-popup,.search-tip-icon:focus .search-tip-popup{display:block;}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
@@ -578,16 +578,7 @@ textarea::placeholder{color:var(--text3);}
     <div class="search-bar">
       <span style="color:var(--text3);font-size:14px">🔍</span>
       <input type="text" id="searchInput" placeholder="직무·도시·스킬 검색 (예: data analyst, barcelona, python)" oninput="filterJobs()">
-      <span class="search-tip-icon" tabindex="0">ⓘ
-        <span class="search-tip-popup">
-          <strong>검색 팁</strong><br>
-          · <span style="color:#7ecfff">직무명</span> — data analyst, marketing<br>
-          · <span style="color:#7ecfff">도시명</span> — barcelona, berlin, amsterdam<br>
-          · <span style="color:#7ecfff">스킬</span> — python, sql, figma<br>
-          · <span style="color:#7ecfff">다중검색</span> — marketing OR finance<br>
-          <span style="color:#8b92a8;margin-top:6px;display:block">💡 국가 필터 선택 후 도시 검색하면 더 정확해요</span>
-        </span>
-      </span>
+      <span class="search-tip-icon" tabindex="0">ⓘ<span class="search-tip-popup"><strong>검색 팁</strong><br>· <span style="color:#7ecfff">직무명</span> — data analyst, marketing<br>· <span style="color:#7ecfff">도시명</span> — barcelona, berlin, amsterdam<br>· <span style="color:#7ecfff">스킬</span> — python, sql, figma<br>· <span style="color:#7ecfff">다중검색</span> — marketing OR finance<br><span style="color:#8b92a8;margin-top:6px;display:block">💡 국가 필터 선택 후 도시 검색하면 더 정확해요</span></span></span>
     </div>
     <div class="topbar-right">
 
@@ -661,6 +652,16 @@ textarea::placeholder{color:var(--text3);}
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px">
       📡 Adzuna · Remotive API를 통해 수집된 채용공고입니다.
       </div>
+      <!-- 검색 팁 배너 -->
+      <div id="searchTipBanner" style="display:flex;align-items:flex-start;gap:10px;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:10px;padding:11px 15px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.7">
+        <span style="font-size:15px;flex-shrink:0;margin-top:1px">💡</span>
+        <div>
+          <span style="color:var(--text);font-weight:600">검색창 활용 팁</span><br>
+          위 검색창에 <span style="color:var(--accent)">직무명</span>(data analyst), <span style="color:var(--accent)">도시명</span>(barcelona, madrid, berlin), <span style="color:var(--accent)">스킬</span>(python, sql) 등을 입력하면 아래 필터와 <strong>조합</strong>해서 검색돼요.
+          <span style="display:inline-block;margin-top:4px;color:var(--text3)">🇰🇷 <strong>한국 연계</strong> 필터 = 한국어 요구 공고 + 삼성·현대·LG 등 유럽 한국 기업 포함</span>
+        </div>
+        <span onclick="document.getElementById('searchTipBanner').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:13px;flex-shrink:0;padding:0 2px" title="닫기">✕</span>
+      </div>
       <div class="filter-row">
         <span class="f-lbl">🌍</span>
         <div class="chip" data-f="country:ES" onclick="toggleChip(this)">🇪🇸 스페인</div>
@@ -682,7 +683,7 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="remote:Remote" onclick="toggleChip(this)">🏠 원격</div>
         <div class="chip" data-f="remote:Hybrid" onclick="toggleChip(this)">🏗️ 하이브리드</div>
         <div class="chip" data-f="lang:English" onclick="toggleChip(this)">🌐 영어 OK</div>
-        <div class="chip" data-f="lang:Korean" onclick="toggleChip(this)">🇰🇷 한국어</div>
+        <div class="chip" data-f="lang:Korean" onclick="toggleChip(this)">🇰🇷 한국 연계</div>
       </div>
       <div class="filter-row">
         <span class="f-lbl">💼</span>
@@ -1343,7 +1344,7 @@ function normalizeJSearch(r) {
     visaSponsored: detectVisaSponsorship(desc),
     relocation:   detectRelocation(desc),
     remoteType:   r.job_is_remote ? 'Remote' : detectRemote(desc),
-    languageReqs: detectLangs(desc),
+    languageReqs: detectLangs(desc, '', r.job_title || '', r.employer_name || ''),
   };
 }
 
@@ -1443,13 +1444,17 @@ function detectWritingLang(d) {
   return 'English';
 }
 
-function detectLangs(d, countryCode) {
+function detectLangs(d, countryCode, title = '', company = '') {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
-  // 추가 언어 명시된 경우
   if (writingLang !== 'English' && /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english|(cv|resume|application|cover letter).{0,20}(in english|english only|written in english)|english.*(cv|resume)|please (apply|send|submit).{0,30}english|(working|business|professional).{0,10}english/i.test(d)) l.push('English');
   if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
-  if (/korean|한국어/i.test(d)) l.push('Korean');
+  // 한국어 요구 키워드
+  const koreanLang = /korean\s*(speaker|speaking|language|proficiency|fluency|native|required|preferred|is a (plus|must|bonus|asset))|fluent\s*in\s*korean|bilingual.*korean|korean.*bilingual|한국어|korean\s*and\s*english|english\s*and\s*korean/i;
+  // 유럽 진출 한국 기업
+  const koreanCompany = /\b(samsung|hyundai|lg\s*(electronics|energy|chem|display|innotek|uplus)?|kia(\s*(motors|europe))?|sk\s*(hynix|innovation|telecom|bioscience|ecoplant)?|posco|lotte\s*(chemical|shopping|global|hotel|holdings)?|hanwha\s*(q\s*cells|aerospace|solutions|vision)?|doosan\s*(bobcat|heavy|fuel\s*cell)?|krafton|nexon|netmarble|kakao(bank|games)?|naver|coupang|celltrion|hugel|mobis|glovis|korean\s*air|asiana|hana\s*(bank|financial)?|kb\s*(financial|securities|insurance)?|shinhan|woori\s*(bank|financial)?|innocean|kolon|kumho|hyosung|daelim|kotra|posco\s*(international|holdings)?)\b/i;
+  if (koreanLang.test(d)) l.push('Korean');
+  else if (koreanCompany.test((title + ' ' + company).trim())) l.push('Korean');
   return l;
 }
 function companyEmoji(n){const e=['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];return e[n.charCodeAt(0)%e.length]||'🏢';}
