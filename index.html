@@ -58,6 +58,11 @@ body{font-family:'Sora','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .search-bar:focus-within{border-color:var(--accent);}
 .search-bar input{background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;flex:1;}
 .search-bar input::placeholder{color:var(--text3);}
+.search-tip-icon{position:relative;font-size:13px;color:var(--text3);cursor:default;user-select:none;flex-shrink:0;padding:2px 3px;border-radius:4px;transition:color .15s;}
+.search-tip-icon:hover,.search-tip-icon:focus{color:var(--accent);outline:none;}
+.search-tip-popup{display:none;position:absolute;top:calc(100% + 8px);right:0;width:260px;background:#1e2230;border:1px solid rgba(79,142,247,.35);border-radius:10px;padding:13px 15px;font-size:12px;color:var(--text2);line-height:1.8;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4);white-space:normal;}
+.search-tip-popup::before{content:'';position:absolute;top:-6px;right:8px;width:10px;height:10px;background:#1e2230;border-left:1px solid rgba(79,142,247,.35);border-top:1px solid rgba(79,142,247,.35);transform:rotate(45deg);}
+.search-tip-icon:hover .search-tip-popup,.search-tip-icon:focus .search-tip-popup{display:block;}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
 .lang-toggle{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:12px;}
 .lang-btn{padding:5px 10px;cursor:pointer;color:var(--text2);font-weight:500;transition:all .15s;}
@@ -572,7 +577,17 @@ textarea::placeholder{color:var(--text3);}
   <div class="topbar">
     <div class="search-bar">
       <span style="color:var(--text3);font-size:14px">🔍</span>
-      <input type="text" id="searchInput" placeholder="직무, 회사, 스킬, OR을 통해 다중 검색 가능" oninput="filterJobs()">
+      <input type="text" id="searchInput" placeholder="직무·도시·스킬 검색 (예: data analyst, barcelona, python)" oninput="filterJobs()">
+      <span class="search-tip-icon" tabindex="0">ⓘ
+        <span class="search-tip-popup">
+          <strong>검색 팁</strong><br>
+          · <span style="color:#7ecfff">직무명</span> — data analyst, marketing<br>
+          · <span style="color:#7ecfff">도시명</span> — barcelona, berlin, amsterdam<br>
+          · <span style="color:#7ecfff">스킬</span> — python, sql, figma<br>
+          · <span style="color:#7ecfff">다중검색</span> — marketing OR finance<br>
+          <span style="color:#8b92a8;margin-top:6px;display:block">💡 국가 필터 선택 후 도시 검색하면 더 정확해요</span>
+        </span>
+      </span>
     </div>
     <div class="topbar-right">
 
