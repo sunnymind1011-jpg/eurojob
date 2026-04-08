@@ -2090,42 +2090,19 @@ function copyPrompt(type) {
 // ── 이력서 텍스트 클리닝 (PDF 레이아웃 깨짐 복구) ───────────
 function cleanResumeText(raw) {
   let t = raw;
-
-  // 1. 단어 중간 공백 제거 (예: "D ata" → "Data", "S cientist" → "Scientist")
-  //    대문자 뒤 공백 + 소문자 패턴
-  t = t.replace(/([A-Z])\s([a-z])/g, '$1$2');
-  // 연속으로 반복 적용 (3회)
   t = t.replace(/([A-Z])\s([a-z])/g, '$1$2');
   t = t.replace(/([A-Z])\s([a-z])/g, '$1$2');
-
-  // 2. 날짜 패턴 공백 복구 (예: "20 19" → "2019", "20 20" → "2020")
-  t = t.replace(/(\d{2})\s(\d{2})/g, '$1$2');
-
-  // 3. 하이픈 주변 공백 정리 (예: "2016 – 2019" 유지, "high - profile" → "high-profile")
+  t = t.replace(/([A-Z])\s([a-z])/g, '$1$2');
+  t = t.replace(/(\d{2})\s(\d{2})\b/g, '$1$2');
   t = t.replace(/\s-\s/g, '-');
-  t = t.replace(/\s–\s/g, ' – ');
-
-  // 4. 불릿 포인트 앞 과도한 공백 제거
-  t = t.replace(/\s{2,}(•|▪|▸|◦|-)/g, '
-$1');
-
-  // 5. 연속 공백 → 단일 공백
-  t = t.replace(/[ 	]{2,}/g, ' ');
-
-  // 6. 3줄 이상 연속 빈줄 → 2줄로
-  t = t.replace(/
-{3,}/g, '
-
-');
-
-  // 7. 섹션 헤더 복구 (전부 대문자 + 공백 패턴: "E X P E R I E N C E" → "EXPERIENCE")
-  t = t.replace(/([A-Z])\s([A-Z])\s([A-Z])\s([A-Z])/g, '$1$2$3$4');
-  t = t.replace(/([A-Z])\s([A-Z])\s([A-Z])/g, '$1$2$3');
-  t = t.replace(/([A-Z])\s([A-Z])/g, '$1$2');
-
-  // 8. 줄 끝 공백 제거
-  t = t.replace(/[ 	]+$/gm, '');
-
+  t = t.replace(/\s\u2013\s/g, ' \u2013 ');
+  t = t.replace(/\s{2,}(\u2022|\u25aa|\u25b8|\u25e6|-)/g, '\n$1');
+  t = t.replace(/[ \t]{2,}/g, ' ');
+  t = t.replace(/\n{3,}/g, '\n\n');
+  t = t.replace(/\b([A-Z])\s([A-Z])\s([A-Z])\s([A-Z])/g, '$1$2$3$4');
+  t = t.replace(/\b([A-Z])\s([A-Z])\s([A-Z])/g, '$1$2$3');
+  t = t.replace(/\b([A-Z])\s([A-Z])\b/g, '$1$2');
+  t = t.replace(/[ \t]+$/gm, '');
   return t.trim();
 }
 
