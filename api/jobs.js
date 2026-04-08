@@ -446,27 +446,25 @@ export default async function handler(req, res) {
 
   // Adzuna(메인) + Himalayas + Remotive 동시 시작
   const adzunaPromise = (async () => {
-    const jobs = [];
-    for (const country of COUNTRIES) {
-      for (const cat of CATEGORIES) {
-        const r = await fetchAdzuna(country.code, cat.tag);
-        jobs.push(...r.map(j => normalizeAdzuna(j, country.code)).filter(Boolean));
-        await new Promise(r => setTimeout(r, 150));
-      }
-    }
-    for (const country of MAJOR_COUNTRIES) {
-      for (const kw of DATA_KEYWORDS) {
-        jobs.push(...await fetchAdzunaKeyword(country, kw));
-        await new Promise(r => setTimeout(r, 150));
-      }
-    }
-    for (const country of BIZ_COUNTRIES) {
-      for (const kw of BIZ_KEYWORDS) {
-        jobs.push(...await fetchAdzunaKeyword(country, kw));
-        await new Promise(r => setTimeout(r, 150));
-      }
-    }
-    return jobs;
+    // 카테고리별 요청 전부 병렬
+    const catRequests = COUNTRIES.flatMap(country =>
+      CATEGORIES.map(cat =>
+        fetchAdzuna(country.code, cat.tag)
+          .then(r => r.map(j => normalizeAdzuna(j, country.code)).filter(Boolean))
+          .catch(() => [])
+      )
+    );
+    // 키워드별 요청 전부 병렬
+    const kwRequests = [
+      ...MAJOR_COUNTRIES.flatMap(country =>
+        DATA_KEYWORDS.map(kw => fetchAdzunaKeyword(country, kw).catch(() => []))
+      ),
+      ...BIZ_COUNTRIES.flatMap(country =>
+        BIZ_KEYWORDS.map(kw => fetchAdzunaKeyword(country, kw).catch(() => []))
+      ),
+    ];
+    const results = await Promise.all([...catRequests, ...kwRequests]);
+    return results.flat();
   })();
 
   const himalayasPromise = fetchHimalayas().catch(() => []);
