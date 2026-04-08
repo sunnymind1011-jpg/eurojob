@@ -422,6 +422,9 @@ function fetchWorldJobPage(pageNo) {
         try {
           const totalMatch = data.match(/<totalCount>(\d+)<\/totalCount>/);
           const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+          // 첫 번째 ITEM 원본 로그 (joCrtfcNo 필드 확인용 - 확인 후 삭제)
+          const firstItem = data.match(/<ITEM>[\s\S]*?<\/ITEM>/);
+          if (firstItem && pageNo === 1) console.log('  WorldJob 첫 ITEM XML:', firstItem[0].slice(0, 500));
           const items = [...data.matchAll(/<ITEM>([\s\S]*?)<\/ITEM>/g)];
           const jobs = items.map(m => {
             const xml = m[1];
