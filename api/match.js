@@ -1,4 +1,4 @@
-// api/match.js — AI 잡 매칭 (Gemini API)
+// api/match.js — AI 잡 매칭 (Groq API 버전)
 
 export const maxDuration = 30;
 
@@ -10,72 +10,47 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
   const { resume, jobs } = req.body;
-  if (!resume || !jobs) {
-    return res.status(400).json({ error: '이력서와 공고 목록이 필요해요' });
-  }
+  if (!resume || !jobs) return res.status(400).json({ error: '데이터 부족' });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY가 설정되지 않았어요' });
-  }
+  // 환경변수 이름을 GROQ_API_KEY로 바꿔주세요
+  const apiKey = process.env.GROQ_API_KEY; 
+  if (!apiKey) return res.status(500).json({ error: 'API 키가 없습니다' });
 
-  const prompt = `You are a job matching expert. Analyze this resume and find the TOP 10 best matching jobs from the list below.
+  const prompt = `You are a job matching expert. Analyze this resume and find the TOP 10 best matching jobs from the list.
+  
+  RESUME: ${resume}
+  JOB LIST: ${jobs}
 
-RESUME:
-${resume}
-
-JOB LIST (format: [index] title | company | country | skills | languages):
-${jobs}
-
-Return ONLY a JSON array with exactly 10 items. Each item must have:
-- "index": the job index number from the list
-- "score": match percentage 0-100
-- "reason": one sentence in Korean explaining why this job matches (max 30 chars)
-
-Example: [{"index":5,"score":87,"reason":"SQL·Python 스킬이 완벽히 일치"},...]
-
-Return ONLY the JSON array, no other text.`;
+  Return ONLY a JSON array. Each item: {"index": number, "score": number, "reason": "한글설명(20자이내)"}`;
 
   try {
-    // 1. 주소에서 v1beta를 v1으로 변경하고, 모델명 뒤에 -latest를 붙여보세요.
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-
-    const response = await fetch(url, {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { 
-          temperature: 0.1, // 매칭의 정확도를 위해 온도를 낮추는 것이 좋습니다.
-          maxOutputTokens: 1000,
-          // JSON 응답을 강제하려면 아래 설정을 추가하는 것이 안전합니다.
-          responseMimeType: "application/json" 
-        },
-      }),
+        model: "llama-3.3-70b-versatile", // 성능이 매우 좋은 모델입니다
+        messages: [
+          { role: "system", content: "You are a helpful assistant that outputs only JSON." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" } // JSON 출력 강제
+      })
     });
 
-    if (!response.ok) {
-      const errBody = await response.json(); // text() 대신 json()으로 에러 메시지 확인
-      return res.status(response.status).json({ error: errBody.error?.message || 'API 호출 실패' });
-    }
-
     const data = await response.json();
-    
-    // 2. 응답 데이터 추출 (JSON 모드를 켰으므로 더 안전하게 가져올 수 있습니다)
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // JSON 응답만 깔끔하게 파싱
-    try {
-      const matches = JSON.parse(text);
-      res.status(200).json({ ok: true, matches });
-    } catch (parseError) {
-      // 혹시라도 텍스트가 섞여 나올 경우를 대비한 기존 정규식 로직 유지
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error('AI 응답 파싱 실패');
-      const matches = JSON.parse(jsonMatch[0]);
-      res.status(200).json({ ok: true, matches });
-    }
+    if (!response.ok) return res.status(response.status).json({ error: data.error?.message });
 
+    const content = data.choices[0].message.content;
+    
+    // Groq은 응답을 객체로 감쌀 때가 있어 배열만 추출합니다
+    let matches = JSON.parse(content);
+    if (matches.matches) matches = matches.matches; // { "matches": [...] } 대응
+
+    res.status(200).json({ ok: true, matches: Array.isArray(matches) ? matches : [matches] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
