@@ -441,10 +441,8 @@ function fetchWorldJobPage(pageNo) {
             const flag = WORLDJOB_FLAG_MAP[countryCode] || '🌍';
             const joCrtfcNo = get('joCrtfcNo');
             const lang = get('rctntcLang');
-            // 개별 공고 상세 URL (joCrtfcNo 있으면 상세 페이지, 없으면 목록)
-            const jobUrl = joCrtfcNo
-              ? `https://www.worldjob.or.kr/advnc/view.do?menuId=1000000014&dobType=1&joCrtfcNo=${joCrtfcNo}&joCrtfcDsp=1&joCrtfcDspSn=1`
-              : 'https://www.worldjob.or.kr/advnc/epmtList.do?menuId=1000006335';
+            // 회사명으로 월드잡 검색 URL 생성 (joCrtfcNo가 API에 없어서 검색으로 대체)
+            const jobUrl = `https://www.worldjob.or.kr/advnc/epmtList.do?menuId=1000006335&searchEntNm=${encodeURIComponent(company)}&searchRctntcSj=${encodeURIComponent(title.slice(0, 20))}`;
             // WorldJob 공고는 한국어로 작성되어 있으므로 항상 Korean 태그
             const langReqs = ['Korean'];
             if (lang && !lang.includes('한국어')) langReqs.push('English');
