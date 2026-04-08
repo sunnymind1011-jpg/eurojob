@@ -439,6 +439,16 @@ function fetchWorldJobPage(pageNo) {
             const title = get('rctntcSj');
             const company = get('entNm');
             const flag = WORLDJOB_FLAG_MAP[countryCode] || '🌍';
+            const joCrtfcNo = get('joCrtfcNo');
+            const lang = get('rctntcLang');
+            // 개별 공고 상세 URL (joCrtfcNo 있으면 상세 페이지, 없으면 목록)
+            const jobUrl = joCrtfcNo
+              ? `https://www.worldjob.or.kr/advnc/view.do?menuId=1000000014&dobType=1&joCrtfcNo=${joCrtfcNo}&joCrtfcDsp=1&joCrtfcDspSn=1`
+              : 'https://www.worldjob.or.kr/advnc/epmtList.do?menuId=1000006335';
+            // WorldJob 공고는 한국어로 작성되어 있으므로 항상 Korean 태그
+            const langReqs = ['Korean'];
+            if (lang && !lang.includes('한국어')) langReqs.push('English');
+            else langReqs.push('English');
             return {
               id:           `wj_${countryCode}_${(title + company).replace(/[^a-zA-Z0-9가-힣]/g, '_').slice(0, 60)}`,
               title,
@@ -448,8 +458,8 @@ function fetchWorldJobPage(pageNo) {
               country:      countryCode,
               flag,
               logo:         companyEmoji(company),
-              description:  `직종: ${get('rctntcKscoNm')} | 업종: ${get('lplcKscoNm')} | 경력: ${get('careerStleNm')} | 필수언어: ${get('rctntcLang')} | 모집인원: ${get('rctntcNmprCo')}명`,
-              url:          'https://www.worldjob.or.kr/advnc/epmtList.do?menuId=1000006335',
+              description:  `직종: ${get('rctntcKscoNm')} | 업종: ${get('lplcKscoNm')} | 경력: ${get('careerStleNm')} | 필수언어: ${lang} | 모집인원: ${get('rctntcNmprCo')}명`,
+              url:          jobUrl,
               salary:       null,
               postedAt:     get('rctntcBgnDe') || new Date().toISOString(),
               source:       'WorldJob',
@@ -457,7 +467,7 @@ function fetchWorldJobPage(pageNo) {
               visaSponsored: get('rctntcVisaNm').includes('취업비자'),
               relocation:   false,
               remoteType:   'On-site',
-              languageReqs: get('rctntcLang').includes('한국어') ? ['Korean', 'English'] : ['English'],
+              languageReqs: langReqs,
             };
           }).filter(Boolean);
           resolve({ jobs, total });
