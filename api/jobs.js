@@ -422,9 +422,6 @@ function fetchWorldJobPage(pageNo) {
         try {
           const totalMatch = data.match(/<totalCount>(\d+)<\/totalCount>/);
           const total = totalMatch ? parseInt(totalMatch[1]) : 0;
-          // 첫 번째 ITEM 원본 로그 (joCrtfcNo 필드 확인용 - 확인 후 삭제)
-          const firstItem = data.match(/<ITEM>[\s\S]*?<\/ITEM>/);
-          if (firstItem && pageNo === 1) console.log('  WorldJob 첫 ITEM XML:', firstItem[0].slice(0, 500));
           const items = [...data.matchAll(/<ITEM>([\s\S]*?)<\/ITEM>/g)];
           const jobs = items.map(m => {
             const xml = m[1];
@@ -445,7 +442,7 @@ function fetchWorldJobPage(pageNo) {
             const joCrtfcNo = get('joCrtfcNo');
             const lang = get('rctntcLang');
             // 회사명으로 월드잡 검색 URL 생성 (joCrtfcNo가 API에 없어서 검색으로 대체)
-            const jobUrl = `https://www.worldjob.or.kr/advnc/epmtList.do?menuId=1000006335&searchEntNm=${encodeURIComponent(company)}&searchRctntcSj=${encodeURIComponent(title.slice(0, 20))}`;
+            const jobUrl = `https://www.google.com/search?q=site:worldjob.or.kr+${encodeURIComponent('"' + title + '"')}`;
             // WorldJob 공고는 한국어로 작성되어 있으므로 항상 Korean 태그
             const langReqs = ['Korean'];
             if (lang && !lang.includes('한국어')) langReqs.push('English');
