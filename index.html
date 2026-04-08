@@ -820,9 +820,10 @@ textarea::placeholder{color:var(--text3);}
           <input type="file" id="resumeFileInput" accept=".pdf,.docx" style="display:none" onchange="handleResumeFile(this.files[0])">
           <div id="resumeFileStatus" style="font-size:11px;color:var(--accent3);margin-bottom:6px;display:none"></div>
           <textarea id="resumeText" rows="10" placeholder="이력서 내용을 붙여넣으세요.&#10;&#10;예시:&#10;경력: 5년 디지털 마케팅 (스타트업)&#10;기술: Google Analytics, SEO, SEM, Meta Ads&#10;언어: 한국어(모국어), 영어(비즈니스)&#10;학력: 경영학 학사 — 연세대"></textarea>
-          <div style="margin-top:8px;display:flex;gap:7px;align-items:center">
+          <div style="margin-top:8px;display:flex;gap:7px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick="fillSampleResume()">샘플 이력서</button>
             <button class="btn btn-ghost btn-sm" onclick="saveResume()">💾 저장</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearResume()" style="color:var(--red);border-color:rgba(240,100,100,.3)">🗑 초기화</button>
             <span style="font-size:11px;color:var(--accent3)" id="resumeSaveStatus"></span>
           </div>
         </div>
@@ -830,7 +831,10 @@ textarea::placeholder{color:var(--text3);}
           <h3>💼 채용공고 선택</h3>
           <div class="sub">채용공고 탭에서 공고를 클릭하면 자동으로 여기에 채워져요</div>
           <textarea id="aiJD" rows="12" placeholder="또는 채용공고를 직접 붙여넣으세요..."></textarea>
-          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+          <div style="margin-top:8px;display:flex;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('aiJD').value='';updatePromptPreview()" style="color:var(--red);border-color:rgba(240,100,100,.3)">🗑 초기화</button>
+          </div>
+          <div style="margin-top:6px;display:flex;flex-direction:column;gap:8px">
             <button class="btn btn-primary" style="justify-content:center" onclick="openClaudeMatch()">
               🤖 Claude.ai에서 적합도 분석하기
             </button>
@@ -894,8 +898,22 @@ textarea::placeholder{color:var(--text3);}
       </div>
 
       <div class="two-col">
-        <div class="card"><h3>📄 내 이력서</h3><div class="sub">AI 매칭 페이지에 저장된 이력서가 자동으로 채워져요</div><textarea id="clResume" rows="10" placeholder="이력서 내용..."></textarea></div>
-        <div class="card"><h3>💼 지원할 채용공고</h3><div class="sub">공고 클릭 시 자동으로 채워집니다</div><textarea id="clJD" rows="10" placeholder="채용공고 내용..."></textarea></div>
+        <div class="card">
+          <h3>📄 내 이력서</h3>
+          <div class="sub">AI 매칭 페이지에 저장된 이력서가 자동으로 채워져요</div>
+          <textarea id="clResume" rows="10" placeholder="이력서 내용..."></textarea>
+          <div style="margin-top:6px;display:flex;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('clResume').value=''" style="color:var(--red);border-color:rgba(240,100,100,.3)">🗑 초기화</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>💼 지원할 채용공고</h3>
+          <div class="sub">공고 클릭 시 자동으로 채워집니다</div>
+          <textarea id="clJD" rows="10" placeholder="채용공고 내용..."></textarea>
+          <div style="margin-top:6px;display:flex;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('clJD').value=''" style="color:var(--red);border-color:rgba(240,100,100,.3)">🗑 초기화</button>
+          </div>
+        </div>
       </div>
 
       <div style="display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
@@ -2155,6 +2173,18 @@ async function handleResumeFile(file) {
     statusEl.style.color = 'var(--red)';
     statusEl.textContent = `❌ 오류: ${e.message}`;
   }
+}
+
+function clearResume() {
+  if (!confirm('이력서 내용을 초기화할까요?')) return;
+  document.getElementById('resumeText').value = '';
+  document.getElementById('resumeFileStatus').style.display = 'none';
+  localStorage.removeItem('ej_resume');
+  const s = document.getElementById('resumeSaveStatus');
+  s.textContent = '🗑 초기화됨';
+  s.style.color = 'var(--red)';
+  setTimeout(() => { s.textContent = ''; s.style.color = 'var(--accent3)'; }, 2000);
+  try { updatePromptPreview(); } catch(e) {}
 }
 
 function saveResume() {
