@@ -1880,9 +1880,7 @@ Return ONLY the JSON array, no other text.`;
       const score = m.score || 0;
       const scoreColor = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--text3)';
       const scoreBg = score >= 80 ? 'rgba(62,207,160,.12)' : score >= 60 ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.05)';
-      const safeUrl = (job.url || '#').replace(/[
-
-]/g, '');
+      const safeUrl = (job.url || '#').replace(/[\n\r]/g, '');
 
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;cursor:pointer';
