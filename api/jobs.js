@@ -99,12 +99,18 @@ function detectWritingLang(d) {
   return 'English';
 }
 
-function detectLangs(d) {
+function detectLangs(d, title = '', company = '') {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
   if (writingLang !== 'English' && /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english/i.test(d)) l.push('English');
   if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
-  if (/korean|한국어/i.test(d)) l.push('Korean');
+  // 한국어 언어 요구 키워드
+  const koreanLang = /korean\s*(speaker|speaking|language|proficiency|fluency|native|required|preferred|is a (plus|must|bonus|asset))|fluent\s*in\s*korean|bilingual.*korean|korean.*bilingual|한국어|korean\s*and\s*english|english\s*and\s*korean/i;
+  // 유럽 진출 한국 기업 (상점 제외, 법인/오피스 있는 기업)
+  const koreanCompany = /\b(samsung|hyundai|lg\s*(electronics|energy|chem|display|innotek|uplus)|kia\s*(motors|europe)?|sk\s*(hynix|innovation|telecom|bioscience|ecoplant|on\s*semiconductor)?|posco|lotte\s*(chemical|shopping|global|hotel|holdings)?|hanwha\s*(q\s*cells|aerospace|solutions|vision)?|doosan\s*(bobcat|heavy|fuel\s*cell)?|krafton|nexon|netmarble|kakao|kakaobank|kakaogames|naver|coupang|krafton|celltrion|hugel|hy?undai\s*(mobis|glovis|rotem|capital|wia|steel|merchant|marine)?|korean\s*air|asiana|hana\s*(bank|financial)?|kb\s*(financial|securities|insurance)?|shinhan|woori\s*(bank|financial)?|hanhwa|korail|kogas|kepco|korea\s*(electric|gas|expressway|railroad|telecom|aerospace)|ks\s*edition|innocean|kolon|kumho|hyosung|daelim|ssamzie|kotra|posco\s*(international|holdings|future\s*m)?|doosaninfo?)\b/i;
+
+  if (koreanLang.test(d)) l.push('Korean');
+  else if (koreanCompany.test(title + ' ' + company)) l.push('Korean');
   return l;
 }
 
@@ -150,7 +156,7 @@ function normalizeAdzuna(raw, countryCode) {
     visaSponsored: detectVisaSponsorship(desc),
     relocation:   detectRelocation(desc),
     remoteType:   detectRemote(desc),
-    languageReqs: detectLangs(desc),
+    languageReqs: detectLangs(desc, raw.title || '', raw.company?.display_name || ''),
   };
 }
 
