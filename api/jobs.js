@@ -402,14 +402,13 @@ const WORLDJOB_FLAG_MAP = {
   'SE':'🇸🇪','DK':'🇩🇰','FI':'🇫🇮','NO':'🇳🇴',
 };
 
-function fetchWorldJobNation(nationNm) {
+function fetchWorldJobPage(pageNo) {
   return new Promise((resolve) => {
-    if (!WORLDJOB_API_KEY) return resolve([]);
+    if (!WORLDJOB_API_KEY) return resolve({ jobs: [], total: 0 });
     const params = new URLSearchParams({
       serviceKey: WORLDJOB_API_KEY,
-      searchNationNm: nationNm,
       numOfRows: '100',
-      pageNo: '1',
+      pageNo: String(pageNo),
     });
     const req = https.request({
       hostname: 'apis.data.go.kr',
@@ -421,23 +420,27 @@ function fetchWorldJobNation(nationNm) {
       res.on('data', c => data += c);
       res.on('end', () => {
         try {
-          const countryCode = WORLDJOB_COUNTRY_MAP[nationNm] || 'EU';
-          const flag = WORLDJOB_FLAG_MAP[countryCode] || '🌍';
-          // XML 파싱 (정규식으로 간단히)
+          const totalMatch = data.match(/<totalCount>(\d+)<\/totalCount>/);
+          const total = totalMatch ? parseInt(totalMatch[1]) : 0;
           const items = [...data.matchAll(/<ITEM>([\s\S]*?)<\/ITEM>/g)];
           const jobs = items.map(m => {
             const xml = m[1];
             const get = tag => {
-              const match = xml.match(new RegExp(`<${tag}>(.*?)<\/${tag}>`));
+              const match = xml.match(new RegExp('<' + tag + '>(.*?)<\/' + tag + '>'));
               return match ? match[1].trim() : '';
             };
+            const nationNm = get('rctntcNationNm');
+            // 유럽 국가만 필터
+            const countryCode = WORLDJOB_COUNTRY_MAP[nationNm];
+            if (!countryCode) return null;
             const endDe = get('rctntcEndDe');
             // 마감된 공고 제외
             if (endDe && new Date(endDe) < new Date()) return null;
             const title = get('rctntcSj');
             const company = get('entNm');
+            const flag = WORLDJOB_FLAG_MAP[countryCode] || '🌍';
             return {
-              id:           `wj_${countryCode}_${title}_${company}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80),
+              id:           `wj_${countryCode}_${(title + company).replace(/[^a-zA-Z0-9가-힣]/g, '_').slice(0, 60)}`,
               title,
               level:        detectLevel(title, ''),
               company,
@@ -457,16 +460,15 @@ function fetchWorldJobNation(nationNm) {
               languageReqs: get('rctntcLang').includes('한국어') ? ['Korean', 'English'] : ['English'],
             };
           }).filter(Boolean);
-          console.log(`  WorldJob ${nationNm}: ${jobs.length}개`);
-          resolve(jobs);
+          resolve({ jobs, total });
         } catch(e) {
-          console.log(`  WorldJob ${nationNm} 파싱 실패: ${e.message}`);
-          resolve([]);
+          console.log(`  WorldJob 페이지${pageNo} 파싱 실패: ${e.message}`);
+          resolve({ jobs: [], total: 0 });
         }
       });
     });
-    req.on('error', () => resolve([]));
-    req.setTimeout(10000, () => { req.destroy(); resolve([]); });
+    req.on('error', () => resolve({ jobs: [], total: 0 }));
+    req.setTimeout(10000, () => { req.destroy(); resolve({ jobs: [], total: 0 }); });
     req.end();
   });
 }
@@ -476,15 +478,19 @@ async function fetchWorldJob() {
     console.log('  WorldJob: API 키 없음, 스킵');
     return [];
   }
-  // 주요 유럽 국가만 병렬 요청 (rate limit 고려해 순차)
-  const results = [];
-  for (const nation of WORLDJOB_EU_NATIONS) {
-    const jobs = await fetchWorldJobNation(nation);
-    results.push(...jobs);
-    await new Promise(r => setTimeout(r, 200));
+  // 1페이지로 전체 개수 파악 후 필요시 추가 페이지 요청
+  const first = await fetchWorldJobPage(1);
+  const allJobs = [...first.jobs];
+  const totalPages = Math.ceil(first.total / 100);
+  if (totalPages > 1) {
+    for (let p = 2; p <= Math.min(totalPages, 10); p++) {
+      const { jobs } = await fetchWorldJobPage(p);
+      allJobs.push(...jobs);
+      await new Promise(r => setTimeout(r, 200));
+    }
   }
-  console.log(`  WorldJob 합계: ${results.length}개`);
-  return results;
+  console.log(`  WorldJob 합계: ${allJobs.length}개 (유럽 필터 후)`);
+  return allJobs;
 }
 
 // ── VisaSponsor (Supabase) ────────────────────────────────
