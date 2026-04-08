@@ -1873,33 +1873,48 @@ Return ONLY the JSON array, no other text.`;
     statusIcon.textContent = '✅';
     statusText.textContent = `${matches.length}개의 맞춤 공고를 찾았어요!`;
 
-    resultsEl.innerHTML = matches.map((m, rank) => {
+    // 결과 카드 DOM으로 생성 (템플릿 리터럴 내 특수문자 오류 방지)
+    resultsEl.innerHTML = '';
+    matches.forEach((m, rank) => {
       const job = allJobs[m.index];
-      if (!job) return '';
+      if (!job) return;
       const score = m.score || 0;
       const scoreColor = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--text3)';
       const scoreBg = score >= 80 ? 'rgba(62,207,160,.12)' : score >= 60 ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.05)';
-      return `
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;cursor:pointer"
-           onmouseover="this.style.borderColor='rgba(79,142,247,.35)'" onmouseout="this.style.borderColor='var(--border)'"
-           onclick="window.open('${job.url}','_blank')">
+      const safeUrl = (job.url || '#').replace(/[
+
+]/g, '');
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;cursor:pointer';
+      card.onmouseover = () => card.style.borderColor = 'rgba(79,142,247,.35)';
+      card.onmouseout = () => card.style.borderColor = 'var(--border)';
+      card.onclick = () => window.open(safeUrl, '_blank');
+
+      card.innerHTML = `
         <div style="font-size:22px;font-weight:800;color:var(--text3);width:28px;text-align:center;flex-shrink:0">${rank+1}</div>
         <div style="font-size:22px;flex-shrink:0">${job.logo||'🏢'}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${job.title}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${job.flag||''} ${job.company} · ${job.location||job.country}</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:5px;font-style:italic">"${m.reason}"</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${job.title||''}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${job.flag||''} ${job.company||''} · ${job.location||job.country||''}</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:5px;font-style:italic">"${m.reason||''}"</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
           <div style="background:${scoreBg};border:1px solid ${scoreColor};border-radius:8px;padding:6px 14px;font-size:18px;font-weight:800;color:${scoreColor}">${score}%</div>
           <div style="font-size:10px;color:var(--text3)">매칭</div>
         </div>
-        <button onclick="event.stopPropagation();window.open('${job.url}','_blank')" 
-                style="flex-shrink:0;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:rgba(79,142,247,.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+        <button style="flex-shrink:0;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:rgba(79,142,247,.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
           지원하기 →
-        </button>
-      </div>`;
-    }).join('');
+        </button>`;
+
+      // 지원하기 버튼 이벤트
+      card.querySelector('button').onclick = (e) => {
+        e.stopPropagation();
+        window.open(safeUrl, '_blank');
+      };
+
+      resultsEl.appendChild(card);
+    });
 
   } catch(e) {
     statusIcon.textContent = '❌';
