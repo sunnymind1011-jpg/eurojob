@@ -1793,29 +1793,7 @@ function openDrawer(id) {
           kununu에서 보기 →
         </a>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a href="https://www.kununu.com/de/${encodeURIComponent((j.company||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))}" target="_blank"
-           style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:border-color .15s"
-           onmouseover="this.style.borderColor='rgba(79,142,247,.4)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:11px;color:var(--text3);font-weight:600">⭐ 전체 평점</div>
-          <div style="font-size:12px;color:var(--text2)">kununu.com에서 확인</div>
-        </a>
-        <a href="https://www.kununu.com/de/${encodeURIComponent((j.company||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))}/kommentare" target="_blank"
-           style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:border-color .15s"
-           onmouseover="this.style.borderColor='rgba(79,142,247,.4)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:11px;color:var(--text3);font-weight:600">💬 직원 리뷰</div>
-          <div style="font-size:12px;color:var(--text2)">실제 직원 후기 보기</div>
-        </a>
-        <a href="https://www.kununu.com/de/${encodeURIComponent((j.company||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))}/gehaelter" target="_blank"
-           style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:border-color .15s"
-           onmouseover="this.style.borderColor='rgba(79,142,247,.4)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:11px;color:var(--text3);font-weight:600">💰 급여 정보</div>
-          <div style="font-size:12px;color:var(--text2)">연봉 데이터 확인</div>
-        </a>
-      </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--text3);line-height:1.5">
-        💡 링크가 맞지 않을 경우 <a href="https://www.kununu.com/de/suche?q=${encodeURIComponent(j.company||'')}" target="_blank" style="color:var(--accent)">kununu에서 직접 검색</a>해보세요.
-      </div>
+      <div id="kununu-links-${j.id}"></div>
     </div>
 
     <!-- Reddit 후기 섹션 -->
@@ -1844,8 +1822,55 @@ function openDrawer(id) {
     </div>`;
 
   document.getElementById('drawerOv').classList.add('show');
+  // kununu 링크 렌더링
+  renderKununuLinks(j);
   // 드로어 열린 후 Reddit 비동기 로드
   fetchRedditPosts(j.company, j.id);
+}
+
+function renderKununuLinks(j) {
+  const el = document.getElementById('kununu-links-' + j.id);
+  if (!el) return;
+  const slug = (j.company || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const searchUrl = 'https://www.kununu.com/de/suche?q=' + encodeURIComponent(j.company || '');
+  const isDE = ['DE','AT','CH'].includes(j.country);
+  const baseUrl = 'https://www.kununu.com/de/' + slug;
+
+  // DOM 방식으로 생성 (따옴표 충돌 방지)
+  function makeLink(href, title, sub) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.style.cssText = 'flex:1;min-width:140px;display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-decoration:none;transition:border-color .15s';
+    a.onmouseover = () => a.style.borderColor = 'rgba(79,142,247,.4)';
+    a.onmouseout  = () => a.style.borderColor = 'var(--border)';
+    const t = document.createElement('div');
+    t.style.cssText = 'font-size:11px;color:var(--text3);font-weight:600';
+    t.textContent = title;
+    const s = document.createElement('div');
+    s.style.cssText = 'font-size:12px;color:var(--text2)';
+    s.textContent = sub;
+    a.appendChild(t);
+    a.appendChild(s);
+    return a;
+  }
+
+  el.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+
+  if (isDE) {
+    wrap.appendChild(makeLink(baseUrl, '⭐ 전체 평점', 'kununu.com에서 확인'));
+    wrap.appendChild(makeLink(baseUrl + '/kommentare', '💬 직원 리뷰', '실제 직원 후기 보기'));
+    el.appendChild(wrap);
+    const note = document.createElement('div');
+    note.style.cssText = 'margin-top:8px;font-size:11px;color:var(--text3);line-height:1.5';
+    note.innerHTML = '💡 링크가 맞지 않을 경우 <a href="' + searchUrl + '" target="_blank" style="color:var(--accent)">kununu에서 직접 검색</a>해보세요.';
+    el.appendChild(note);
+  } else {
+    wrap.appendChild(makeLink(searchUrl, '🔍 kununu에서 검색', (j.company || '') + ' 직원 평가 검색'));
+    el.appendChild(wrap);
+  }
 }
 
 async function fetchRedditPosts(company, jobId) {
