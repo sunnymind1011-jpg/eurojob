@@ -2005,7 +2005,7 @@ async function runJobMatch() {
   statusEl.style.display = 'flex';
   statusIcon.textContent = '⏳';
   statusText.textContent = `${allJobs.length}개 공고 중 최적 매칭을 찾는 중... (10~20초 소요)`;
-  resultsEl.innerHTML = '';
+  // 이전 결과는 새 결과 나올 때까지 유지 (resultsEl.innerHTML 지우지 않음)
 
   // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드만)
   const jobList = allJobs.slice(0, 300).map((j, i) =>
@@ -2367,6 +2367,7 @@ function toggleSave(id, btn) {
   }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
+  trackerJobs = []; // 저장 변경 시 트래커 캐시 무효화 → 다음 진입 시 재조회
   renderSaved();
 }
 
@@ -2412,6 +2413,8 @@ async function loadTracker() {
     if (!session?.user) return;
     currentUser = session.user;
   }
+  // 이미 로드된 trackerJobs가 있으면 그냥 렌더링만 (반복 클릭 시 DB 재조회 생략)
+  if (trackerJobs.length > 0) { renderTracker(); return; }
 
   // Supabase에서 기존 저장 목록 조회
   const { data: existing, error: fetchErr } = await sb.from('saved_jobs')
