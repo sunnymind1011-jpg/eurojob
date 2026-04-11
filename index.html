@@ -1723,7 +1723,7 @@ function buildCard(j, showFeat) {
       <div class="co-logo">${j.logo}</div>
       <div style="flex:1;min-width:0">
         <div class="jc-title">${j.title}</div>
-        <div class="jc-company">${j.company} · ${j.flag} ${j.location.split(',')[0]}</div>
+        <div class="jc-company">${j.company} · ${j.flag} ${(j.location||'').split(',')[0]}</div>
       </div>
       <button class="save-btn${saved?' saved':''}" data-id="${j.id}" onclick="event.stopPropagation();toggleSave(this.dataset.id,this)">${saved?'♥':'♡'}</button>
     </div>
