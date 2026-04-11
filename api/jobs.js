@@ -82,7 +82,7 @@ function detectLevel(title, desc) {
   if (/\bjunior\b|\bjr\.\b|\bjr\b/i.test(t)) return 'Junior';
   if (/\bentry.level\b|\bgraduate\b|\binternship\b|\bintern\b|\btraineee?\b/i.test(t)) return 'Entry';
   if (/\bassociate\b/i.test(t)) return 'Associate';
-  if (/\bmid.level\b|\bmedior\b/i.test(t)) return 'Mid';
+  if (/\bmid.level\b|\bmedior\b|\bmid level\b|\bintermediate\b/i.test(t)) return 'Mid';
   return '';
 }
 
