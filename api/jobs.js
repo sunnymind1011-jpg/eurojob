@@ -1,12 +1,12 @@
 // api/jobs.js — Adzuna + Remotive + Himalayas + WorldJob + VisaSponsor
 import https from 'https';
-
+ 
 export const maxDuration = 60;
-
+ 
 const ADZUNA_APP_ID  = process.env.ADZUNA_APP_ID  || '22308f32';
 const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY || '4902733d7210f0c75a0ad5a8d38a3c17';
 const WORLDJOB_API_KEY = process.env.WORLDJOB_API_KEY || '';
-
+ 
 const COUNTRIES = [
   { code: 'gb', name: 'United Kingdom', flag: '🇬🇧' },
   { code: 'de', name: 'Germany',        flag: '🇩🇪' },
@@ -20,19 +20,25 @@ const COUNTRIES = [
   { code: 'ch', name: 'Switzerland',    flag: '🇨🇭' },
   { code: 'ie', name: 'Ireland',        flag: '🇮🇪' },
 ];
-
+ 
 const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
 const MAJOR_COUNTRIES = ['gb', 'de', 'es', 'nl', 'fr'];
-const BIZ_KEYWORDS = ['business development', 'project manager', 'logistics manager'];
-const BIZ_COUNTRIES = ['es'];
-
+// 운영/물류 키워드 — 확장된 국가 대상
+const OPS_KEYWORDS = ['logistics manager', 'supply chain manager', 'warehouse manager', 'operations manager', 'procurement manager', 'inventory manager'];
+const OPS_COUNTRIES = ['es', 'de', 'nl', 'gb', 'fr'];
+ 
+// 경영/전략 키워드
+const MGMT_KEYWORDS = ['business development', 'project manager'];
+const MGMT_COUNTRIES = ['es', 'de', 'nl', 'gb'];
+ 
 const CATEGORIES = [
   { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
   { tag: 'pr-advertising-marketing-jobs', label: '마케팅 / 광고 / PR' },
   { tag: 'hr-jobs',                       label: 'HR / 채용'          },
   { tag: 'scientific-qa-jobs',            label: '데이터 / 분석 / 과학' },
+  { tag: 'transport-logistics-jobs',      label: '운송 / 물류'         },
 ];
-
+ 
 const COUNTRY_INFO = {
   gb: { name: 'United Kingdom', flag: '🇬🇧', code: 'GB' },
   de: { name: 'Germany',        flag: '🇩🇪', code: 'DE' },
@@ -46,12 +52,12 @@ const COUNTRY_INFO = {
   ch: { name: 'Switzerland',    flag: '🇨🇭', code: 'CH' },
   ie: { name: 'Ireland',        flag: '🇮🇪', code: 'IE' },
 };
-
+ 
 function companyEmoji(name) {
   const e = ['🏢','💼','🏗️','🔬','⚡','🚀','🌐','🎯','📊','🏨'];
   return e[(name.charCodeAt(0) || 0) % e.length] || '🏢';
 }
-
+ 
 function detectVisaSponsorship(d) {
   if (!d) return false;
   const text = d.toLowerCase();
@@ -60,20 +66,20 @@ function detectVisaSponsorship(d) {
   if (noSponsor.test(text) || negPattern.test(text)) return false;
   return /visa sponsorship (available|provided|offered|supported|possible|considered)|we (will|can|do) sponsor|sponsor(ing|ed|ship for) (non-eu|non eu|international|overseas|foreign|candidates|applicants)|skilled worker visa|work permit (provided|supported|assistance|included)|right to work (provided|sponsored|supported)|eu blue card|tier 2 (visa|sponsor)|sponsorship (available|provided|offered)|open to sponsoring|happy to sponsor|able to sponsor|(visa|sponsorship|work permit).{0,50}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,50}(visa|sponsorship|work permit)/i.test(text);
 }
-
+ 
 function detectRelocation(d) {
   if (!d) return false;
   const text = d.toLowerCase();
   if (/no relocation|relocation (not|is not) (provided|offered|available|supported)/i.test(text)) return false;
   return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)/i.test(text);
 }
-
+ 
 function detectRemote(t) {
   if (/remote/i.test(t)) return 'Remote';
   if (/hybrid/i.test(t)) return 'Hybrid';
   return 'On-site';
 }
-
+ 
 function detectLevel(title, desc) {
   const t = (title + ' ' + desc).toLowerCase();
   if (/\bdirector\b|\bvp\b|\bvice president\b|\bhead of\b/i.test(t)) return 'Director';
@@ -85,7 +91,7 @@ function detectLevel(title, desc) {
   if (/\bmid.level\b|\bmedior\b|\bmid level\b|\bintermediate\b/i.test(t)) return 'Mid';
   return '';
 }
-
+ 
 function detectWritingLang(d) {
   if (/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour|sur|par|qui|que)\b/gi.test(d) &&
       (d.match(/\b(nous|vous|notre|votre|les|des|une|dans|avec|pour)\b/gi)||[]).length > 3) return 'French';
@@ -99,7 +105,7 @@ function detectWritingLang(d) {
       (d.match(/\b(wij|ons|onze|voor|met|een|van)\b/g)||[]).length > 3) return 'Dutch';
   return 'English';
 }
-
+ 
 function detectLangs(d, title = '', company = '') {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
@@ -109,12 +115,12 @@ function detectLangs(d, title = '', company = '') {
   const koreanLang = /korean\s*(speaker|speaking|language|proficiency|fluency|native|required|preferred|is a (plus|must|bonus|asset))|fluent\s*in\s*korean|bilingual.*korean|korean.*bilingual|한국어|korean\s*and\s*english|english\s*and\s*korean/i;
   // 유럽 진출 한국 기업 (상점 제외, 법인/오피스 있는 기업)
   const koreanCompany = /\b(samsung|hyundai|lg\s*(electronics|energy|chem|display|innotek|uplus)|kia\s*(motors|europe)?|sk\s*(hynix|innovation|telecom|bioscience|ecoplant|on\s*semiconductor)?|posco|lotte\s*(chemical|shopping|global|hotel|holdings)?|hanwha\s*(q\s*cells|aerospace|solutions|vision)?|doosan\s*(bobcat|heavy|fuel\s*cell)?|krafton|nexon|netmarble|kakao|kakaobank|kakaogames|naver|coupang|krafton|celltrion|hugel|hy?undai\s*(mobis|glovis|rotem|capital|wia|steel|merchant|marine)?|korean\s*air|asiana|hana\s*(bank|financial)?|kb\s*(financial|securities|insurance)?|shinhan|woori\s*(bank|financial)?|hanhwa|korail|kogas|kepco|korea\s*(electric|gas|expressway|railroad|telecom|aerospace)|ks\s*edition|innocean|kolon|kumho|hyosung|daelim|ssamzie|kotra|posco\s*(international|holdings|future\s*m)?|doosaninfo?)\b/i;
-
+ 
   if (koreanLang.test(d)) l.push('Korean');
   else if (koreanCompany.test(title + ' ' + company)) l.push('Korean');
   return l;
 }
-
+ 
 function removeDups(jobs) {
   const seen = new Set();
   return jobs.filter(j => {
@@ -131,7 +137,7 @@ function removeDups(jobs) {
   });
 }
 // ── Adzuna ────────────────────────────────────────────────
-
+ 
 function normalizeAdzuna(raw, countryCode) {
   const info = COUNTRY_INFO[countryCode] || { name: countryCode, flag: '🌍', code: countryCode.toUpperCase() };
   const location = raw.location?.display_name || info.name;
@@ -160,7 +166,7 @@ function normalizeAdzuna(raw, countryCode) {
     languageReqs: detectLangs(desc, raw.title || '', raw.company?.display_name || ''),
   };
 }
-
+ 
 function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
@@ -185,7 +191,7 @@ function fetchAdzuna(countryCode, categoryTag) {
     req.end();
   });
 }
-
+ 
 function fetchAdzunaKeyword(countryCode, keyword) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
@@ -210,9 +216,9 @@ function fetchAdzunaKeyword(countryCode, keyword) {
     req.end();
   });
 }
-
+ 
 // ── Remotive ──────────────────────────────────────────────
-
+ 
 function fetchRemotive() {
   return new Promise((resolve) => {
     const categories = ['marketing', 'data', 'hr'];
@@ -277,9 +283,9 @@ function fetchRemotive() {
     });
   });
 }
-
+ 
 // ── Himalayas ─────────────────────────────────────────────
-
+ 
 const HIMALAYAS_COUNTRY_MAP = {
   'germany':'DE','netherlands':'NL','spain':'ES','united kingdom':'GB','united-kingdom':'GB',
   'france':'FR','portugal':'PT','ireland':'IE','belgium':'BE','switzerland':'CH','italy':'IT',
@@ -298,7 +304,7 @@ const NON_EU_HM = [
   'philippines','indonesia','vietnam','thailand','malaysia',
   'south korea','taiwan','hong kong','middle east','gulf',
 ];
-
+ 
 function fetchHimalayasCountry(country, code) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({ country, limit: '20', sort: 'recent' });
@@ -330,7 +336,7 @@ function fetchHimalayasCountry(country, code) {
               // 1. 공고마다 절대 겹치지 않도록 제목, 회사명, 랜덤 숫자를 조합해서 새 ID를 만듭니다.
               const uniqueId = `${j.title}-${j.company?.name}-${Math.random().toString(36).slice(2, 9)}`;
               const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_'); 
-
+ 
               return {
                 // 2. 이제 각 공고는 'hm_ES_제목_회사_랜덤값' 형태의 고유한 ID를 가집니다.
                 id:          `hm_${code}_${safeId}`,
@@ -363,7 +369,7 @@ function fetchHimalayasCountry(country, code) {
     req.end();
   });
 }
-
+ 
 async function fetchHimalayas() {
   const targets = [
     ['Germany','DE'], ['Spain','ES'], ['Netherlands','NL'],
@@ -379,29 +385,29 @@ async function fetchHimalayas() {
     return [];
   }
 }
-
-
+ 
+ 
 // ── WorldJob (공공데이터포털) ─────────────────────────────
-
+ 
 const WORLDJOB_EU_NATIONS = [
   '독일', '영국', '프랑스', '스페인', '네덜란드', '아일랜드',
   '벨기에', '스위스', '이탈리아', '폴란드', '오스트리아',
   '포르투갈', '스웨덴', '덴마크', '핀란드', '노르웨이',
 ];
-
+ 
 const WORLDJOB_COUNTRY_MAP = {
   '독일': 'DE', '영국': 'GB', '프랑스': 'FR', '스페인': 'ES',
   '네덜란드': 'NL', '아일랜드': 'IE', '벨기에': 'BE', '스위스': 'CH',
   '이탈리아': 'IT', '폴란드': 'PL', '오스트리아': 'AT', '포르투갈': 'PT',
   '스웨덴': 'SE', '덴마크': 'DK', '핀란드': 'FI', '노르웨이': 'NO',
 };
-
+ 
 const WORLDJOB_FLAG_MAP = {
   'DE':'🇩🇪','GB':'🇬🇧','FR':'🇫🇷','ES':'🇪🇸','NL':'🇳🇱','IE':'🇮🇪',
   'BE':'🇧🇪','CH':'🇨🇭','IT':'🇮🇹','PL':'🇵🇱','AT':'🇦🇹','PT':'🇵🇹',
   'SE':'🇸🇪','DK':'🇩🇰','FI':'🇫🇮','NO':'🇳🇴',
 };
-
+ 
 function fetchWorldJobPage(pageNo) {
   return new Promise((resolve) => {
     if (!WORLDJOB_API_KEY) return resolve({ jobs: [], total: 0 });
@@ -480,7 +486,7 @@ function fetchWorldJobPage(pageNo) {
     req.end();
   });
 }
-
+ 
 async function fetchWorldJob() {
   if (!WORLDJOB_API_KEY) {
     console.log('  WorldJob: API 키 없음, 스킵');
@@ -500,12 +506,12 @@ async function fetchWorldJob() {
   console.log(`  WorldJob 합계: ${allJobs.length}개 (유럽 필터 후)`);
   return allJobs;
 }
-
+ 
 // ── VisaSponsor (Supabase) ────────────────────────────────
-
+ 
 const SUPABASE_URL = 'https://rorckellupiapjrfaqsp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kAK6n7JyQJUyf72RcIZqIQ_dsAlQ2L3';
-
+ 
 async function fetchVisaSponsorFromSupabase() {
   try {
     const res = await fetch(
@@ -542,30 +548,30 @@ async function fetchVisaSponsorFromSupabase() {
     return [];
   }
 }
-
+ 
 // ── 메모리 캐시 ───────────────────────────────────────────
-
+ 
 let cache = { jobs: [], fetchedAt: null };
-
+ 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
-
+ 
   const { refresh } = req.query;
   const cacheAgeHours = cache.fetchedAt
     ? (Date.now() - new Date(cache.fetchedAt)) / 3600000
     : 999;
-
+ 
   if (cache.jobs.length > 0 && cacheAgeHours < 12 && refresh !== '1') {
     return res.status(200).json({
       ok: true, count: cache.jobs.length,
       fetchedAt: cache.fetchedAt, cached: true, jobs: cache.jobs,
     });
   }
-
+ 
   console.log('🔄 수집 시작 (Adzuna + Remotive + Himalayas + VisaSponsor)...');
-
+ 
   // Adzuna(메인) + Himalayas + Remotive 동시 시작
   const adzunaPromise = (async () => {
     // 배치 병렬 헬퍼: 한 번에 BATCH_SIZE개씩, 배치 사이 딜레이
@@ -579,7 +585,7 @@ export default async function handler(req, res) {
       }
       return results;
     }
-
+ 
     const catTasks = COUNTRIES.flatMap(country =>
       CATEGORIES.map(cat => () =>
         fetchAdzuna(country.code, cat.tag)
@@ -590,41 +596,44 @@ export default async function handler(req, res) {
       ...MAJOR_COUNTRIES.flatMap(country =>
         DATA_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
       ),
-      ...BIZ_COUNTRIES.flatMap(country =>
-        BIZ_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
+      ...OPS_COUNTRIES.flatMap(country =>
+        OPS_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
+      ),
+      ...MGMT_COUNTRIES.flatMap(country =>
+        MGMT_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
       ),
     ];
-
+ 
     const results = await batchAll([...catTasks, ...kwTasks], 5, 300);
     return results.flat();
   })();
-
+ 
   const himalayasPromise = fetchHimalayas().catch(() => []);
   const remotivePromise  = fetchRemotive().catch(() => []);
-
+ 
   // Adzuna 완료 기다리고, Himalayas/Remotive는 15초 안에 끝나면 포함
   const [adzunaJobs, himalayasJobs, remotiveJobs] = await Promise.all([
     adzunaPromise,
     Promise.race([himalayasPromise, new Promise(r => setTimeout(() => r([]), 15000))]),
     remotivePromise,
   ]);
-
+ 
   console.log(`  Adzuna: ${adzunaJobs.length}개, Himalayas: ${himalayasJobs.length}개, Remotive: ${remotiveJobs.length}개`);
-
+ 
   let allJobs = [...adzunaJobs, ...himalayasJobs, ...remotiveJobs];
-
+ 
   // WorldJob
   console.log('🇰🇷 WorldJob (공공데이터포털) 로드...');
   allJobs.push(...await fetchWorldJob());
-
+ 
   // VisaSponsor
   console.log('🛂 visasponsor.jobs (Supabase) 로드...');
   allJobs.push(...await fetchVisaSponsorFromSupabase());
-
+ 
   cache.jobs = removeDups(allJobs);
   cache.fetchedAt = new Date().toISOString();
   console.log(`✅ 완료: ${cache.jobs.length}개 (비자스폰서 확정: ${cache.jobs.filter(j=>j.visaSponsored).length}개)`);
-
+ 
   res.status(200).json({
     ok: true, count: cache.jobs.length,
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
