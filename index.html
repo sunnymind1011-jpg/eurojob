@@ -945,12 +945,25 @@ textarea::placeholder{color:var(--text3);}
         <div><div class="sec-title">🔍 채용공고 핵심 분석</div><div class="sec-sub">JD를 붙여넣으면 핵심 정보를 바로 추출합니다</div></div>
       </div>
       <div class="card" style="margin-bottom:18px">
-        <h3>채용공고 붙여넣기</h3>
+        <!-- URL 입력 -->
+        <h3>🔗 링크로 분석</h3>
+        <div class="sub" style="margin-bottom:10px">채용공고 URL을 붙여넣으면 자동으로 내용을 가져와요 <span style="color:var(--text3)">(LinkedIn은 로그인 필요로 직접 복붙해주세요)</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:18px">
+          <input type="text" id="jdUrlInput" placeholder="https://himalayas.app/... 또는 회사 채용 페이지 링크"
+            style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 13px;outline:none;transition:border-color .15s"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')fetchJDFromUrl()">
+          <button class="btn btn-ghost btn-sm" onclick="fetchJDFromUrl()" id="jdUrlBtn">가져오기</button>
+        </div>
+        <div id="jdUrlStatus" style="display:none;font-size:12px;margin-bottom:10px;padding:8px 12px;border-radius:7px"></div>
+
+        <h3 style="margin-bottom:4px">📋 채용공고 붙여넣기</h3>
         <div class="sub">JD 전문을 붙여넣으면 비자·언어·원격·스킬을 자동 분석합니다</div>
         <textarea id="jdAnalIn" rows="7" placeholder="채용공고 내용 전체를 여기에..."></textarea>
-        <div style="display:flex;gap:8px;margin-top:11px">
+        <div style="display:flex;gap:8px;margin-top:11px;align-items:center">
           <button class="btn btn-primary" id="jdBtn" onclick="analyzeJD()">🔍 즉시 분석</button>
-          <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 Claude로 상세 분석</button>
+          <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 ChatGPT로 상세 분석</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('jdAnalIn').value='';document.getElementById('jdResult').style.display='none';document.getElementById('jdUrlInput').value='';document.getElementById('jdUrlStatus').style.display='none';" style="color:var(--red);border-color:rgba(240,100,100,.3);margin-left:auto">🗑 초기화</button>
         </div>
       </div>
       <div id="jdResult" style="display:none">
@@ -1498,12 +1511,17 @@ function detectRelocation(d) {
   if (!d) return false;
   const text = d.toLowerCase();
   // 부정/불가 패턴 먼저 체크 — 이 중 하나라도 있으면 relocation 불가
-  const noRelo = /no relocation|relocation (not|is not) (provided|offered|available|supported)|must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|candidates must.{0,60}right to work|full right to work|unrestricted right to work|no visa sponsorship|unable to (provide|offer|support) (visa|sponsorship)|cannot sponsor|won't sponsor|does not (offer|provide) sponsor/i;
+  const noRelo = /no relocation|relocation (not|is not) (provided|offered|available|supported)|must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|candidates must.{0,60}right to work|full right to work|unrestricted right to work|no visa sponsorship|unable to (provide|offer|support) (visa|sponsorship)|cannot sponsor|won't sponsor|does not (offer|provide) sponsor|us (citizen(ship)?|national) (required|only|must)|must be (a )?(us|u\.s\.) citizen|security clearance required|clearance (required|needed|must)|authorized to work in the (us|u\.s\.)/i;
   if (noRelo.test(text)) return false;
   // 긍정 패턴
   return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)|(relocation|moving).{0,40}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,40}(relocation|moving)|(package|support|assistance).{0,30}relocation|relo (package|support|benefit)/i.test(text);
 }
-function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
+function detectRemote(t){
+  if(/hybrid|hybride|onsite.*remote|remote.*onsite|flexible.*work|work.*flexible|2.*day.*office|3.*day.*office|days? (in|at) (the )?office/i.test(t)) return 'Hybrid';
+  if(/\bremote\b|fully remote|100.{0,5}remote|work from home|wfh|distributed team|location.{0,20}anywhere/i.test(t)) return 'Remote';
+  if(/on.?site|in.?office|in person|in-person|office.?based|on location|presencial|vor ort/i.test(t)) return 'On-site';
+  return 'Unknown';
+}
 const COUNTRY_LANG = {
   GB:'English', IE:'English', DE:'German', AT:'German', CH:'German',
   NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
@@ -2582,7 +2600,7 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
 
   // ── 툴 (다국어 변형 있음)
   { en: 'Excel', variants: ['excel', 'tableur'] },
-  { en: 'PowerBI', variants: ['power bi', 'power-bi'] },
+  // PowerBI → 아래 'Power BI' 항목으로 통합
   { en: 'Tableau', variants: ['tableaux', 'tableau de bord'] },
   { en: 'Google Analytics', variants: ['google analytics', 'analytics google'] },
   { en: 'Google Ads', variants: ['google ads','google adwords','adwords','annonces google','ppc','paid search'] },
@@ -2692,7 +2710,7 @@ const foundSkills = skillKeywords.filter(sk => {
   const englishOnly = /english.*sufficient|working language.*english|english.*required/i.test(jd);
 
   // 6. 한국인 가능성 평가
-  const noRightToWork = /must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|full right to work|unrestricted right to work/i.test(jd);
+  const noRightToWork = /must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|full right to work|unrestricted right to work|us (citizen(ship)?|national) (required|only|must)|must be (a )?(us|u\.s\.) citizen|authorized to work in the (us|u\.s\.)|security clearance required/i.test(jd);
   const noVisa = /no visa sponsorship|unable to (provide|offer) (visa|sponsorship)|cannot sponsor|won't sponsor/i.test(jd);
   let koreanScore = 50;
   if (englishOnly) koreanScore += 20;
@@ -2710,7 +2728,7 @@ const foundSkills = skillKeywords.filter(sk => {
     <h3>📋 핵심 정보</h3>
     <div class="visa-table">
       <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
-      <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span>${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':'🏢 출근'}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span style="color:${remote==='Unknown'?'var(--text3)':'var(--text)'}">${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':remote==='On-site'?'🏢 출근':'❓ 확인 필요 (언급 없음)'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':'정보 없음'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">한국인 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
@@ -2731,6 +2749,54 @@ const foundSkills = skillKeywords.filter(sk => {
 
   document.getElementById('jdResult').style.display = 'block';
   btn.textContent = '🔍 즉시 분석'; btn.disabled = false;
+}
+
+
+// ── JD URL 가져오기 ─────────────────────────────────────
+async function fetchJDFromUrl() {
+  const urlInput = document.getElementById('jdUrlInput');
+  const statusEl = document.getElementById('jdUrlStatus');
+  const btn = document.getElementById('jdUrlBtn');
+  const url = urlInput.value.trim();
+  if (!url) return;
+
+  // LinkedIn 감지 → 안내만
+  if (/linkedin\.com/i.test(url)) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(245,166,35,.08)';
+    statusEl.style.border = '1px solid rgba(245,166,35,.2)';
+    statusEl.style.color = 'var(--warn)';
+    statusEl.innerHTML = '⚠️ LinkedIn은 로그인이 필요해서 자동 가져오기가 불가해요. 공고 내용을 직접 복사해서 아래에 붙여넣어 주세요.';
+    return;
+  }
+
+  btn.textContent = '가져오는 중...'; btn.disabled = true;
+  statusEl.style.display = 'block';
+  statusEl.style.background = 'rgba(79,142,247,.06)';
+  statusEl.style.border = '1px solid rgba(79,142,247,.18)';
+  statusEl.style.color = 'var(--text2)';
+  statusEl.textContent = '⏳ 페이지 내용을 가져오는 중...';
+
+  try {
+    const res = await fetch('/api/fetch-jd?url=' + encodeURIComponent(url));
+    const data = await res.json();
+    if (!data.ok || !data.text) throw new Error(data.error || '내용을 가져올 수 없어요');
+
+    document.getElementById('jdAnalIn').value = data.text;
+    statusEl.style.background = 'rgba(62,207,160,.06)';
+    statusEl.style.border = '1px solid rgba(62,207,160,.18)';
+    statusEl.style.color = 'var(--accent3)';
+    statusEl.textContent = '✅ 내용을 가져왔어요! 아래에서 확인 후 분석하세요.';
+    // 자동 분석 시작
+    analyzeJD();
+  } catch(e) {
+    statusEl.style.background = 'rgba(240,100,100,.06)';
+    statusEl.style.border = '1px solid rgba(240,100,100,.18)';
+    statusEl.style.color = 'var(--red)';
+    statusEl.innerHTML = '❌ 가져오기 실패: ' + e.message + '<br><span style="font-size:11px;opacity:.8">해당 사이트는 직접 접근이 제한될 수 있어요. 내용을 직접 복사해 붙여넣어 주세요.</span>';
+  } finally {
+    btn.textContent = '가져오기'; btn.disabled = false;
+  }
 }
 
 function openClaudeJD() {
