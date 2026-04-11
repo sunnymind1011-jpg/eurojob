@@ -1497,8 +1497,10 @@ function detectVisaSponsorship(d) {
 function detectRelocation(d) {
   if (!d) return false;
   const text = d.toLowerCase();
-  // 부정 먼저 체크
-  if (/no relocation|relocation (not|is not) (provided|offered|available|supported)/i.test(text)) return false;
+  // 부정/불가 패턴 먼저 체크 — 이 중 하나라도 있으면 relocation 불가
+  const noRelo = /no relocation|relocation (not|is not) (provided|offered|available|supported)|must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|candidates must.{0,60}right to work|full right to work|unrestricted right to work|no visa sponsorship|unable to (provide|offer|support) (visa|sponsorship)|cannot sponsor|won't sponsor|does not (offer|provide) sponsor/i;
+  if (noRelo.test(text)) return false;
+  // 긍정 패턴
   return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)|(relocation|moving).{0,40}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,40}(relocation|moving)|(package|support|assistance).{0,30}relocation|relo (package|support|benefit)/i.test(text);
 }
 function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
@@ -2605,11 +2607,36 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
   { en: 'DevOps', variants: ['devops', 'développement opérations', 'desarrollo operaciones'] },
   { en: 'Kanban', variants: ['kanban'] },
 
+  // ── Microsoft / BI 추가 스킬
+  { en: 'Power BI', variants: ['power bi', 'powerbi', 'power-bi', 'pbi'] },
+  { en: 'Power Automate', variants: ['power automate', 'microsoft automate'] },
+  { en: 'Power Apps', variants: ['power apps', 'powerapps'] },
+  { en: 'DAX', variants: ['dax', 'data analysis expressions'] },
+  { en: 'Power Query', variants: ['power query'] },
+  { en: 'Excel (Advanced)', variants: ['advanced excel', 'excel vba', 'vba', 'pivot table', 'vlookup', 'xlookup'] },
+  { en: 'SSRS', variants: ['ssrs', 'sql server reporting'] },
+  { en: 'SharePoint', variants: ['sharepoint'] },
+  { en: 'Microsoft Fabric', variants: ['microsoft fabric', 'ms fabric'] },
+
+  // ── ERP / 데이터 플랫폼
+  { en: 'ERP', variants: ['erp', 'enterprise resource planning', 'dynamics 365', 'd365', 'business central'] },
+  { en: 'Alteryx', variants: ['alteryx'] },
+  { en: 'SAS', variants: ['sas analytics', 'sas programming', 'sas software'] },
+  { en: 'R', variants: ['r programming', 'rstudio', 'tidyverse', 'ggplot'] },
+  { en: 'Azure Data Factory', variants: ['azure data factory', 'adf'] },
+  { en: 'Azure Synapse', variants: ['azure synapse', 'synapse analytics'] },
+  { en: 'Apache Kafka', variants: ['kafka', 'apache kafka'] },
+
+  // ── 마케팅 추가
+  { en: 'Adobe Analytics', variants: ['adobe analytics', 'omniture'] },
+  { en: 'Mixpanel', variants: ['mixpanel'] },
+  { en: 'Klaviyo', variants: ['klaviyo'] },
+
   // ── HR / 조직
   { en: 'Recruitment', variants: ['recrutement', 'reclutamiento', 'rekrutierung', 'werving', 'reclutamento', 'recrutamento', 'recruitement'] },
   { en: 'Talent Acquisition', variants: ['acquisition de talents', 'adquisición de talento', 'talentakquise', 'talentwerving', 'acquisizione di talenti'] },
   { en: 'HRIS', variants: ['hris', 'système d\'information rh', 'sistema de información de rrhh'] },
-  { en: 'ATS', variants: ['ats', 'système de suivi des candidats', 'sistema de seguimiento de candidatos'] },
+  { en: 'ATS', variants: ['ats', 'système de suivi des candidats', 'sistema de seguimiento de candidatos', 'applicant tracking'] },
   { en: 'C&B', variants: ['compensation', 'rémunération', 'compensación', 'vergütung', 'beloning'] },
 
   // ── 프로젝트 / 방법론
@@ -2642,7 +2669,17 @@ function analyzeJD() {
 
   
 
+// 회사 소개/채용 에이전시 문구에서 오탐 방지: "specialise in X recruitment" 같은 패턴 제외
+const agencyContext = /specialise? in .{0,60}recruitment|proud to .{0,40}recruitment|speciali[sz]e in .{0,60}recruitment/i.test(jd);
+
 const foundSkills = skillKeywords.filter(sk => {
+  // Recruitment는 HR 직무 맥락에서만 인정 (에이전시 소개 문구 제외)
+  if (sk.en === 'Recruitment' || sk.en === 'Talent Acquisition') {
+    if (agencyContext) {
+      // 실제 업무 요건으로 언급되는지 확인
+      return /experience (in|with) recruitment|recruitment experience|talent acquisition experience|sourcing|headhunting|full.?cycle recruit|volume recruit|technical recruit/i.test(jd);
+    }
+  }
   const allVariants = [sk.en, ...(sk.variants || [])];
   return allVariants.some(v => {
     const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -2655,9 +2692,13 @@ const foundSkills = skillKeywords.filter(sk => {
   const englishOnly = /english.*sufficient|working language.*english|english.*required/i.test(jd);
 
   // 6. 한국인 가능성 평가
+  const noRightToWork = /must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|full right to work|unrestricted right to work/i.test(jd);
+  const noVisa = /no visa sponsorship|unable to (provide|offer) (visa|sponsorship)|cannot sponsor|won't sponsor/i.test(jd);
   let koreanScore = 50;
   if (englishOnly) koreanScore += 20;
   if (requiresLocal) koreanScore -= 30;
+  if (noRightToWork) koreanScore -= 35;
+  if (noVisa) koreanScore -= 25;
   if (relocation) koreanScore += 15;
   if (remote === 'Remote') koreanScore += 10;
   koreanScore = Math.min(95, Math.max(5, koreanScore));
@@ -2671,7 +2712,7 @@ const foundSkills = skillKeywords.filter(sk => {
       <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span>${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':'🏢 출근'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
-      <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':'var(--text3)'}">${relocation?'✅ 지원':'정보 없음'}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':'정보 없음'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">한국인 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
     </div>`;
 
