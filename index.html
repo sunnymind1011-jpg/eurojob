@@ -2923,17 +2923,45 @@ function openClaudeJD() {
 
 ## 채용공고
 ${jd}`;
-  // JD 분석은 항상 클립보드 복사 방식 (JD 자체가 길어서 431 에러 방지)
-  navigator.clipboard.writeText(prompt).then(() => {
-    window.open('https://chatgpt.com/', '_blank');
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3ecfa0;color:#04342c;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.3)';
-    toast.innerHTML = '✅ 프롬프트 복사 완료!<br><span style="font-size:11px;font-weight:400">ChatGPT에서 Ctrl+V로 붙여넣어 주세요</span>';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-  }).catch(() => {
-    window.open('https://chatgpt.com/', '_blank');
-  });
+  // JD 분석: 팝업으로 안내 후 버튼 클릭 시 복사+열기
+  const closeJDModal = () => document.getElementById('jd-gpt-modal')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'jd-gpt-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:flex;align-items:center;justify-content:center';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#1e2230;border:2px solid rgba(79,142,247,.4);color:#f0f2f7;padding:28px 32px;border-radius:14px;text-align:center;max-width:380px;line-height:1.8;box-shadow:0 8px 32px rgba(0,0,0,.5)';
+  const icon = document.createElement('div');
+  icon.style.cssText = 'font-size:28px;margin-bottom:10px'; icon.textContent = '🤖';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-weight:700;font-size:15px;margin-bottom:8px'; title.textContent = 'ChatGPT로 상세 분석';
+  const desc = document.createElement('div');
+  desc.style.cssText = 'font-size:13px;color:#8b92a8;margin-bottom:20px;line-height:1.8';
+  desc.innerHTML = '아래 버튼을 누르면 <strong style="color:#f0f2f7">ChatGPT가 열리고<br>분석 프롬프트가 클립보드에 복사</strong>돼요.<br><span style="font-size:12px;color:#6b7280">ChatGPT 입력창에 <strong style="color:#f0f2f7">Ctrl+V</strong> 후 전송하세요</span>';
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center';
+  const openBtn = document.createElement('button');
+  openBtn.style.cssText = 'background:#4f8ef7;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit';
+  openBtn.textContent = 'ChatGPT 열기 →';
+  openBtn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText('');
+      await new Promise(r => setTimeout(r, 50));
+      await navigator.clipboard.writeText(prompt);
+      window.open('https://chatgpt.com/', '_blank');
+      closeJDModal();
+    } catch(e) {
+      window.open('https://chatgpt.com/', '_blank');
+      closeJDModal();
+    }
+  };
+  const cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'background:transparent;color:#8b92a8;border:1px solid rgba(255,255,255,.12);padding:10px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit';
+  cancelBtn.textContent = '취소'; cancelBtn.onclick = closeJDModal;
+  btnRow.appendChild(openBtn); btnRow.appendChild(cancelBtn);
+  box.appendChild(icon); box.appendChild(title); box.appendChild(desc); box.appendChild(btnRow);
+  ov.appendChild(box);
+  ov.onclick = (e) => { if(e.target===ov) closeJDModal(); };
+  document.body.appendChild(ov);
 }
 
 // ════════════════════════════════════════
@@ -3118,14 +3146,15 @@ async function onLogin(user) {
 
   isBeta = (role === 'beta') && !isAdmin;
 
-  // Supabase saved_jobs에서 저장목록 동기화 (PC/모바일 간 동기화)
+  // Supabase saved_jobs 전체 로드 → savedIds + trackerJobs 동시 초기화
   try {
     const { data: savedData } = await sb
       .from('saved_jobs')
-      .select('job_id')
-      .eq('user_id', user.id);
+      .select('*')
+      .eq('user_id', user.id)
+      .order('saved_at', { ascending: false });
     if (savedData && savedData.length > 0) {
-      // Supabase에 있는 ID를 savedIds에 병합
+      trackerJobs = savedData;
       savedData.forEach(r => savedIds.add(r.job_id));
       localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
     }
