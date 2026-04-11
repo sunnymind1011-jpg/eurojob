@@ -861,7 +861,7 @@ textarea::placeholder{color:var(--text3);}
     <!-- ★ AI 공고 추천 ──────────────────────────────── -->
     <div class="page" id="page-jobmatch">
       <div class="sec-hd" style="margin-bottom:18px">
-        <div><div class="sec-title">🎯 AI 공고 추천</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 서류 통과 및 면접 기회 가능성이 높은 공고를 찾아드려요</div></div>
+        <div><div class="sec-title">🎯 AI 공고 추천</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 합격 가능성이 높은 공고를 찾아드려요</div></div>
       </div>
 
       <div style="background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;font-size:13px;color:var(--text2)">
@@ -945,29 +945,12 @@ textarea::placeholder{color:var(--text3);}
         <div><div class="sec-title">🔍 채용공고 핵심 분석</div><div class="sec-sub">JD를 붙여넣으면 핵심 정보를 바로 추출합니다</div></div>
       </div>
       <div class="card" style="margin-bottom:18px">
-        <!-- URL 입력 -->
-        <h3>🔗 링크로 분석</h3>
-        <div class="sub" style="margin-bottom:10px">채용공고 URL을 붙여넣으면 자동으로 내용을 가져와요</div>
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:8px 12px;background:rgba(240,100,100,.08);border:1px solid rgba(240,100,100,.3);border-radius:7px;font-size:12px;color:#f06464;font-weight:500">
-          <span style="font-size:14px;flex-shrink:0">🚫</span>
-          <span><strong>LinkedIn 링크는 로그인이 필요해 자동 가져오기가 어렵습니다.</strong> 공고 내용을 직접 복사해서 아래 채용공고 붙여넣기에 넣어주세요.</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:18px">
-          <input type="text" id="jdUrlInput" placeholder="https://himalayas.app/... 또는 회사 채용 페이지 링크"
-            style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 13px;outline:none;transition:border-color .15s"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-            onkeydown="if(event.key==='Enter')fetchJDFromUrl()">
-          <button class="btn btn-ghost btn-sm" onclick="fetchJDFromUrl()" id="jdUrlBtn">가져오기</button>
-        </div>
-        <div id="jdUrlStatus" style="display:none;font-size:12px;margin-bottom:10px;padding:8px 12px;border-radius:7px"></div>
-
-        <h3 style="margin-bottom:4px">📋 채용공고 붙여넣기</h3>
+        <h3>채용공고 붙여넣기</h3>
         <div class="sub">JD 전문을 붙여넣으면 비자·언어·원격·스킬을 자동 분석합니다</div>
         <textarea id="jdAnalIn" rows="7" placeholder="채용공고 내용 전체를 여기에..."></textarea>
-        <div style="display:flex;gap:8px;margin-top:11px;align-items:center">
+        <div style="display:flex;gap:8px;margin-top:11px">
           <button class="btn btn-primary" id="jdBtn" onclick="analyzeJD()">🔍 즉시 분석</button>
-          <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 ChatGPT로 상세 분석</button>
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('jdAnalIn').value='';document.getElementById('jdResult').style.display='none';document.getElementById('jdUrlInput').value='';document.getElementById('jdUrlStatus').style.display='none';" style="color:var(--red);border-color:rgba(240,100,100,.3);margin-left:auto">🗑 초기화</button>
+          <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 Claude로 상세 분석</button>
         </div>
       </div>
       <div id="jdResult" style="display:none">
@@ -1515,17 +1498,12 @@ function detectRelocation(d) {
   if (!d) return false;
   const text = d.toLowerCase();
   // 부정/불가 패턴 먼저 체크 — 이 중 하나라도 있으면 relocation 불가
-  const noRelo = /no relocation|relocation (not|is not) (provided|offered|available|supported)|must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|candidates must.{0,60}right to work|full right to work|unrestricted right to work|no visa sponsorship|unable to (provide|offer|support) (visa|sponsorship)|cannot sponsor|won't sponsor|does not (offer|provide) sponsor|us (citizen(ship)?|national) (required|only|must)|must be (a )?(us|u\.s\.) citizen|security clearance required|clearance (required|needed|must)|authorized to work in the (us|u\.s\.)/i;
+  const noRelo = /no relocation|relocation (not|is not) (provided|offered|available|supported)|must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|candidates must.{0,60}right to work|full right to work|unrestricted right to work|no visa sponsorship|unable to (provide|offer|support) (visa|sponsorship)|cannot sponsor|won't sponsor|does not (offer|provide) sponsor/i;
   if (noRelo.test(text)) return false;
   // 긍정 패턴
   return /relocation (package|support|assistance|allowance|provided|offered|available|benefit)|we (will|can) relocate|full relocation|relocation supported|moving (costs|expenses) (covered|provided|reimbursed)|(relocation|moving).{0,40}(eligible|qualified|successful|selected) (candidates?|applicants?)|(eligible|successful|selected) candidates?.{0,40}(relocation|moving)|(package|support|assistance).{0,30}relocation|relo (package|support|benefit)/i.test(text);
 }
-function detectRemote(t){
-  if(/hybrid|hybride|onsite.*remote|remote.*onsite|flexible.*work|work.*flexible|2.*day.*office|3.*day.*office|days? (in|at) (the )?office/i.test(t)) return 'Hybrid';
-  if(/\bremote\b|fully remote|100.{0,5}remote|work from home|wfh|distributed team|location.{0,20}anywhere/i.test(t)) return 'Remote';
-  if(/on.?site|in.?office|in person|in-person|office.?based|on location|presencial|vor ort/i.test(t)) return 'On-site';
-  return 'Unknown';
-}
+function detectRemote(t){if(/remote/i.test(t))return'Remote';if(/hybrid/i.test(t))return'Hybrid';return'On-site';}
 const COUNTRY_LANG = {
   GB:'English', IE:'English', DE:'German', AT:'German', CH:'German',
   NL:'Dutch', FR:'French', BE:'French', ES:'Spanish', IT:'Italian',
@@ -2115,7 +2093,8 @@ function openClaudeCoverLetter() {
   const jd = document.getElementById('aiJD').value.trim();
   if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
   const prompt = buildCLPrompt(resume, jd, 'en', 'professional');
-  openChatGPTWithPrompt(prompt);
+  const url = 'https://chatgpt.com/';navigator.clipboard.writeText(prompt).catch(()=>{});
+  window.open(url, '_blank');
 }
 
 function openClaudeCoverLetterFull() {
@@ -2603,7 +2582,7 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
 
   // ── 툴 (다국어 변형 있음)
   { en: 'Excel', variants: ['excel', 'tableur'] },
-  // PowerBI → 아래 'Power BI' 항목으로 통합
+  { en: 'PowerBI', variants: ['power bi', 'power-bi'] },
   { en: 'Tableau', variants: ['tableaux', 'tableau de bord'] },
   { en: 'Google Analytics', variants: ['google analytics', 'analytics google'] },
   { en: 'Google Ads', variants: ['google ads','google adwords','adwords','annonces google','ppc','paid search'] },
@@ -2648,6 +2627,16 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
   { en: 'Azure Synapse', variants: ['azure synapse', 'synapse analytics'] },
   { en: 'Apache Kafka', variants: ['kafka', 'apache kafka'] },
 
+  // ── AI / ML 툴링
+  { en: 'AI/ML', variants: ['ai/ml', 'ai ml', 'artificial intelligence', 'machine learning tooling', 'ml tooling', 'ml infrastructure', 'mlops', 'llmops'] },
+  { en: 'OpenAI API', variants: ['openai', 'gpt-4', 'gpt4', 'chatgpt api', 'openai api'] },
+  { en: 'LangChain', variants: ['langchain', 'lang chain'] },
+  { en: 'TensorFlow', variants: ['tensorflow', 'tensor flow'] },
+  { en: 'PyTorch', variants: ['pytorch', 'py torch'] },
+  { en: 'Hugging Face', variants: ['hugging face', 'huggingface', 'transformers'] },
+  { en: 'Vector DB', variants: ['vector database', 'pinecone', 'weaviate', 'chroma', 'qdrant', 'vector store', 'embedding'] },
+  { en: 'RAG', variants: ['rag', 'retrieval augmented', 'retrieval-augmented'] },
+
   // ── 마케팅 추가
   { en: 'Adobe Analytics', variants: ['adobe analytics', 'omniture'] },
   { en: 'Mixpanel', variants: ['mixpanel'] },
@@ -2684,9 +2673,21 @@ function analyzeJD() {
   const lines = jd.split('\n').filter(l => l.trim()).slice(0, 5);
   const titleLine = lines[0] || '';
 
-  // 3. 급여 추출
-  const salaryMatch = jd.match(/[€£$][\d,.]+-?[\d,.]*[k]?(?:\s*(?:per|\/)\s*(?:year|yr|month|annum))?/i);
-  const salary = salaryMatch ? salaryMatch[0] : '미공개';
+  // 3. 급여 추출 (GMV/ARR/revenue 등 회사 지표 제외)
+  function extractSalary(text) {
+    // 회사 매출/거래액 관련 문맥 패턴 (앞 50자 이내에 있으면 제외)
+    const bizMetricCtx = /(gmv|arr|revenue|funding|valuation|annual recurring|gross merchandise|raised|series [a-z]|mrr|budget|investment|market cap).{0,60}[€£$]|[€£$].{0,30}(gmv|arr|revenue|funding|valuation|raised|series [a-z]|mrr)/gi;
+    // 회사 지표 패턴을 먼저 제거한 텍스트에서 급여 추출
+    const cleaned = text.replace(bizMetricCtx, ' ');
+    // 급여 패턴: 숫자가 연속되어야 하고, 단독 $16 같은 작은 수는 제외 (최소 4자리 이상이거나 k 붙어야)
+    const matches = [...cleaned.matchAll(/[€£$](\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+k?)\s*(?:[-–]\s*[€£$]?\d{1,3}(?:,\d{3})*(?:\.\d+)?k?)?\s*(?:\/|per)\s*(?:year|yr|annum|month|mo|hour|hr)/gi)];
+    // k 없이 단독 숫자면 최소 4자리 (1000 이상)
+    const salaryMatches = [...cleaned.matchAll(/[€£$](\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{2,}k)\s*(?:[-–]\s*[€£$]?\d{1,3}(?:,\d{3})*(?:\.\d+)?k?)?/gi)];
+    if (matches.length > 0) return matches[0][0].trim();
+    if (salaryMatches.length > 0) return salaryMatches[0][0].trim();
+    return null;
+  }
+  const salary = extractSalary(jd) || '미공개';
 
   
 
@@ -2713,7 +2714,7 @@ const foundSkills = skillKeywords.filter(sk => {
   const englishOnly = /english.*sufficient|working language.*english|english.*required/i.test(jd);
 
   // 6. 한국인 가능성 평가
-  const noRightToWork = /must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|full right to work|unrestricted right to work|us (citizen(ship)?|national) (required|only|must)|must be (a )?(us|u\.s\.) citizen|authorized to work in the (us|u\.s\.)|security clearance required/i.test(jd);
+  const noRightToWork = /must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|full right to work|unrestricted right to work/i.test(jd);
   const noVisa = /no visa sponsorship|unable to (provide|offer) (visa|sponsorship)|cannot sponsor|won't sponsor/i.test(jd);
   let koreanScore = 50;
   if (englishOnly) koreanScore += 20;
@@ -2731,7 +2732,7 @@ const foundSkills = skillKeywords.filter(sk => {
     <h3>📋 핵심 정보</h3>
     <div class="visa-table">
       <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
-      <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span style="color:${remote==='Unknown'?'var(--text3)':'var(--text)'}">${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':remote==='On-site'?'🏢 출근':'❓ 확인 필요 (언급 없음)'}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span>${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':'🏢 출근'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':'정보 없음'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">한국인 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
@@ -2745,58 +2746,13 @@ const foundSkills = skillKeywords.filter(sk => {
         ? foundSkills.map(s=>`<span class="sk-hit">${s}</span>`).join('')
         : '<span style="color:var(--text3);font-size:13px">스킬 키워드를 찾지 못했어요</span>'
       }
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 Claude로 더 자세히 분석</button>
     </div>`;
 
   document.getElementById('jdResult').style.display = 'block';
   btn.textContent = '🔍 즉시 분석'; btn.disabled = false;
-}
-
-
-// ── JD URL 가져오기 ─────────────────────────────────────
-async function fetchJDFromUrl() {
-  const urlInput = document.getElementById('jdUrlInput');
-  const statusEl = document.getElementById('jdUrlStatus');
-  const btn = document.getElementById('jdUrlBtn');
-  const url = urlInput.value.trim();
-  if (!url) return;
-
-  // LinkedIn 감지 → 안내만
-  if (/linkedin\.com/i.test(url)) {
-    statusEl.style.display = 'block';
-    statusEl.style.background = 'rgba(245,166,35,.08)';
-    statusEl.style.border = '1px solid rgba(245,166,35,.2)';
-    statusEl.style.color = 'var(--warn)';
-    statusEl.innerHTML = '⚠️ LinkedIn은 로그인이 필요해 자동 가져오기가 어렵습니다. 공고 내용을 직접 복사해서 아래에 붙여넣어 주세요.';
-    return;
-  }
-
-  btn.textContent = '가져오는 중...'; btn.disabled = true;
-  statusEl.style.display = 'block';
-  statusEl.style.background = 'rgba(79,142,247,.06)';
-  statusEl.style.border = '1px solid rgba(79,142,247,.18)';
-  statusEl.style.color = 'var(--text2)';
-  statusEl.textContent = '⏳ 페이지 내용을 가져오는 중...';
-
-  try {
-    const res = await fetch('/api/fetch-jd?url=' + encodeURIComponent(url));
-    const data = await res.json();
-    if (!data.ok || !data.text) throw new Error(data.error || '내용을 가져올 수 없어요');
-
-    document.getElementById('jdAnalIn').value = data.text;
-    statusEl.style.background = 'rgba(62,207,160,.06)';
-    statusEl.style.border = '1px solid rgba(62,207,160,.18)';
-    statusEl.style.color = 'var(--accent3)';
-    statusEl.textContent = '✅ 내용을 가져왔어요! 아래에서 확인 후 분석하세요.';
-    // 자동 분석 시작
-    analyzeJD();
-  } catch(e) {
-    statusEl.style.background = 'rgba(240,100,100,.06)';
-    statusEl.style.border = '1px solid rgba(240,100,100,.18)';
-    statusEl.style.color = 'var(--red)';
-    statusEl.innerHTML = '❌ 가져오기 실패: ' + e.message + '<br><span style="font-size:11px;opacity:.8">해당 사이트는 직접 접근이 제한될 수 있어요. 내용을 직접 복사해 붙여넣어 주세요.</span>';
-  } finally {
-    btn.textContent = '가져오기'; btn.disabled = false;
-  }
 }
 
 function openClaudeJD() {
@@ -4025,4 +3981,4 @@ function closeSkillDrawer(e) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   
 </body>
-</html> 
+</html>
