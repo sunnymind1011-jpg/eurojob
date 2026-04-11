@@ -3767,7 +3767,7 @@ function showSkillCat(cat) {
     const countryCount = new Set(catJobs.map(j=>j.country)).size;
     document.getElementById('skillmap-stats').innerHTML = `
       <div class="stat"><div class="stat-lbl">수집 공고</div><div class="stat-val" style="color:${color}">${jobCount}</div></div>
-      <div class="stat"><div class="stat-lbl">Relocation/비자</div><div class="stat-val c-green">${reloc}</div></div>
+      <div class="stat"><div class="stat-lbl">Relocation/비자스폰서</div><div class="stat-val c-green">${reloc}</div></div>
       <div class="stat"><div class="stat-lbl">원격 가능</div><div class="stat-val c-blue">${remote}</div></div>
       <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple">${countryCount}</div></div>`;
   } else {
