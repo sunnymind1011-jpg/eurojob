@@ -1812,7 +1812,7 @@ function openDrawer(id) {
             <div style="font-size:11px;color:var(--text3)">독일어권 최대 고용주 리뷰 플랫폼</div>
           </div>
         </div>
-        <a href="https://www.kununu.com/de/${encodeURIComponent((j.company||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))}" target="_blank"
+        <a href="https://www.kununu.com/de/${encodeURIComponent((j.company||'').replace(/\s+(GmbH|Ltd\.?|Limited|AG|SE|SAS|SL|SRL|BV|NV|AB|AS|Inc\.?|Corp\.?|LLC|LLP|PLC|GmbH & Co\.? KG|Co\.? KG)\s*$/i,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))}" target="_blank"
            style="font-size:11px;color:var(--accent);text-decoration:none;border:1px solid rgba(79,142,247,.3);padding:4px 10px;border-radius:6px;font-weight:600">
           kununu에서 보기 →
         </a>
@@ -1855,7 +1855,12 @@ function openDrawer(id) {
 function renderKununuLinks(j) {
   const el = document.getElementById('kununu-links-' + j.id);
   if (!el) return;
-  const slug = (j.company || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  // 법인 형태 suffix 제거 후 slug 생성 (GmbH, Ltd, AG, SE, SL, SRL, BV, AB 등)
+  const slug = (j.company || '')
+    .replace(/\s+(GmbH|Ltd\.?|Limited|AG|SE|SAS|SL|SRL|BV|NV|AB|AS|Oy|Inc\.?|Corp\.?|LLC|LLP|PLC|GmbH & Co\.? KG|Co\.? KG)\s*$/i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
   const searchUrl = 'https://www.kununu.com/de/suche?q=' + encodeURIComponent(j.company || '');
   const isDE = ['DE','AT','CH'].includes(j.country);
   const baseUrl = 'https://www.kununu.com/de/' + slug;
