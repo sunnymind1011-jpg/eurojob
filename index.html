@@ -697,6 +697,16 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="cat:finance" onclick="toggleChip(this)">💰 금융</div>
         <div class="chip" data-f="cat:management" onclick="toggleChip(this)">🏢 경영/전략</div>
       </div>
+      <div class="filter-row">
+        <span class="f-lbl">📊</span>
+        <div class="chip" data-f="level:Entry" onclick="toggleChip(this)">🌱 Entry/Intern</div>
+        <div class="chip" data-f="level:Junior" onclick="toggleChip(this)">🔵 Junior</div>
+        <div class="chip" data-f="level:Associate" onclick="toggleChip(this)">⚪ Associate</div>
+        <div class="chip" data-f="level:Mid" onclick="toggleChip(this)">🟡 Mid-level</div>
+        <div class="chip" data-f="level:Senior" onclick="toggleChip(this)">🟠 Senior</div>
+        <div class="chip" data-f="level:Lead" onclick="toggleChip(this)">🔴 Lead/Principal</div>
+        <div class="chip" data-f="level:Director" onclick="toggleChip(this)">⭐ Director/VP</div>
+      </div>
       <div class="job-grid" id="jobGrid">
         <div class="empty" style="grid-column:1/-1">
           <div class="empty-icon">💼</div>
@@ -1657,6 +1667,7 @@ function filterJobs() {
         if (!remoteFilters.includes(j.remoteType)) return false;
       }
       if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
+      if (k==='level' && j.level !== v) return false;
     }
     return true;
   });
