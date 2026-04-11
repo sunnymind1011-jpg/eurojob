@@ -4139,8 +4139,19 @@ function openSkillDrawer(skillName, cat) {
   const matchItem = top10.find(t => t.skill.toLowerCase().includes(skillName.toLowerCase()) || skillName.toLowerCase().includes(t.skill.split(' ')[0].toLowerCase()));
   
   // 해당 스킬 언급 공고 찾기
-  const escaped = skillName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const relatedJobs = catJobs.filter(j => new RegExp('\\b'+escaped+'\\b','i').test((j.description||'')+(j.title||'')));
+  // "SAP / ERP", "Excel (Advanced)" 같은 표시용 레이블 → 핵심 키워드로 분해해서 검색
+  const skillTokens = skillName
+    .replace(/\(.*?\)/g, '')          // 괄호 안 제거: "(Advanced)" → ""
+    .split(/[/\|,&+]+/)               // 슬래시/파이프/쉼표로 분리: "SAP / ERP" → ["SAP","ERP"]
+    .map(s => s.trim())
+    .filter(s => s.length > 1);
+  const relatedJobs = catJobs.filter(j => {
+    const text = ((j.description||'') + ' ' + (j.title||'')).toLowerCase();
+    return skillTokens.some(token => {
+      const esc = token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      return new RegExp('\\b' + esc + '\\b', 'i').test(text);
+    });
+  });
 
   const ov = document.getElementById('skillDrawerOv');
   const drawer = document.getElementById('skillDrawer');
