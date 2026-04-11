@@ -2145,9 +2145,24 @@ function openClaudeCoverLetterFull() {
 }
 
 // ChatGPT에 프롬프트 자동 입력 헬퍼
-function openChatGPTWithPrompt(prompt) {
-  // chatgpt.com은 URL 파라미터로 프롬프트 전달 지원
-  const url = 'https://chatgpt.com/?q=' + encodeURIComponent(prompt);
+function openChatGPTWithPrompt(prompt, fallbackMsg) {
+  const encoded = encodeURIComponent(prompt);
+  // URL이 너무 길면 (3000자 초과) 클립보드 복사 방식으로 fallback
+  if (encoded.length > 3000) {
+    navigator.clipboard.writeText(prompt).then(() => {
+      window.open('https://chatgpt.com/', '_blank');
+      const msg = fallbackMsg || '프롬프트가 너무 길어 자동 입력이 어려워요.<br><span style="font-weight:400;opacity:.85">ChatGPT가 열리면 <strong>Ctrl+V</strong>로 붙여넣어 주세요.<br>또는 아래 <strong>복사</strong> 버튼을 눌러 직접 붙여넣어도 돼요.</span>';
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1e2230;border:1px solid rgba(245,166,35,.4);color:#f5a623;padding:14px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:360px;line-height:1.6';
+      toast.innerHTML = '⚠️ ' + msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 6000);
+    }).catch(() => {
+      window.open('https://chatgpt.com/', '_blank');
+    });
+    return;
+  }
+  const url = 'https://chatgpt.com/?q=' + encoded;
   window.open(url, '_blank');
 }
 
@@ -2853,7 +2868,17 @@ function openClaudeJD() {
 
 ## 채용공고
 ${jd}`;
-  openChatGPTWithPrompt(prompt);
+  // JD 분석은 항상 클립보드 복사 방식 (JD 자체가 길어서 431 에러 방지)
+  navigator.clipboard.writeText(prompt).then(() => {
+    window.open('https://chatgpt.com/', '_blank');
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3ecfa0;color:#04342c;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+    toast.innerHTML = '✅ 프롬프트 복사 완료!<br><span style="font-size:11px;font-weight:400">ChatGPT에서 Ctrl+V로 붙여넣어 주세요</span>';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }).catch(() => {
+    window.open('https://chatgpt.com/', '_blank');
+  });
 }
 
 // ════════════════════════════════════════
