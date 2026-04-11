@@ -1711,7 +1711,7 @@ function buildCard(j, showFeat) {
       <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
       
     </div>
-    ${skills.length?`<div class="jc-skills">${skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>`:''}
+    
     <div class="jc-foot">
       ${j.salary?`<span class="jc-salary">${j.salary}</span>`:'<span style="font-size:11px;color:var(--text3)">급여 미공개</span>'}
       <span class="jc-date">${relDate(j.postedAt)}</span>
