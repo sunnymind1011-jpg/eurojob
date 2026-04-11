@@ -2147,37 +2147,47 @@ function openClaudeCoverLetterFull() {
 // ChatGPT에 프롬프트 자동 입력 헬퍼
 function openChatGPTWithPrompt(prompt) {
   const encoded = encodeURIComponent(prompt);
-  // URL이 너무 길면 (3000자 초과) 클립보드 복사 방식
+  // URL이 너무 길면 (3000자 초과) → 팝업 먼저, 버튼 클릭 시점에 복사+열기
   if (encoded.length > 3000) {
-    navigator.clipboard.writeText(prompt).then(() => {
-      window.open('https://chatgpt.com/', '_blank');
-      // 화면 중앙에 눈에 띄는 모달형 안내
-      const overlay = document.createElement('div');
-      overlay.id = 'gpt-copy-modal';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:flex;align-items:center;justify-content:center';
-      const box = document.createElement('div');
-      box.style.cssText = 'background:#1e2230;border:2px solid rgba(245,166,35,.5);color:#f0f2f7;padding:28px 32px;border-radius:14px;font-size:14px;text-align:center;max-width:360px;line-height:1.8;box-shadow:0 8px 32px rgba(0,0,0,.5)';
-      const closeModal = () => document.getElementById('gpt-copy-modal')?.remove();
-      const icon = document.createElement('div');
-      icon.style.cssText = 'font-size:28px;margin-bottom:10px';
-      icon.textContent = '📋';
-      const title = document.createElement('div');
-      title.style.cssText = 'font-weight:700;font-size:15px;color:#f5a623;margin-bottom:10px';
-      title.textContent = '프롬프트가 복사됐어요!';
-      const desc = document.createElement('div');
-      desc.style.cssText = 'font-size:13px;color:#8b92a8;margin-bottom:18px;line-height:1.8';
-      desc.innerHTML = 'ChatGPT가 열리면<br><strong style="color:#f0f2f7;font-size:15px">Ctrl+V</strong> 로 붙여넣고 전송하세요<br><span style="font-size:11px">(프롬프트가 길어 자동 입력이 어려워요)</span>';
-      const btn = document.createElement('button');
-      btn.style.cssText = 'background:#4f8ef7;color:#fff;border:none;padding:9px 24px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit';
-      btn.textContent = '확인';
-      btn.onclick = closeModal;
-      box.appendChild(icon); box.appendChild(title); box.appendChild(desc); box.appendChild(btn);
-      overlay.appendChild(box);
-      overlay.onclick = (e) => { if(e.target===overlay) closeModal(); };
-      document.body.appendChild(overlay);
-    }).catch(() => {
-      window.open('https://chatgpt.com/', '_blank');
-    });
+    const closeModal = () => document.getElementById('gpt-copy-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'gpt-copy-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:flex;align-items:center;justify-content:center';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#1e2230;border:2px solid rgba(79,142,247,.4);color:#f0f2f7;padding:28px 32px;border-radius:14px;font-size:14px;text-align:center;max-width:380px;line-height:1.8;box-shadow:0 8px 32px rgba(0,0,0,.5)';
+    const icon = document.createElement('div');
+    icon.style.cssText = 'font-size:28px;margin-bottom:10px';
+    icon.textContent = '🤖';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:700;font-size:15px;color:#f0f2f7;margin-bottom:8px';
+    title.textContent = 'ChatGPT로 분석할게요';
+    const desc = document.createElement('div');
+    desc.style.cssText = 'font-size:13px;color:#8b92a8;margin-bottom:20px;line-height:1.8';
+    desc.innerHTML = '프롬프트가 길어 자동 입력이 어려워요.<br>아래 버튼을 누르면 <strong style="color:#f0f2f7">ChatGPT가 열리고<br>프롬프트가 복사</strong>돼요.<br><span style="font-size:12px;color:#6b7280">ChatGPT 입력창에 <strong style="color:#f0f2f7">Ctrl+V</strong> 후 전송하세요</span>';
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center';
+    const openBtn = document.createElement('button');
+    openBtn.style.cssText = 'background:#4f8ef7;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit';
+    openBtn.textContent = 'ChatGPT 열기 →';
+    openBtn.onclick = () => {
+      navigator.clipboard.writeText(prompt).then(() => {
+        window.open('https://chatgpt.com/', '_blank');
+        closeModal();
+      }).catch(() => {
+        window.open('https://chatgpt.com/', '_blank');
+        closeModal();
+      });
+    };
+    const cancelBtn = document.createElement('button');
+    cancelBtn.style.cssText = 'background:transparent;color:#8b92a8;border:1px solid rgba(255,255,255,.12);padding:10px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit';
+    cancelBtn.textContent = '취소';
+    cancelBtn.onclick = closeModal;
+    btnRow.appendChild(openBtn);
+    btnRow.appendChild(cancelBtn);
+    box.appendChild(icon); box.appendChild(title); box.appendChild(desc); box.appendChild(btnRow);
+    overlay.appendChild(box);
+    overlay.onclick = (e) => { if(e.target===overlay) closeModal(); };
+    document.body.appendChild(overlay);
     return;
   }
   const url = 'https://chatgpt.com/?q=' + encoded;
