@@ -977,7 +977,7 @@ textarea::placeholder{color:var(--text3);}
         <div style="display:flex;gap:8px;margin-top:11px;align-items:center">
           <button class="btn btn-primary" id="jdBtn" onclick="analyzeJD()">🔍 즉시 분석</button>
           <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 ChatGPT로 상세 분석</button>
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('jdAnalIn').value='';document.getElementById('jdResult').style.display='none';document.getElementById('jdUrlInput').value='';document.getElementById('jdUrlStatus').style.display='none';" style="color:var(--red);border-color:rgba(240,100,100,.3);margin-left:auto">🗑 초기화</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('jdAnalIn').value='';document.getElementById('jdAnalIn').dataset.sourceHint='';document.getElementById('jdResult').style.display='none';document.getElementById('jdUrlInput').value='';document.getElementById('jdUrlStatus').style.display='none';" style="color:var(--red);border-color:rgba(240,100,100,.3);margin-left:auto">🗑 초기화</button>
         </div>
       </div>
       <div id="jdResult" style="display:none">
@@ -2772,7 +2772,8 @@ function analyzeJD() {
   btn.textContent = '분석 중...'; btn.disabled = true;
 
   // 1. 기본 정보 추출
-  const remote = detectRemote(jd);
+  const sourceHint = document.getElementById('jdAnalIn').dataset.sourceHint || '';
+  const remote = sourceHint === 'himalayas' ? 'Remote' : detectRemote(jd);
   const langs = detectLangs(jd);
   const relocation = detectRelocation ? detectRelocation(jd) : false;
 
@@ -2821,8 +2822,10 @@ const foundSkills = skillKeywords.filter(sk => {
   const requiresLocal = /native|fluent in (german|french|dutch|spanish|italian)/i.test(jd);
   const englishOnly = /english.*sufficient|working language.*english|english.*required/i.test(jd);
 
-  // 6. 한국인 가능성 평가
+  // 6. 외국인 지원 가능성 평가 (비자/취업권 기준 — 거주지 무관)
   const noRightToWork = /must (already |)(reside|live|be based|be located) in|must have.{0,30}right to work|applicants must.{0,60}right to work|full right to work|unrestricted right to work|us (citizen(ship)?|national) (required|only|must)|must be (a )?(us|u\.s\.) citizen|authorized to work in the (us|u\.s\.)|security clearance required/i.test(jd);
+  // 지역 제한 원격 감지 (표시용만 — 점수 감점 없음, 유럽 거주자는 해당 없음)
+  const timezoneRestricted = /(uk|united kingdom|europe|cet|gmt).{0,20}(only|timezone|time zone|based|residents?)|timezone.{0,30}(uk|europe|gmt|cet)|must (work|be available).{0,30}(uk|european|gmt|cet).{0,20}(time|hours|timezone)|applicants.{0,30}(uk|europe).{0,20}(only|based|residents?)/i.test(jd);
   const noVisa = /no visa sponsorship|unable to (provide|offer) (visa|sponsorship)|cannot sponsor|won't sponsor/i.test(jd);
   let koreanScore = 50;
   if (englishOnly) koreanScore += 20;
@@ -2842,8 +2845,8 @@ const foundSkills = skillKeywords.filter(sk => {
       <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span style="color:${remote==='Unknown'?'var(--text3)':'var(--text)'}">${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':remote==='On-site'?'🏢 출근':'❓ 확인 필요 (언급 없음)'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
-      <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':'정보 없음'}</span></div>
-      <div class="visa-row"><span style="color:var(--text2)">한국인 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':timezoneRestricted?'#f5a623':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':timezoneRestricted?'⚠️ 지역제한 원격 (현지 거주 권장)':'정보 없음'}</span></div>
+      <div class="visa-row"><span style="color:var(--text2)">외국인 지원 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
     </div>`;
 
   document.getElementById('jdSkillCard').innerHTML = `
@@ -2892,6 +2895,8 @@ async function fetchJDFromUrl() {
     if (!data.ok || !data.text) throw new Error(data.error || '내용을 가져올 수 없어요');
 
     document.getElementById('jdAnalIn').value = data.text;
+    // URL 소스 힌트 저장 (analyzeJD에서 사용)
+    document.getElementById('jdAnalIn').dataset.sourceHint = /himalayas\.app/i.test(url) ? 'himalayas' : '';
     statusEl.style.background = 'rgba(62,207,160,.06)';
     statusEl.style.border = '1px solid rgba(62,207,160,.18)';
     statusEl.style.color = 'var(--accent3)';
