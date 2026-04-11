@@ -950,7 +950,7 @@ textarea::placeholder{color:var(--text3);}
         <div class="sub" style="margin-bottom:10px">채용공고 URL을 붙여넣으면 자동으로 내용을 가져와요</div>
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:8px 12px;background:rgba(240,100,100,.08);border:1px solid rgba(240,100,100,.3);border-radius:7px;font-size:12px;color:#f06464;font-weight:500">
           <span style="font-size:14px;flex-shrink:0">🚫</span>
-          <span><strong>LinkedIn 링크는 로그인이 필요해 자동 가져오기가 불가해요.</strong> 공고 내용을 직접 복사해서 아래 채용공고 붙여넣기에 넣어주세요.</span>
+          <span><strong>LinkedIn 링크는 로그인이 필요해 자동 가져오기가 어렵습니다.</strong> 공고 내용을 직접 복사해서 아래 채용공고 붙여넣기에 넣어주세요.</span>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:18px">
           <input type="text" id="jdUrlInput" placeholder="https://himalayas.app/... 또는 회사 채용 페이지 링크"
@@ -2115,8 +2115,7 @@ function openClaudeCoverLetter() {
   const jd = document.getElementById('aiJD').value.trim();
   if (!resume || !jd) { alert('이력서와 채용공고를 모두 입력해주세요.'); return; }
   const prompt = buildCLPrompt(resume, jd, 'en', 'professional');
-  const url = 'https://chatgpt.com/';navigator.clipboard.writeText(prompt).catch(()=>{});
-  window.open(url, '_blank');
+  openChatGPTWithPrompt(prompt);
 }
 
 function openClaudeCoverLetterFull() {
@@ -2746,9 +2745,6 @@ const foundSkills = skillKeywords.filter(sk => {
         ? foundSkills.map(s=>`<span class="sk-hit">${s}</span>`).join('')
         : '<span style="color:var(--text3);font-size:13px">스킬 키워드를 찾지 못했어요</span>'
       }
-    </div>
-    <div style="margin-top:14px">
-      <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 Claude로 더 자세히 분석</button>
     </div>`;
 
   document.getElementById('jdResult').style.display = 'block';
@@ -2770,7 +2766,7 @@ async function fetchJDFromUrl() {
     statusEl.style.background = 'rgba(245,166,35,.08)';
     statusEl.style.border = '1px solid rgba(245,166,35,.2)';
     statusEl.style.color = 'var(--warn)';
-    statusEl.innerHTML = '⚠️ LinkedIn은 로그인이 필요해서 자동 가져오기가 불가해요. 공고 내용을 직접 복사해서 아래에 붙여넣어 주세요.';
+    statusEl.innerHTML = '⚠️ LinkedIn은 로그인이 필요해 자동 가져오기가 어렵습니다. 공고 내용을 직접 복사해서 아래에 붙여넣어 주세요.';
     return;
   }
 
