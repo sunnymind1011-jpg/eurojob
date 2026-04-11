@@ -690,12 +690,13 @@ textarea::placeholder{color:var(--text3);}
       </div>
       <div class="filter-row">
         <span class="f-lbl">💼</span>
-        <div class="chip" data-f="cat:data" onclick="toggleChip(this)">📊 데이터</div>
-        <div class="chip" data-f="cat:marketing" onclick="toggleChip(this)">📣 마케팅</div>
-        <div class="chip" data-f="cat:dev" onclick="toggleChip(this)">💻 개발</div>
-        <div class="chip" data-f="cat:hr" onclick="toggleChip(this)">🤝 HR</div>
-        <div class="chip" data-f="cat:finance" onclick="toggleChip(this)">💰 금융</div>
-        <div class="chip" data-f="cat:management" onclick="toggleChip(this)">🏢 경영/전략</div>
+        <div class="chip" data-f="cat:data" onclick="toggleChip(this)" title="Data Analyst, Data Scientist, Data Engineer, BI Analyst, ML Engineer 등">📊 데이터</div>
+        <div class="chip" data-f="cat:marketing" onclick="toggleChip(this)" title="Digital Marketing, SEO/SEM, Growth, Brand, Content, CRM, Performance Marketing 등">📣 마케팅</div>
+        <div class="chip" data-f="cat:dev" onclick="toggleChip(this)" title="Software Engineer, Backend/Frontend Developer, DevOps, Cloud Architect, Full Stack 등">💻 개발</div>
+        <div class="chip" data-f="cat:hr" onclick="toggleChip(this)" title="HR Manager, Talent Acquisition, Recruiter, People Operations, HRIS, Payroll 등">🤝 HR</div>
+        <div class="chip" data-f="cat:finance" onclick="toggleChip(this)" title="Finance Manager, Accountant, Audit, Tax, Investment, Risk, Compliance, Treasury 등">💰 금융</div>
+        <div class="chip" data-f="cat:management" onclick="toggleChip(this)" title="Project Manager, Product Manager, Strategy, Business Analyst, Director, Consulting 등">🏢 경영/전략</div>
+        <div class="chip" data-f="cat:ops" onclick="toggleChip(this)" title="Operations Manager, Logistics, Supply Chain, Warehouse, Procurement, Inventory, Transport 등">🚛 운영/물류</div>
       </div>
       <div class="filter-row">
         <span class="f-lbl">📊</span>
@@ -1610,6 +1611,7 @@ const CAT_KEYWORDS = {
   hr:         ['hr','human resources','talent','recruitment','recruiter','people','hris','payroll','compensation'],
   finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','analyst','risk','compliance'],
   management: ['manager','director','strategy','operations','product manager','project manager','consulting','business analyst','chief'],
+  ops:        ['operations','logistics','supply chain','warehouse','almacén','almacen','logística','logistica','procurement','inventory','fulfillment','dispatch','transport','shipping','freight','import','export','customs','planning','demand planning','distribution'],
 };
 
 function filterJobs() {
@@ -3670,7 +3672,40 @@ const SKILL_CATEGORIES = {
       { skill:'SuccessFactors (SAP)', pct:38, note:'유럽 대기업 표준 HRIS', hot:false },
       { skill:'CIPD 자격증', pct:35, note:'영국 HR 취업 시 강력 우대', hot:false },
     ]
-  }  
+  },
+  '운영/물류': {
+    keywords: ['operations','logistics','supply chain','warehouse','procurement','inventory','fulfillment','transport','shipping','planning','distribution','almacen','logistica'],
+    radarLabels: ['SCM / 물류','창고 / WMS','조달 / 구매','데이터 / ERP','프로젝트 관리','규정 / 무역'],
+    radarSkills: [
+      ['Supply Chain','Logistics','Transportation','Freight','Distribution','Last Mile','3PL','Carrier Management','Route Optimization','Fleet Management'],
+      ['Warehouse Management','WMS','Inventory Control','Stock Management','Pick & Pack','Fulfillment','SAP WM','Mecalux','Manhattan Associates'],
+      ['Procurement','Purchasing','Sourcing','Vendor Management','Contract Negotiation','RFQ','RFP','Supplier Relations','Category Management'],
+      ['SAP','ERP','Excel','Power BI','SQL','Tableau','Dynamics 365','Data Analysis','KPI','Reporting','Power Query'],
+      ['Project Management','Process Improvement','Lean','Six Sigma','Continuous Improvement','Agile','Cross-functional','Stakeholder Management'],
+      ['Customs','Import','Export','Incoterms','Compliance','Trade Regulations','IATA','Dangerous Goods','Sustainability'],
+    ],
+    radarBaseline: [82, 68, 72, 65, 60, 50],
+    color: '#3ecfa0',
+    insights: [
+      { icon:'📦', text:'스페인·독일·네덜란드는 유럽 최대 물류 허브 — 공고 수 <strong>꾸준히 증가</strong>', tag:'수요 안정' },
+      { icon:'🤖', text:'창고 자동화 확산으로 WMS·로봇 운영 경험 공고 <strong>2배</strong> 증가', tag:'자동화 트렌드' },
+      { icon:'🌍', text:'Supply Chain 직군은 영어만으로도 지원 가능한 글로벌 포지션 많음', tag:'언어 유리' },
+      { icon:'📊', text:'SAP·ERP 경험 있으면 대기업/제조업 물류 공고 서류 통과율 크게 향상', tag:'필수 툴' },
+      { icon:'💰', text:'Logistics Manager 유럽 평균 <strong>€40,000~€60,000</strong>, SCM Director +50%', tag:'연봉' },
+    ],
+    top10: [
+      { skill:'SAP / ERP', pct:78, note:'물류·제조 대기업 필수 시스템', hot:false },
+      { skill:'Supply Chain Management', pct:74, note:'전체 공급망 이해 필수', hot:false },
+      { skill:'Excel (Advanced)', pct:71, note:'재고·물류 분석 기본 도구', hot:false },
+      { skill:'Warehouse Management (WMS)', pct:65, note:'창고 운영 자동화 핵심', hot:true },
+      { skill:'Procurement / Sourcing', pct:62, note:'비용 절감 역량 중시', hot:false },
+      { skill:'Inventory Management', pct:58, note:'재고 최적화 수요 증가', hot:false },
+      { skill:'Power BI / Tableau', pct:48, note:'KPI 대시보드 필수화', hot:true },
+      { skill:'Lean / Six Sigma', pct:44, note:'프로세스 개선 방법론', hot:false },
+      { skill:'Incoterms / 무역 규정', pct:38, note:'국제 무역 실무 필수', hot:false },
+      { skill:'3PL 협력사 관리', pct:34, note:'외주 물류 관리 역량', hot:false },
+    ]
+  }
 };
 
 const COUNTRY_COORDS = {
