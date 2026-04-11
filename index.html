@@ -861,7 +861,7 @@ textarea::placeholder{color:var(--text3);}
     <!-- ★ AI 공고 추천 ──────────────────────────────── -->
     <div class="page" id="page-jobmatch">
       <div class="sec-hd" style="margin-bottom:18px">
-        <div><div class="sec-title">🎯 AI 공고 추천</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 합격 가능성이 높은 공고를 찾아드려요</div></div>
+        <div><div class="sec-title">🎯 AI 공고 추천</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 서류 통과 및 면접 기회 가능성이 높은 공고를 찾아드려요</div></div>
       </div>
 
       <div style="background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;font-size:13px;color:var(--text2)">
@@ -2648,6 +2648,16 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
   { en: 'Azure Synapse', variants: ['azure synapse', 'synapse analytics'] },
   { en: 'Apache Kafka', variants: ['kafka', 'apache kafka'] },
 
+  // ── AI / ML 툴링
+  { en: 'AI/ML', variants: ['ai/ml', 'ai ml', 'artificial intelligence', 'machine learning tooling', 'ml tooling', 'ml infrastructure', 'mlops', 'llmops'] },
+  { en: 'OpenAI API', variants: ['openai', 'gpt-4', 'gpt4', 'chatgpt api', 'openai api'] },
+  { en: 'LangChain', variants: ['langchain', 'lang chain'] },
+  { en: 'TensorFlow', variants: ['tensorflow', 'tensor flow'] },
+  { en: 'PyTorch', variants: ['pytorch', 'py torch'] },
+  { en: 'Hugging Face', variants: ['hugging face', 'huggingface', 'transformers'] },
+  { en: 'Vector DB', variants: ['vector database', 'pinecone', 'weaviate', 'chroma', 'qdrant', 'vector store', 'embedding'] },
+  { en: 'RAG', variants: ['rag', 'retrieval augmented', 'retrieval-augmented'] },
+
   // ── 마케팅 추가
   { en: 'Adobe Analytics', variants: ['adobe analytics', 'omniture'] },
   { en: 'Mixpanel', variants: ['mixpanel'] },
@@ -2684,9 +2694,22 @@ function analyzeJD() {
   const lines = jd.split('\n').filter(l => l.trim()).slice(0, 5);
   const titleLine = lines[0] || '';
 
-  // 3. 급여 추출
-  const salaryMatch = jd.match(/[€£$][\d,.]+-?[\d,.]*[k]?(?:\s*(?:per|\/)\s*(?:year|yr|month|annum))?/i);
-  const salary = salaryMatch ? salaryMatch[0] : '미공개';
+  // 3. 급여 추출 (GMV/ARR/revenue 등 회사 지표 제외)
+  function extractSalary(text) {
+    // 회사 매출/거래액 관련 문맥 제거
+    const cleaned = text.replace(/(gmv|arr|revenue|funding|valuation|annual recurring|gross merchandise|raised|series [a-z]|mrr|budget|investment|market cap).{0,80}/gi, ' ');
+    // 연봉/월급 명시된 패턴 우선
+    const withPeriod = cleaned.match(/[€£$][\d,]+(?:\.?\d+)?k?\s*(?:[-–]\s*[€£$]?[\d,]+(?:\.?\d+)?k?)?\s*(?:\/|per)\s*(?:year|yr|annum|month|mo)/i);
+    if (withPeriod) return withPeriod[0].trim();
+    // 범위 패턴 (예: €40,000–45,000)
+    const range = cleaned.match(/[€£$][\d,]{4,}\s*[-–]\s*[€£$]?[\d,]{4,}/);
+    if (range) return range[0].trim();
+    // 단독 금액은 최소 4자리 이상만 (€40,000 이상)
+    const single = cleaned.match(/[€£$][\d]{4,}(?:,\d{3})*/);
+    if (single) return single[0].trim();
+    return null;
+  }
+  const salary = extractSalary(jd) || '미공개';
 
   
 
@@ -2814,8 +2837,7 @@ function openClaudeJD() {
 
 ## 채용공고
 ${jd}`;
-  const url = 'https://chatgpt.com/';navigator.clipboard.writeText(prompt).catch(()=>{});
-  window.open(url, '_blank');
+  openChatGPTWithPrompt(prompt);
 }
 
 // ════════════════════════════════════════
