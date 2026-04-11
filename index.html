@@ -3765,10 +3765,21 @@ function showSkillCat(cat) {
     const reloc = catJobs.filter(j=>j.relocation || j.visaSponsored).length;
     const remote = catJobs.filter(j=>j.remoteType==='Remote').length;
     const countryCount = new Set(catJobs.map(j=>j.country)).size;
-    document.getElementById('skillmap-stats').innerHTML = `
-      <div class="stat"><div class="stat-lbl">수집 공고</div><div class="stat-val" style="color:${color}">${jobCount}</div></div>
-      <div class="stat"><div class="stat-lbl">Relocation/비자스폰서</div><div class="stat-val c-green">${reloc}</div></div>
-      <div class="stat"><div class="stat-lbl">원격 가능</div><div class="stat-val c-blue">${remote}</div></div>
+    const catCode = {'데이터':'data','마케팅':'marketing','개발':'dev','HR':'hr','운영/물류':'ops'}[cat] || '';
+    const statEl = document.getElementById('skillmap-stats');
+    statEl.innerHTML = `
+      <div class="stat" style="cursor:pointer" title="${cat} 공고 보기" onclick="navWithFilter('jobs',['cat:${catCode}'])" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div class="stat-lbl">수집 공고</div><div class="stat-val" style="color:${color}">${jobCount}</div>
+        <div class="stat-note" style="color:var(--accent);font-size:10px">클릭하면 공고 보기 →</div>
+      </div>
+      <div class="stat" style="cursor:pointer" title="Relocation/비자스폰서 공고 보기" onclick="navWithFilter('jobs',['cat:${catCode}','visa:true','relocation:true'])" onmouseover="this.style.borderColor='var(--accent3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div class="stat-lbl">Relocation/비자스폰서</div><div class="stat-val c-green">${reloc}</div>
+        <div class="stat-note" style="color:var(--accent3);font-size:10px">클릭하면 공고 보기 →</div>
+      </div>
+      <div class="stat" style="cursor:pointer" title="원격 가능 공고 보기" onclick="navWithFilter('jobs',['cat:${catCode}','remote:Remote'])" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div class="stat-lbl">원격 가능</div><div class="stat-val c-blue">${remote}</div>
+        <div class="stat-note" style="color:var(--warn);font-size:10px">클릭하면 공고 보기 →</div>
+      </div>
       <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple">${countryCount}</div></div>`;
   } else {
     document.getElementById('skillmap-stats').innerHTML = `
