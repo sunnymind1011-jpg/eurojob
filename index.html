@@ -947,7 +947,11 @@ textarea::placeholder{color:var(--text3);}
       <div class="card" style="margin-bottom:18px">
         <!-- URL 입력 -->
         <h3>🔗 링크로 분석</h3>
-        <div class="sub" style="margin-bottom:10px">채용공고 URL을 붙여넣으면 자동으로 내용을 가져와요 <span style="color:var(--text3)">(LinkedIn은 로그인 필요로 직접 복붙해주세요)</span></div>
+        <div class="sub" style="margin-bottom:10px">채용공고 URL을 붙여넣으면 자동으로 내용을 가져와요</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:8px 12px;background:rgba(240,100,100,.08);border:1px solid rgba(240,100,100,.3);border-radius:7px;font-size:12px;color:#f06464;font-weight:500">
+          <span style="font-size:14px;flex-shrink:0">🚫</span>
+          <span><strong>LinkedIn 링크는 로그인이 필요해 자동 가져오기가 불가해요.</strong> 공고 내용을 직접 복사해서 아래 채용공고 붙여넣기에 넣어주세요.</span>
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:18px">
           <input type="text" id="jdUrlInput" placeholder="https://himalayas.app/... 또는 회사 채용 페이지 링크"
             style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 13px;outline:none;transition:border-color .15s"
