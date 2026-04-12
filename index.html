@@ -692,13 +692,13 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
       </div>
       <div class="filter-row">
         <span class="f-lbl">💼</span>
-        <div class="chip" data-f="cat:data" onclick="toggleChip(this)" title="Data Analyst, Data Scientist, Data Engineer, BI Analyst, ML Engineer 등">📊 데이터</div>
-        <div class="chip" data-f="cat:marketing" onclick="toggleChip(this)" title="Digital Marketing, SEO/SEM, Growth, Brand, Content, CRM, Performance Marketing 등">📣 마케팅</div>
-        <div class="chip" data-f="cat:dev" onclick="toggleChip(this)" title="Software Engineer, Backend/Frontend Developer, DevOps, Cloud Architect, Full Stack 등">💻 개발</div>
-        <div class="chip" data-f="cat:hr" onclick="toggleChip(this)" title="HR Manager, Talent Acquisition, Recruiter, People Operations, HRIS, Payroll 등">🤝 HR</div>
+        <div class="chip" data-f="cat:data" onclick="toggleChip(this)" title="Data Analyst, Data Scientist, Data Engineer, BI Analyst, ML Engineer 등">📊 데이터 분석/과학자</div>
+        <div class="chip" data-f="cat:marketing" onclick="toggleChip(this)" title="Digital Marketing, SEO/SEM, Growth, Brand, Content, CRM, Performance Marketing 등">📣 마케팅/퍼포먼스</div>
+        <div class="chip" data-f="cat:dev" onclick="toggleChip(this)" title="Software Engineer, Backend/Frontend Developer, DevOps, Cloud Architect, Full Stack 등">💻 개발/엔지니어링</div>
+        <div class="chip" data-f="cat:hr" onclick="toggleChip(this)" title="HR Manager, Talent Acquisition, Recruiter, People Operations, HRIS, Payroll 등">🤝 HR/리쿠르터</div>
         <div class="chip" data-f="cat:finance" onclick="toggleChip(this)" title="Finance Manager, Accountant, Audit, Tax, Investment, Risk, Compliance, Treasury 등">💰 금융</div>
         <div class="chip" data-f="cat:management" onclick="toggleChip(this)" title="Project Manager, Product Manager, Strategy, Business Analyst, Director, Consulting 등">🏢 경영/전략</div>
-        <div class="chip" data-f="cat:ops" onclick="toggleChip(this)" title="Operations Manager, Logistics, Supply Chain, Warehouse, Procurement, Inventory, Transport 등">🚛 운영/물류</div>
+        <div class="chip" data-f="cat:ops" onclick="toggleChip(this)" title="Operations Manager, Logistics, Supply Chain, Warehouse, Procurement, Inventory, Transport 등">🚛 운영/물류·SCM</div>
       </div>
       <div class="filter-row">
         <span class="f-lbl">📊</span>
@@ -1635,7 +1635,7 @@ const CAT_KEYWORDS = {
   data:       ['data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst','ml engineer','machine learning','データ'],
   marketing:  ['marketing','seo','sem','growth','brand','content','campaign','digital marketing','performance marketing','crm'],
   dev:        ['engineer','developer','backend','frontend','software','fullstack','devops','cloud','architect','programmer','coding'],
-  hr:         ['hr','human resources','talent','recruitment','recruiter','people','hris','payroll','compensation'],
+  hr:         [' hr ','hr manager','hr director','hr business','human resources','talent acquisition','talent management','recruiter','recruiting','recruitment manager','people operations','people partner','hris','payroll','compensation & benefits'],
   finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','analyst','risk','compliance'],
   management: ['manager','director','strategy','operations','product manager','project manager','consulting','business analyst','chief'],
   ops:        ['operations','logistics','supply chain','warehouse','almacén','almacen','logística','logistica','procurement','inventory','fulfillment','dispatch','transport','shipping','freight','import','export','customs','planning','demand planning','distribution'],
@@ -1673,7 +1673,11 @@ function filterJobs() {
     if (selectedCats.length > 0) {
       const titleLower = (j.title||'').toLowerCase();
       const matched = selectedCats.some(cat =>
-        (CAT_KEYWORDS[cat]||[]).some(kw => titleLower.includes(kw))
+        (CAT_KEYWORDS[cat]||[]).some(kw => {
+          // 공백 포함 키워드는 includes, 그 외엔 단어 경계 체크
+          if (kw.startsWith(' ') || kw.endsWith(' ')) return titleLower.includes(kw.trim()) && (new RegExp('\\b' + kw.trim() + '\\b')).test(titleLower);
+          return (new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b')).test(titleLower);
+        })
       );
       if (!matched) return false;
     }
@@ -3616,7 +3620,7 @@ function showTrendCountry(countryCode, tabEl) {
 //  SKILL MAP
 // ════════════════════════════════════════
 const SKILL_CATEGORIES = {
-  '데이터': {
+  '데이터 분석/과학자': {
     keywords: ['data', 'analyst', 'scientist', 'analytics', 'bi', 'intelligence', 'sql', 'databricks', 'snowflake', 'machine learning', 'deep learning',
       'pipeline', 'mlops', 'visualization', 'statistic'],
     radarLabels: ['SQL / DB','Python / R','시각화','ML / AI','클라우드','통계 / 수학'],
@@ -3651,7 +3655,7 @@ const SKILL_CATEGORIES = {
       { skill:'Looker', pct:33, note:'테크 스타트업 선호, BI 도구 다양화', hot:false },
     ]
   },
-  '마케팅': {
+  '마케팅/퍼포먼스': {
     keywords: ['marketing', 'seo', 'growth', 'brand', 'content', 'campaign', 'acquisition', 'crm', 'digital', 'performance', 'go-to-market', 'gtm strategy', 'conversion',
     'retention', 'funnel optimization', 'demand generation'],
     radarLabels: ['Performance / Growth','데이터 분석','CRM / MarTech','유료 광고 매체','콘텐츠 / 디자인','전략 / 운영'],
@@ -3685,7 +3689,7 @@ const SKILL_CATEGORIES = {
       { skill:'TikTok Ads', pct:32, note:'신규 채널, 빠르게 수요 증가 중', hot:true },
     ]
   },
-  '개발': {
+  '개발/엔지니어링': {
     keywords: ['engineer', 'developer', 'backend', 'frontend', 'software', 'fullstack', 'devops', 'cloud', 'architect', 'sre', 'distributed systems', 'microservices', 
     'scalability', 'agile', 'sdlc'],
     radarLabels: ['백엔드','프론트엔드','클라우드 / 인프라','DevOps / SRE','데이터베이스','AI / 신기술'],
@@ -3719,7 +3723,7 @@ const SKILL_CATEGORIES = {
       { skill:'LangChain / RAG', pct:29, note:'AI 기능 통합 역할 급증', hot:true },
     ]
   },
-  'HR': {
+  'HR/리쿠르터': {
     keywords: ['hr','talent','recruitment','people','hris','recruiter','compensation','payroll','human resources','people operations','labor law','employee engagement'],
     radarLabels: ['채용/ATS','HRIS / 테크','데이터 분석','C&B / 보상','조직문화','프로젝트 / 운영'],
     radarSkills: [
@@ -3752,7 +3756,7 @@ const SKILL_CATEGORIES = {
       { skill:'CIPD 자격증', pct:35, note:'영국 HR 취업 시 강력 우대', hot:false },
     ]
   },
-  '운영/물류': {
+  '운영/물류·SCM': {
     keywords: ['operations','logistics','supply chain','warehouse','procurement','inventory','fulfillment','transport','shipping','planning','distribution','almacen','logistica'],
     radarLabels: ['SCM / 물류','창고 / WMS','조달 / 구매','데이터 / ERP','프로젝트 관리','규정 / 무역'],
     radarSkills: [
@@ -3846,7 +3850,7 @@ function showSkillCat(cat) {
     const reloc = catJobs.filter(j=>j.relocation || j.visaSponsored).length;
     const remote = catJobs.filter(j=>j.remoteType==='Remote').length;
     const countryCount = new Set(catJobs.map(j=>j.country)).size;
-    const catCode = {'데이터':'data','마케팅':'marketing','개발':'dev','HR':'hr','운영/물류':'ops'}[cat] || '';
+    const catCode = {'데이터 분석/과학자':'data','마케팅/퍼포먼스':'marketing','개발/엔지니어링':'dev','HR/리쿠르터':'hr','운영/물류·SCM':'ops'}[cat] || '';
     const statEl = document.getElementById('skillmap-stats');
     statEl.innerHTML = `
       <div class="stat" style="cursor:pointer" title="${cat} 공고 보기" onclick="navWithFilter('jobs',['cat:${catCode}'])" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
@@ -4006,8 +4010,8 @@ function showSkillCat(cat) {
 
   // 업계 기준 국가 분포 (직종별)
   const BASE_COUNTRY = {
-    '데이터': {GB:120,NL:95,DE:88,ES:62,FR:55,IE:40,PT:28,BE:24,CH:20,IT:18},
-    '마케팅': {ES:140,GB:110,DE:75,NL:68,FR:60,PT:45,IT:35,BE:25,IE:22,CH:18},
+    '데이터 분석/과학자': {GB:120,NL:95,DE:88,ES:62,FR:55,IE:40,PT:28,BE:24,CH:20,IT:18},
+    '마케팅/퍼포먼스': {ES:140,GB:110,DE:75,NL:68,FR:60,PT:45,IT:35,BE:25,IE:22,CH:18},
     '개발':   {DE:155,NL:130,GB:125,ES:90,FR:72,IE:55,PT:42,BE:38,CH:32,AT:25},
     'HR':     {GB:135,NL:100,DE:85,ES:70,BE:45,IE:38,FR:35,CH:28,PT:22,AT:18},
   };
