@@ -21,7 +21,7 @@ const COUNTRIES = [
   { code: 'ie', name: 'Ireland',        flag: '🇮🇪' },
 ];
  
-const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer'];
+const DATA_KEYWORDS = ['data analyst', 'data scientist', 'data engineer', 'bi analyst', 'data steward', 'data governance', 'data quality', 'analytics engineer', 'business intelligence'];
 const MAJOR_COUNTRIES = ['gb', 'de', 'es', 'nl', 'fr'];
 // 운영/물류 키워드 — 확장된 국가 대상
 const OPS_KEYWORDS = ['logistics manager', 'supply chain manager', 'warehouse manager', 'operations manager', 'procurement manager', 'inventory manager'];
