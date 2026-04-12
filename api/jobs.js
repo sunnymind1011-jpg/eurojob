@@ -165,12 +165,8 @@ function normalizeAdzuna(raw, countryCode) {
       const sym = cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '€';
       return `${sym}${mn}–${mx}/hr`;
     }
-    // PLN → EUR 환산 (1 PLN ≈ 0.23 EUR) — Adzuna는 항상 연봉 단위로 전달
-    if (cur === 'PLN') {
-      const eurMin = Math.round(mn * 0.23 / 1000) * 1000;
-      const eurMax = Math.round(mx * 0.23 / 1000) * 1000;
-      return `€${eurMin.toLocaleString()}–${eurMax.toLocaleString()}/yr`;
-    }
+    // PLN — 환산 오탐 많아서 표시 안 함
+    if (cur === 'PLN') return null;
     // USD → EUR 환산 (1 USD ≈ 0.92 EUR)
     if (cur === 'USD') {
       const eurMin = Math.round(mn * 0.92 / 1000) * 1000;
