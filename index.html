@@ -2809,21 +2809,39 @@ function analyzeJD() {
   const titleLine = lines[0] || '';
 
   // 3. 급여 추출 (GMV/ARR/revenue 등 회사 지표 제외)
+  // 3. 급여 추출 (복지/수당 문맥 + GMV/ARR 등 회사 지표 제외)
   function extractSalary(text) {
-    // 회사 매출/거래액 관련 문맥 제거
-    const cleaned = text.replace(/(gmv|arr|revenue|funding|valuation|annual recurring|gross merchandise|raised|series [a-z]|mrr|budget|investment|market cap).{0,80}/gi, ' ');
-    // 연봉/월급 명시된 패턴 우선
-    const withPeriod = cleaned.match(/[€£$][\d,]+(?:\.?\d+)?k?\s*(?:[-–]\s*[€£$]?[\d,]+(?:\.?\d+)?k?)?\s*(?:\/|per)\s*(?:year|yr|annum|month|mo)/i);
-    if (withPeriod) return withPeriod[0].trim();
-    // 범위 패턴 (예: €40,000–45,000)
-    const range = cleaned.match(/[€£$][\d,]{4,}\s*[-–]\s*[€£$]?[\d,]{4,}/);
+    // 복지/수당/보너스 문맥 제거 (stipend, allowance, wellness, bonus 등)
+    const cleaned = text
+      .replace(/(stipend|allowance|wellness|reimbursement|bonus|perks?|benefit|subsid[yi]).{0,100}/gi, ' ')
+      .replace(/(gmv|arr|revenue|funding|valuation|annual recurring|gross merchandise|raised|series [a-z]|mrr|budget|investment|market cap).{0,80}/gi, ' ');
+    // 연봉 명시된 패턴 우선 (연 단위만: year/yr/annum)
+    const withYear = cleaned.match(/[€£$][\d,]+(?:\.?\d+)?k?\s*(?:[-–]\s*[€£$]?[\d,]+(?:\.?\d+)?k?)?\s*(?:\/|per)\s*(?:year|yr|annum)/i);
+    if (withYear) return withYear[0].trim();
+    // 범위 패턴 최소 5자리 이상 (€10,000–)
+    const range = cleaned.match(/[€£$][\d,]{5,}\s*[-–]\s*[€£$]?[\d,]{5,}/);
     if (range) return range[0].trim();
-    // 단독 금액은 최소 4자리 이상만 (€40,000 이상)
-    const single = cleaned.match(/[€£$][\d]{4,}(?:,\d{3})*/);
+    // 단독 금액 최소 5자리 이상
+    const single = cleaned.match(/[€£$][\d]{5,}(?:,\d{3})*/);
     if (single) return single[0].trim();
     return null;
   }
   const salary = extractSalary(jd) || '미공개';
+
+  // 3-1. 직급 레벨 감지
+  function extractLevel(text) {
+    const t = text.slice(0, 400);
+    if (/\b(vp|vice president|c-level|cmo|cto|ceo|chief)\b/i.test(t)) return 'Director/VP';
+    if (/\b(director)\b/i.test(t)) return 'Director/VP';
+    if (/\b(lead|principal|head of|staff engineer)\b/i.test(t)) return 'Lead/Principal';
+    if (/\b(senior|sr\.?)\b/i.test(t)) return 'Senior';
+    if (/\b(mid.?level|mid.?senior)\b/i.test(t)) return 'Mid-level';
+    if (/\b(junior|jr\.?)\b/i.test(t)) return 'Junior';
+    if (/\b(intern|entry.?level|graduate|trainee)\b/i.test(t)) return 'Entry/Intern';
+    if (/\b(manager)\b/i.test(t)) return 'Mid-level';
+    return null;
+  }
+  const level = extractLevel(jd);
 
   
 
@@ -2878,6 +2896,7 @@ const foundSkills = skillKeywords.filter(sk => {
     <h3>📋 핵심 정보</h3>
     <div class="visa-table">
       <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
+      ${level ? `<div class="visa-row"><span style="color:var(--text2)">직급 레벨</span><span>${level === 'Director/VP' ? '⭐ Director/VP' : level === 'Lead/Principal' ? '🔴 Lead/Principal' : level === 'Senior' ? '🟠 Senior' : level === 'Mid-level' ? '🟡 Mid-level' : level === 'Junior' ? '🔵 Junior' : '🌱 ' + level}</span></div>` : ''}
       <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span style="color:${remote==='Unknown'?'var(--text3)':'var(--text)'}">${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':remote==='On-site'?'🏢 출근':'❓ 확인 필요 (언급 없음)'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':timezoneRestricted?'#f5a623':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':timezoneRestricted?'⚠️ 지역제한 원격 (현지 거주 권장)':'정보 없음'}</span></div>
