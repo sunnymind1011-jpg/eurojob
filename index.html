@@ -1641,17 +1641,6 @@ function updateHomeStats() {
 }
 
 // 직종 키워드 매핑
-// CAT_KEYWORDS 정규식 미리 컴파일 (필터링 성능 개선)
-let _CAT_REGEX_CACHE = null;
-function getCatRegex() {
-  if (_CAT_REGEX_CACHE) return _CAT_REGEX_CACHE;
-  _CAT_REGEX_CACHE = {};
-  for (const [cat, kws] of Object.entries(CAT_KEYWORDS)) {
-    _CAT_REGEX_CACHE[cat] = kws.map(kw => new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i'));
-  }
-  return _CAT_REGEX_CACHE;
-}
-
 const CAT_KEYWORDS = {
   data:       [
     'data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst',
@@ -1748,6 +1737,17 @@ const CAT_KEYWORDS = {
     'logística','almacén','aprovisionamiento','cadena de suministro',
   ],
 };
+
+// CAT_KEYWORDS 정규식 미리 컴파일 (CAT_KEYWORDS 선언 후에 위치해야 함)
+let _CAT_REGEX_CACHE = null;
+function getCatRegex() {
+  if (_CAT_REGEX_CACHE) return _CAT_REGEX_CACHE;
+  _CAT_REGEX_CACHE = {};
+  for (const [cat, kws] of Object.entries(CAT_KEYWORDS)) {
+    _CAT_REGEX_CACHE[cat] = kws.map(kw => new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i'));
+  }
+  return _CAT_REGEX_CACHE;
+}
 
 function filterJobs() {
   const q = document.getElementById('searchInput').value.toLowerCase();
