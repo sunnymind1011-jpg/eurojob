@@ -160,13 +160,10 @@ function normalizeAdzuna(raw, countryCode) {
     const mn = raw.salary_min, mx = raw.salary_max;
     if (!mn || !mx) return null;
     const cur = (raw.currency || 'EUR').toUpperCase();
-    // 시급 감지: 값이 매우 작으면 (500 미만) 시급으로 간주 — 표시만 하고 연봉 변환 안 함
-    if (mn < 500) {
-      const sym = cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '€';
-      return `${sym}${mn}–${mx}/hr`;
-    }
     // PLN — 환산 오탐 많아서 표시 안 함
     if (cur === 'PLN') return null;
+    // 연봉으로 보기에 너무 작은 값 (10,000 미만) — 시급/일당/월급 오탐 방지
+    if (mn < 10000) return null;
     // USD → EUR 환산 (1 USD ≈ 0.92 EUR)
     if (cur === 'USD') {
       const eurMin = Math.round(mn * 0.92 / 1000) * 1000;
