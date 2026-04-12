@@ -1642,13 +1642,86 @@ function updateHomeStats() {
 
 // 직종 키워드 매핑
 const CAT_KEYWORDS = {
-  data:       ['data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst','ml engineer','machine learning','データ'],
-  marketing:  ['marketing','seo','sem','growth','brand','content','campaign','digital marketing','performance marketing','crm'],
-  dev:        ['engineer','developer','backend','frontend','software','fullstack','devops','cloud','architect','programmer','coding'],
-  hr:         [' hr ','hr manager','hr director','hr business','human resources','talent acquisition','talent management','recruiter','recruiting','recruitment manager','people operations','people partner','hris','payroll','compensation & benefits'],
+  data:       [
+    'data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst',
+    'ml engineer','machine learning','データ',
+    // DE
+    'datenanalyst','dateningenieur','datenwissenschaft',
+    // FR
+    'analyste de données','ingénieur données','science des données',
+    // ES
+    'analista de datos','ingeniero de datos','científico de datos',
+    // NL
+    'data analist','data ingenieur',
+  ],
+  marketing:  [
+    'marketing','seo','sem','growth','brand','content','campaign','digital marketing',
+    'performance marketing','crm','social media','paid media','growth hacker',
+    'acquisition','retention','email marketing','affiliate','influencer',
+    'demand generation','marketing manager','marketing specialist','marketing coordinator',
+    // DE
+    'marketingmanager','marketingspezialist','marketingkoordinator','werbung',
+    // FR
+    'responsable marketing','chargé de marketing','chef de produit','marketing digital',
+    'community manager','gestionnaire de contenu',
+    // ES
+    'responsable de marketing','especialista en marketing','marketing digital',
+    'gestor de redes sociales','marketing de contenidos','publicidad',
+    // NL
+    'marketingmanager','marketingspecialist','online marketing',
+  ],
+  dev:        [
+    'engineer','developer','backend','frontend','software','fullstack','devops',
+    'cloud','architect','programmer','coding','développeur','entwickler',
+    'ingeniero','programador','développeuse',
+    // DE
+    'softwareentwickler','webentwickler','anwendungsentwickler',
+    // FR
+    'développeur','ingénieur logiciel',
+    // ES
+    'desarrollador','ingeniero de software',
+    // NL
+    'ontwikkelaar','softwareontwikkelaar',
+  ],
+  hr:         [
+    // EN
+    'hr','hr manager','hr director','hr business partner','hr generalist','hr specialist',
+    'hr officer','hr advisor','hr coordinator','human resources','talent acquisition',
+    'talent management','recruiter','recruiting','recruitment','headhunter',
+    'people operations','people partner','people manager','hris','payroll',
+    'compensation','benefits','employee relations','labor relations','workforce',
+    'onboarding','employer branding','organizational development',
+    // DE
+    'personalreferent','personalleiter','personalmanager','personalabteilung',
+    'personalwesen','personalbeschaffung','hr-manager','hr-referent',
+    'bewerbermanagement','mitarbeiterbetreuung','lohnbuchhaltung',
+    // FR
+    'ressources humaines','chargé de recrutement','responsable rh',
+    'gestionnaire rh','drh','recrutement','chargé rh','business partner rh',
+    // ES
+    'recursos humanos','rrhh','selección de personal','reclutamiento',
+    'técnico de rrhh','responsable de rrhh','business partner de rrhh',
+    // NL
+    'personeelszaken','hrm','werving en selectie','hr-medewerker','recruiter',
+    // IT
+    'risorse umane','selezione del personale','responsabile hr',
+    // PL
+    'zasoby ludzkie','rekrutacja','specjalista hr',
+  ],
   finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','analyst','risk','compliance'],
   management: ['manager','director','strategy','operations','product manager','project manager','consulting','business analyst','chief'],
-  ops:        ['operations','logistics','supply chain','warehouse','almacén','almacen','logística','logistica','procurement','inventory','fulfillment','dispatch','transport','shipping','freight','import','export','customs','planning','demand planning','distribution'],
+  ops:        [
+    'operations','logistics','supply chain','warehouse','almacén','almacen',
+    'logística','logistica','procurement','inventory','fulfillment','dispatch',
+    'transport','shipping','freight','import','export','customs','planning',
+    'demand planning','distribution',
+    // DE
+    'logistik','lagerleiter','lagerverwaltung','einkauf','beschaffung',
+    // FR
+    'logistique','gestion des stocks','approvisionnement','entrepôt',
+    // ES
+    'logística','almacén','aprovisionamiento','cadena de suministro',
+  ],
 };
 
 function filterJobs() {
