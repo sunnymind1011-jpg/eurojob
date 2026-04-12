@@ -159,6 +159,8 @@ function normalizeAdzuna(raw, countryCode) {
   const salary = (() => {
     const mn = raw.salary_min, mx = raw.salary_max;
     if (!mn || !mx) return null;
+    // 폴란드 공고는 currency 무관하게 급여 표시 안 함 (오탐 많음)
+    if (countryCode === 'pl') return null;
     const cur = (raw.currency || 'EUR').toUpperCase();
     // PLN — 환산 오탐 많아서 표시 안 함
     if (cur === 'PLN') return null;
