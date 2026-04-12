@@ -610,7 +610,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
 </div>
 
   <!-- CONTENT -->
-  <button id="topBtn" onclick="document.getElementById('mainContent').scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});" title="맨 위로">↑</button>
+  <button id="topBtn" onclick="document.getElementById('mainContent').scrollTo({top:0,behavior:'instant'});window.scrollTo({top:0,behavior:'instant'});" title="맨 위로">↑</button>
   <div class="content" id="mainContent">
 
     <!-- ★ HOME ──────────────────────────────────────── -->
@@ -647,10 +647,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
       <div class="sec-hd" style="margin-bottom:16px">
         <div><div class="sec-title">💼 채용공고</div><div class="sec-sub" id="jobs-sub">공고를 불러오세요</div></div>
         <div style="display:flex;align-items:center;gap:8px">
-          <select id="sortBy" onchange="filterJobs()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:inherit;font-size:12px;padding:5px 10px;border-radius:6px;outline:none;">
-            <option value="date">최신순</option>
-            <option value="remote">원격 우선</option>
-          </select>
+
           <button id="clearFiltersBtn" onclick="clearAllFilters()" style="display:none;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;border:1px solid rgba(240,100,100,.35);background:rgba(240,100,100,.08);color:#f06464;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='rgba(240,100,100,.16)'" onmouseout="this.style.background='rgba(240,100,100,.08)'">
             ✕ 필터 해제
           </button>
@@ -1646,7 +1643,7 @@ const CAT_KEYWORDS = {
 
 function filterJobs() {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const sort = document.getElementById('sortBy').value;
+  const sort = 'date';
   const selectedCountries = [...activeFilters]
     .filter(f => f.startsWith('country:'))
     .map(f => f.split(':')[1]);
