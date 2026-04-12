@@ -332,9 +332,8 @@ function fetchHimalayasCountry(country, code) {
               if (hasEu) return true;
               return !keys.every(k => NON_EU_HM.some(n => k.includes(n)));
             })
-           console.log('HM sample job keys:', Object.keys(data.jobs[0] || {}));
-           console.log('HM company raw:', JSON.stringify(data.jobs[0]?.company));
             .map(j => {
+              if (Math.random() < 0.1) console.log('HM job sample:', JSON.stringify({ company: j.company, companyName: j.companyName, organization: j.organization, keys: Object.keys(j) }));
               // 1. 공고마다 절대 겹치지 않도록 제목, 회사명, 랜덤 숫자를 조합해서 새 ID를 만듭니다.
               const uniqueId = `${j.title}-${j.company?.name}-${Math.random().toString(36).slice(2, 9)}`;
               const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_'); 
