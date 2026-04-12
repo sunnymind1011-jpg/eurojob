@@ -1697,12 +1697,13 @@ function renderSaved() {
     // trackerJobs에서 기본 정보로 fallback 카드
     const tk = trackerJobs.find(j => j.job_id === id);
     if (tk) savedJobs.push({
-      id: tk.job_id, title: tk.job_title, company: tk.job_company,
-      url: tk.job_url, country: tk.job_country || 'EU',
+      id: tk.job_id, title: tk.job_title || '제목 없음', company: tk.job_company || '',
+      url: tk.job_url || '#', country: tk.job_country || 'EU',
       flag: tk.job_flag || '🌍', logo: '🏢', description: '',
       salary: null, postedAt: tk.saved_at || new Date().toISOString(),
       source: tk.job_source || '', skills: [], visaSponsored: false,
-      relocation: false, remoteType: 'Unknown', languageReqs: [],
+      relocation: false, remoteType: '', languageReqs: [],
+      _isOffline: true, // allJobs에 없는 오래된 공고 표시
     });
   }
   const sub = document.getElementById('saved-sub');
@@ -1714,7 +1715,7 @@ function renderSaved() {
 
 function buildCard(j, showFeat) {
   const saved = savedIds.has(j.id);
-  const remIcon = j.remoteType==='Remote'?'🏠':j.remoteType==='Hybrid'?'🏗️':'🏢';
+  const remIcon = j.remoteType==='Remote'?'🏠':j.remoteType==='Hybrid'?'🏗️':j.remoteType==='On-site'?'🏢':'';
   const isNew = (Date.now()-new Date(j.postedAt))<48*3600000;
   const skills = (j.skills||[]).slice(0,4);
   return `
@@ -1731,12 +1732,12 @@ function buildCard(j, showFeat) {
     </div>
     <div class="jc-meta">
       <span class="badge b-green">${j.flag} ${countryName(j.country)}</span>
-      <span class="badge b-blue">${remIcon} ${j.remoteType}</span>
+      ${remIcon && j.remoteType ? `<span class="badge b-blue">${remIcon} ${j.remoteType}</span>` : ''}
       ${j.visaSponsored?'<span class="badge b-blue">🛂 비자 스폰서</span>':''}
       ${j.source==='VisaSponsor'&&j.visaType?`<span class="badge" style="background:rgba(255,69,0,.1);color:#ff6b35;border:1px solid rgba(255,69,0,.25)">✅ ${j.visaType}</span>`:''}
       ${j.relocation?'<span class="badge b-purple">🚀 Relocation</span>':''}
       ${j.level?`<span class="badge b-gray">📊 ${j.level}</span>`:''}
-      <span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>
+      ${j.languageReqs&&j.languageReqs[0]?`<span class="badge b-warn">🌐 ${j.languageReqs[0]}</span>`:''}
       
     </div>
     
@@ -1801,7 +1802,26 @@ function useJobForCoverLetter(id) {
 }
 
 function openDrawer(id) {
-  const j = allJobs.find(x=>x.id===id); if (!j) return;
+  // allJobs에 없는 오래된 공고 (저장목록 fallback)
+  const offline = trackerJobs.find(x => x.job_id === id);
+  const j = allJobs.find(x=>x.id===id);
+  if (!j) {
+    if (!offline) return;
+    // 간단한 드로어 표시
+    document.getElementById('drawerContent').innerHTML = `
+      <div style="font-size:28px;margin-bottom:2px">🏢</div>
+      <h2>${offline.job_title || '공고 정보'}</h2>
+      <div class="drawer-co">${offline.job_company || ''}</div>
+      <div style="margin:16px 0;padding:14px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text2);line-height:1.8">
+        ⚠️ 이 공고는 현재 수집 목록에 없어요.<br>공고가 마감됐거나 수집 주기가 지났을 수 있어요.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="${offline.job_url||'#'}" target="_blank" class="btn btn-primary btn-sm">원문 공고 확인 →</a>
+        <button class="btn btn-ghost btn-sm" id="drawer-save-${offline.job_id}" onclick="toggleSaveFromDrawer('${offline.job_id}',this)" style="color:var(--warn)">♥ 저장 취소</button>
+      </div>`;
+    document.getElementById('drawerOv').classList.add('show');
+    return;
+  }
   const remIcon = j.remoteType==='Remote'?'🏠':j.remoteType==='Hybrid'?'🏗️':'🏢';
   document.getElementById('drawerContent').innerHTML = `
     <div style="font-size:28px;margin-bottom:2px">${j.logo}</div>
