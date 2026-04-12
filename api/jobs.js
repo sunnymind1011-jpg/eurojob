@@ -30,6 +30,14 @@ const OPS_COUNTRIES = ['es', 'de', 'nl', 'gb', 'fr'];
 // 경영/전략 키워드
 const MGMT_KEYWORDS = ['business development', 'project manager'];
 const MGMT_COUNTRIES = ['es', 'de', 'nl', 'gb'];
+
+// HR 키워드
+const HR_KEYWORDS = ['hr manager', 'human resources', 'talent acquisition', 'recruiter', 'people operations'];
+const HR_COUNTRIES = ['gb', 'de', 'nl', 'es', 'fr'];
+
+// 마케팅 키워드
+const MARKETING_KEYWORDS = ['marketing manager', 'digital marketing', 'performance marketing', 'growth marketing', 'marketing specialist'];
+const MARKETING_COUNTRIES = ['gb', 'de', 'nl', 'es', 'fr'];
  
 const CATEGORIES = [
   { tag: 'it-jobs',                       label: 'IT / 개발 / 데이터' },
@@ -631,6 +639,12 @@ export default async function handler(req, res) {
       ),
       ...MGMT_COUNTRIES.flatMap(country =>
         MGMT_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
+      ),
+      ...HR_COUNTRIES.flatMap(country =>
+        HR_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
+      ),
+      ...MARKETING_COUNTRIES.flatMap(country =>
+        MARKETING_KEYWORDS.map(kw => () => fetchAdzunaKeyword(country, kw))
       ),
     ];
  
