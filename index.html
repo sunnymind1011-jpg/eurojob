@@ -486,11 +486,11 @@ textarea::placeholder{color:var(--text3);}
   const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('lp-on');}),{threshold:0.12});
   document.querySelectorAll('.lp-reveal').forEach(el=>obs.observe(el));
 
-  document.getElementById('mainContent').addEventListener('scroll', function(){
-  const btn = document.getElementById('topBtn');
-  if (this.scrollTop > 300) btn.classList.add('show');
-  else btn.classList.remove('show');
-}, {passive:true});
+  const _mc = document.getElementById('mainContent');
+  if (_mc) _mc.addEventListener('scroll', function(){
+    const btn = document.getElementById('topBtn');
+    if (btn) { if (this.scrollTop > 300) btn.classList.add('show'); else btn.classList.remove('show'); }
+  }, {passive:true});
 window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');if(h)h.style.opacity=window.scrollY>80?'0':'1';},{passive:true});
 })();
 </script>
