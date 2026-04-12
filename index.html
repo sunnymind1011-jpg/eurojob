@@ -1643,16 +1643,25 @@ function updateHomeStats() {
 // 직종 키워드 매핑
 const CAT_KEYWORDS = {
   data:       [
-    'data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst',
-    'ml engineer','machine learning','データ',
+    // EN — 코어
+    'data analyst','data scientist','data engineer','analytics engineer',
+    'business intelligence','bi analyst','bi developer','bi engineer',
+    'ml engineer','machine learning','deep learning','nlp engineer',
+    'ai engineer','artificial intelligence','llm','generative ai',
+    'data steward','data governance','data quality','data architect',
+    'data manager','data specialist','data consultant','data strategist',
+    'analytics','reporting analyst','insights analyst','quantitative analyst',
     // DE
-    'datenanalyst','dateningenieur','datenwissenschaft',
+    'datenanalyst','dateningenieur','datenwissenschaftler','datenwissenschaft',
+    'datenarchitekt','ki-ingenieur','maschinelles lernen',
     // FR
     'analyste de données','ingénieur données','science des données',
+    'analyste bi','ingénieur machine learning','ingénieur ia',
     // ES
     'analista de datos','ingeniero de datos','científico de datos',
+    'analista bi','ingeniero de machine learning','inteligencia artificial',
     // NL
-    'data analist','data ingenieur',
+    'data analist','data ingenieur','data wetenschapper','bi analist',
   ],
   marketing:  [
     'marketing','seo','sem','growth','brand','content','campaign','digital marketing',
@@ -1671,15 +1680,18 @@ const CAT_KEYWORDS = {
     'marketingmanager','marketingspecialist','online marketing',
   ],
   dev:        [
-    'engineer','developer','backend','frontend','software','fullstack','devops',
-    'cloud','architect','programmer','coding','développeur','entwickler',
-    'ingeniero','programador','développeuse',
+    // 'engineer' 단독 제거 — data/ml engineer 오탐 방지
+    'software engineer','backend engineer','frontend engineer','platform engineer',
+    'infrastructure engineer','security engineer','network engineer','site reliability',
+    'developer','backend','frontend','software developer','fullstack','devops',
+    'cloud engineer','cloud developer','architect','programmer','coding',
+    'développeur','entwickler','programador','développeuse',
     // DE
     'softwareentwickler','webentwickler','anwendungsentwickler',
     // FR
-    'développeur','ingénieur logiciel',
+    'développeur','ingénieur logiciel','ingénieur développement',
     // ES
-    'desarrollador','ingeniero de software',
+    'desarrollador','ingeniero de software','desarrollador de software',
     // NL
     'ontwikkelaar','softwareontwikkelaar',
   ],
@@ -1708,7 +1720,7 @@ const CAT_KEYWORDS = {
     // PL
     'zasoby ludzkie','rekrutacja','specjalista hr',
   ],
-  finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','analyst','risk','compliance'],
+  finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','financial analyst','risk analyst','compliance analyst','risk','compliance','controller','actuary','fund manager','portfolio manager'],
   management: [
     // 구체적 직함만 — 'manager' 단독 제거로 HR/마케팅 오탐 방지
     'product manager','project manager','program manager','general manager',
