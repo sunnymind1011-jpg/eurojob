@@ -3969,9 +3969,12 @@ function selectSkillCat(cat, el) {
 function showSkillCat(cat) {
   const { keywords, radarLabels, radarSkills, radarBaseline, color, insights, top10 } = SKILL_CATEGORIES[cat];
 
-  const catJobs = allJobs.filter(j =>
-    keywords.some(k => j.title.toLowerCase().includes(k))
-  );
+  // 채용공고 필터와 동일한 기준 (CAT_KEYWORDS + 단어경계 매칭)
+  const catCode = {'데이터 분석/과학자':'data','마케팅/퍼포먼스':'marketing','개발/엔지니어링':'dev','HR/리쿠르터':'hr','운영/물류·SCM':'ops'}[cat] || '';
+  const catJobs = allJobs.filter(j => {
+    const titleLower = (j.title||'').toLowerCase();
+    return (getCatRegex()[catCode]||[]).some(rx => rx.test(titleLower));
+  });
   const jobCount = catJobs.length;
   const hasJobs = jobCount > 0;
 
