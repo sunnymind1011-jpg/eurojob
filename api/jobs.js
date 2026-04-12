@@ -81,14 +81,28 @@ function detectRemote(t) {
 }
  
 function detectLevel(title, desc) {
-  const t = (title + ' ' + desc).toLowerCase();
-  if (/\bdirector\b|\bvp\b|\bvice president\b|\bhead of\b/i.test(t)) return 'Director';
-  if (/\blead\b|\bprincipal\b|\bstaff\b/i.test(t)) return 'Lead';
-  if (/\bsenior\b|\bsr\.\b|\bsr\b/i.test(t)) return 'Senior';
-  if (/\bjunior\b|\bjr\.\b|\bjr\b/i.test(t)) return 'Junior';
-  if (/\bentry.level\b|\bgraduate\b|\binternship\b|\bintern\b|\btraineee?\b/i.test(t)) return 'Entry';
-  if (/\bassociate\b/i.test(t)) return 'Associate';
-  if (/\bmid.level\b|\bmedior\b|\bmid level\b|\bintermediate\b/i.test(t)) return 'Mid';
+  // title만 우선 체크 — desc 전체 스캔하면 오탐 많음
+  const ti = title.toLowerCase();
+  if (/\bsenior\b|\bsr\.\b|\bsr\b/i.test(ti)) return 'Senior'; // Senior Manager 등 → Senior 우선
+  if (/\bdirector\b|\bvp\b|\bvice president\b/i.test(ti)) return 'Director';
+  if (/\bhead of\b/i.test(ti)) return 'Director';
+  if (/\blead\b|\bprincipal\b|\bstaff\b/i.test(ti)) return 'Lead';
+  if (/\bjunior\b|\bjr\.\b|\bjr\b/i.test(ti)) return 'Junior';
+  if (/\bentry.level\b|\binternship\b|\bintern\b|\btraineee?\b/i.test(ti)) return 'Entry';
+  if (/\bassociate\b/i.test(ti)) return 'Associate';
+  if (/\bmid.level\b|\bmedior\b|\bintermediate\b/i.test(ti)) return 'Mid';
+  // title에서 못 찾으면 desc의 'experience level' 섹션만 제한 확인
+  const expMatch = desc.match(/experience level[\s\S]{0,30}(senior|director|lead|junior|mid|entry|associate)/i);
+  if (expMatch) {
+    const l = expMatch[1].toLowerCase();
+    if (l === 'senior') return 'Senior';
+    if (l === 'director') return 'Director';
+    if (l === 'lead') return 'Lead';
+    if (l === 'junior') return 'Junior';
+    if (l === 'mid') return 'Mid';
+    if (l === 'entry') return 'Entry';
+    if (l === 'associate') return 'Associate';
+  }
   return '';
 }
  
@@ -142,9 +156,34 @@ function normalizeAdzuna(raw, countryCode) {
   const info = COUNTRY_INFO[countryCode] || { name: countryCode, flag: '🌍', code: countryCode.toUpperCase() };
   const location = raw.location?.display_name || info.name;
   const desc = raw.description || '';
-  const salary = raw.salary_min && raw.salary_max
-    ? `${raw.currency || '€'}${Math.round(raw.salary_min).toLocaleString()}–${Math.round(raw.salary_max).toLocaleString()}/yr`
-    : null;
+  const salary = (() => {
+    const mn = raw.salary_min, mx = raw.salary_max;
+    if (!mn || !mx) return null;
+    const cur = (raw.currency || 'EUR').toUpperCase();
+    // 시급 감지: 값이 매우 작으면 (500 미만) 시급으로 간주 — 표시만 하고 연봉 변환 안 함
+    if (mn < 500) {
+      const sym = cur === 'GBP' ? '£' : cur === 'USD' ? '$' : '€';
+      return `${sym}${mn}–${mx}/hr`;
+    }
+    // PLN → EUR 환산 (1 PLN ≈ 0.23 EUR), 월급이면 ×12
+    if (cur === 'PLN') {
+      // Adzuna PLN은 월급 단위로 오는 경우가 많음 — 12000 PLN 이하면 월급으로 판단
+      const isMonthly = mx <= 30000;
+      const annualPLN = isMonthly ? mn * 12 : mn;
+      const annualPLNmax = isMonthly ? mx * 12 : mx;
+      const eurMin = Math.round(annualPLN * 0.23 / 1000) * 1000;
+      const eurMax = Math.round(annualPLNmax * 0.23 / 1000) * 1000;
+      return `€${eurMin.toLocaleString()}–${eurMax.toLocaleString()}/yr (PLN 환산)`;
+    }
+    // USD → EUR 환산 (1 USD ≈ 0.92 EUR)
+    if (cur === 'USD') {
+      const eurMin = Math.round(mn * 0.92 / 1000) * 1000;
+      const eurMax = Math.round(mx * 0.92 / 1000) * 1000;
+      return `€${eurMin.toLocaleString()}–${eurMax.toLocaleString()}/yr`;
+    }
+    const sym = cur === 'GBP' ? '£' : '€';
+    return `${sym}${Math.round(mn).toLocaleString()}–${Math.round(mx).toLocaleString()}/yr`;
+  })();
   return {
     id:           String(raw.id || Math.random()),
     title:        raw.title || '',
