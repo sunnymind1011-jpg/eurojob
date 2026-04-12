@@ -1565,7 +1565,13 @@ function detectWritingLang(d) {
 function detectLangs(d, countryCode, title = '', company = '') {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
-  if (writingLang !== 'English' && /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english|(cv|resume|application|cover letter).{0,20}(in english|english only|written in english)|english.*(cv|resume)|please (apply|send|submit).{0,30}english|(working|business|professional).{0,10}english/i.test(d)) l.push('English');
+  // 다국어로 표현된 영어 요건 감지 (A: 다국어 영어 키워드 + C: 작성 언어와 다른 언어 언급)
+  const englishInOtherLang = /(anglais|inglés|ingles|englisch|inglese|engels|engelska|angielski).{0,60}(professionnel|professionnel|requerido|erforderlich|richiesto|vereist|krävs|wymagany|courant|fluent|maîtrise|maîtriser|niveau|niveau|bilingue|proficiency|working|business)/i.test(d)
+    || /(maîtrise|maîtriser|courant|bilingue|nivel|niveau|kenntnisse|conoscenza|beheersing|beheersing).{0,40}(anglais|inglés|englisch|inglese|engels)/i.test(d);
+  if (writingLang !== 'English' && (
+    /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english|(cv|resume|application|cover letter).{0,20}(in english|english only|written in english)|english.*(cv|resume)|please (apply|send|submit).{0,30}english|(working|business|professional).{0,10}english/i.test(d)
+    || englishInOtherLang
+  )) l.push('English');
   if (writingLang !== 'Spanish' && /spanish.*(required|must|fluent)|fluent.*spanish/i.test(d)) l.push('Spanish');
   // 한국어 요구 키워드
   const koreanLang = /korean\s*(speaker|speaking|language|proficiency|fluency|native|required|preferred|is a (plus|must|bonus|asset))|fluent\s*in\s*korean|bilingual.*korean|korean.*bilingual|한국어|korean\s*and\s*english|english\s*and\s*korean/i;
@@ -2754,7 +2760,7 @@ function setLang(l, btn) { document.querySelectorAll('.lang-btn').forEach(b=>b.c
   { en: 'ERP', variants: ['erp', 'enterprise resource planning', 'dynamics 365', 'd365', 'business central'] },
   { en: 'Alteryx', variants: ['alteryx'] },
   { en: 'SAS', variants: ['sas analytics', 'sas programming', 'sas software'] },
-  { en: 'R', variants: ['r programming', 'rstudio', 'tidyverse', 'ggplot'] },
+  { en: 'R', variants: ['rstudio', 'r studio', 'tidyverse', 'ggplot'] }, // 단독 R은 아래 맥락 필터로 처리
   { en: 'Azure Data Factory', variants: ['azure data factory', 'adf'] },
   { en: 'Azure Synapse', variants: ['azure synapse', 'synapse analytics'] },
   { en: 'Apache Kafka', variants: ['kafka', 'apache kafka'] },
@@ -2829,6 +2835,14 @@ function analyzeJD() {
 const agencyContext = /specialise? in .{0,60}recruitment|proud to .{0,40}recruitment|speciali[sz]e in .{0,60}recruitment/i.test(jd);
 
 const foundSkills = skillKeywords.filter(sk => {
+  // R 스킬: 단독 \bR\b는 맥락 필요 (CRO, Manager 등 오탐 방지)
+  if (sk.en === 'R') {
+    // variants(rstudio, tidyverse 등)로 먼저 확인
+    const hasVariant = (sk.variants||[]).some(v => new RegExp('\\b'+v+'\\b','i').test(jd));
+    if (hasVariant) return true;
+    // 단독 R: 리스트 맥락(Python, R / R, Python / and R / R and)에서만 인정
+    return /python[,\s]+r\b|\br[,\s]+python|\band\s+r\b|\br\s+and\b|,\s*r[,\s]|[\(\[]r[,\s\)\]]/i.test(jd);
+  }
   // Recruitment는 HR 직무 맥락에서만 인정 (에이전시 소개 문구 제외)
   if (sk.en === 'Recruitment' || sk.en === 'Talent Acquisition') {
     if (agencyContext) {
