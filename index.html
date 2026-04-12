@@ -1566,8 +1566,8 @@ function detectLangs(d, countryCode, title = '', company = '') {
   const writingLang = detectWritingLang(d);
   const l = [writingLang];
   // 다국어로 표현된 영어 요건 감지 (A: 다국어 영어 키워드 + C: 작성 언어와 다른 언어 언급)
-  const englishInOtherLang = /(anglais|inglés|ingles|englisch|inglese|engels|engelska|angielski).{0,60}(professionnel|professionnel|requerido|erforderlich|richiesto|vereist|krävs|wymagany|courant|fluent|maîtrise|maîtriser|niveau|niveau|bilingue|proficiency|working|business)/i.test(d)
-    || /(maîtrise|maîtriser|courant|bilingue|nivel|niveau|kenntnisse|conoscenza|beheersing|beheersing).{0,40}(anglais|inglés|englisch|inglese|engels)/i.test(d);
+  const englishInOtherLang = /\b(anglais|ingl[eé]s|englisch|inglese|engels|engelska|angielski)\b.{0,60}(professionnel|requerido|erforderlich|richiesto|vereist|courant|fluent|ma[îi]trise|niveau|bilingue|proficiency|working|business)/i.test(d)
+    || /\b(ma[îi]trise|ma[îi]triser|courant|bilingue|nivel|niveau|kenntnisse|conoscenza|beheersing)\b.{0,40}\b(anglais|ingl[eé]s|englisch|inglese|engels)\b/i.test(d);
   if (writingLang !== 'English' && (
     /english.*(required|must|essential|fluent|only|preferred|working language|is a must)|fluent.*english|strong.*english|(cv|resume|application|cover letter).{0,20}(in english|english only|written in english)|english.*(cv|resume)|please (apply|send|submit).{0,30}english|(working|business|professional).{0,10}english/i.test(d)
     || englishInOtherLang
