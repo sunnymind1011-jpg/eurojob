@@ -1641,6 +1641,17 @@ function updateHomeStats() {
 }
 
 // 직종 키워드 매핑
+// CAT_KEYWORDS 정규식 미리 컴파일 (필터링 성능 개선)
+let _CAT_REGEX_CACHE = null;
+function getCatRegex() {
+  if (_CAT_REGEX_CACHE) return _CAT_REGEX_CACHE;
+  _CAT_REGEX_CACHE = {};
+  for (const [cat, kws] of Object.entries(CAT_KEYWORDS)) {
+    _CAT_REGEX_CACHE[cat] = kws.map(kw => new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i'));
+  }
+  return _CAT_REGEX_CACHE;
+}
+
 const CAT_KEYWORDS = {
   data:       [
     'data analyst','data scientist','data engineer','analytics','business intelligence','bi analyst',
@@ -1709,7 +1720,21 @@ const CAT_KEYWORDS = {
     'zasoby ludzkie','rekrutacja','specjalista hr',
   ],
   finance:    ['finance','financial','accounting','audit','tax','treasury','investment','banking','analyst','risk','compliance'],
-  management: ['manager','director','strategy','operations','product manager','project manager','consulting','business analyst','chief'],
+  management: [
+    // 구체적 직함만 — 'manager' 단독 제거로 HR/마케팅 오탐 방지
+    'product manager','project manager','program manager','general manager',
+    'country manager','account manager','category manager','brand manager',
+    'chief of staff','chief executive','chief operating','coo','ceo','cto','cmo',
+    'strategy','business analyst','business development','management consultant',
+    'consulting','strategy manager','corporate strategy','head of strategy',
+    'vp of','vice president','managing director',
+    // DE
+    'produktmanager','projektmanager','geschäftsführer','unternehmensberater',
+    // FR
+    'chef de projet','directeur général','responsable produit','consultant en stratégie',
+    // ES
+    'gerente de producto','gerente de proyecto','director general','consultor de estrategia',
+  ],
   ops:        [
     'operations','logistics','supply chain','warehouse','almacén','almacen',
     'logística','logistica','procurement','inventory','fulfillment','dispatch',
@@ -1756,11 +1781,7 @@ function filterJobs() {
     if (selectedCats.length > 0) {
       const titleLower = (j.title||'').toLowerCase();
       const matched = selectedCats.some(cat =>
-        (CAT_KEYWORDS[cat]||[]).some(kw => {
-          // 공백 포함 키워드는 includes, 그 외엔 단어 경계 체크
-          if (kw.startsWith(' ') || kw.endsWith(' ')) return titleLower.includes(kw.trim()) && (new RegExp('\\b' + kw.trim() + '\\b')).test(titleLower);
-          return (new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b')).test(titleLower);
-        })
+        (getCatRegex()[cat]||[]).some(rx => rx.test(titleLower))
       );
       if (!matched) return false;
     }
