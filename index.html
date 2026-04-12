@@ -3554,598 +3554,128 @@ async function toggleUserRole(userId, currentRole) {
 
 // ── 주간 리포트 생성 ─────────────────────────────────────
 function generateWeeklyReport() {
-  if (!allJobs || allJobs.length === 0) {
-    alert('채용공고를 먼저 불러와주세요!');
-    return;
-  }
+  if (!allJobs || allJobs.length === 0) { alert('채용공고를 먼저 불러와주세요!'); return; }
 
-  const now = new Date();
-  const oneWeekAgo = new Date(now - 7 * 24 * 3600 * 1000);
-  const twoWeeksAgo = new Date(now - 14 * 24 * 3600 * 1000);
+  var now = new Date();
+  var oneWeekAgo  = new Date(now - 7  * 24 * 3600 * 1000);
+  var twoWeeksAgo = new Date(now - 14 * 24 * 3600 * 1000);
+  var thisWeek = allJobs.filter(function(j){ return new Date(j.postedAt) >= oneWeekAgo; });
+  var lastWeek = allJobs.filter(function(j){ var d=new Date(j.postedAt); return d>=twoWeeksAgo && d<oneWeekAgo; });
 
-  const thisWeek = allJobs.filter(j => new Date(j.postedAt) >= oneWeekAgo);
-  const lastWeek = allJobs.filter(j => new Date(j.postedAt) >= twoWeeksAgo && new Date(j.postedAt) < oneWeekAgo);
-
-  // 국가별 집계
-  const countries = [
-    {code:'GB', flag:'🇬🇧', name:'영국'},
-    {code:'DE', flag:'🇩🇪', name:'독일'},
-    {code:'NL', flag:'🇳🇱', name:'네덜란드'},
-    {code:'ES', flag:'🇪🇸', name:'스페인'},
-    {code:'FR', flag:'🇫🇷', name:'프랑스'},
-    {code:'IE', flag:'🇮🇪', name:'아일랜드'},
-    {code:'IT', flag:'🇮🇹', name:'이탈리아'},
-    {code:'PT', flag:'🇵🇹', name:'포르투갈'},
+  var countries = [
+    {code:'GB',flag:'🇬🇧',name:'영국'},{code:'DE',flag:'🇩🇪',name:'독일'},
+    {code:'NL',flag:'🇳🇱',name:'네덜란드'},{code:'ES',flag:'🇪🇸',name:'스페인'},
+    {code:'FR',flag:'🇫🇷',name:'프랑스'},{code:'IE',flag:'🇮🇪',name:'아일랜드'},
+    {code:'IT',flag:'🇮🇹',name:'이탈리아'},{code:'PT',flag:'🇵🇹',name:'포르투갈'},
   ];
+  var countryStats = countries.map(function(c){ return Object.assign({},c,{
+    thisWeek: thisWeek.filter(function(j){return j.country===c.code;}).length,
+    lastWeek: lastWeek.filter(function(j){return j.country===c.code;}).length,
+  });}).filter(function(c){return c.thisWeek>0||c.lastWeek>0;}).sort(function(a,b){return b.thisWeek-a.thisWeek;});
 
-  const countryStats = countries.map(c => ({
-    ...c,
-    thisWeek: thisWeek.filter(j => j.country === c.code).length,
-    lastWeek: lastWeek.filter(j => j.country === c.code).length,
-  })).filter(c => c.thisWeek > 0 || c.lastWeek > 0)
-    .sort((a,b) => b.thisWeek - a.thisWeek);
-
-  // 직종별 집계 (CAT_KEYWORDS 기반)
-  const catDefs = [
-    {key:'data', name:'데이터/AI'},
-    {key:'dev', name:'개발/엔지니어링'},
-    {key:'marketing', name:'마케팅/퍼포먼스'},
-    {key:'hr', name:'HR/리쿠르터'},
-    {key:'ops', name:'운영/물류·SCM'},
-    {key:'management', name:'경영/전략'},
+  var catDefs = [
+    {key:'data',name:'데이터/AI'},{key:'dev',name:'개발/엔지니어링'},
+    {key:'marketing',name:'마케팅/퍼포먼스'},{key:'hr',name:'HR/리쿠르터'},
+    {key:'ops',name:'운영/물류·SCM'},{key:'management',name:'경영/전략'},
   ];
-  const regex = getCatRegex();
-  const catStats = catDefs.map(c => ({
-    ...c,
-    thisWeek: thisWeek.filter(j => (regex[c.key]||[]).some(rx => rx.test((j.title||'').toLowerCase()))).length,
-    lastWeek: lastWeek.filter(j => (regex[c.key]||[]).some(rx => rx.test((j.title||'').toLowerCase()))).length,
-  })).sort((a,b) => b.thisWeek - a.thisWeek);
+  var regex = getCatRegex();
+  var catStats = catDefs.map(function(c){ return Object.assign({},c,{
+    thisWeek: thisWeek.filter(function(j){return (regex[c.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length,
+    lastWeek: lastWeek.filter(function(j){return (regex[c.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length,
+  });}).sort(function(a,b){return b.thisWeek-a.thisWeek;});
 
-  // 스킬 Top 10
-  const skillCount = {};
-  const skillKws = ['Python','SQL','Excel','Tableau','Power BI','JavaScript','React','AWS','Azure','GCP',
+  var skillKws = ['Python','SQL','Excel','Tableau','Power BI','JavaScript','React','AWS','Azure','GCP',
     'Salesforce','HubSpot','Google Ads','Meta Ads','SEO','Workday','SAP','dbt','Spark','Machine Learning',
-    'TensorFlow','PyTorch','Kubernetes','Docker','Git','Figma','Looker','GA4','LinkedIn Ads','A/B Testing'];
-  thisWeek.forEach(j => {
-    const t = ((j.title||'') + ' ' + (j.description||'')).toLowerCase();
-    skillKws.forEach(sk => {
-      if (t.includes(sk.toLowerCase())) skillCount[sk] = (skillCount[sk]||0) + 1;
-    });
+    'TensorFlow','PyTorch','Kubernetes','Docker','Git','Figma','Looker','GA4','A/B Testing'];
+  var skillCount = {};
+  thisWeek.forEach(function(j){
+    var t=((j.title||'')+' '+(j.description||'')).toLowerCase();
+    skillKws.forEach(function(sk){ if(t.includes(sk.toLowerCase())) skillCount[sk]=(skillCount[sk]||0)+1; });
   });
-  const topSkills = Object.entries(skillCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  var topSkills = Object.entries(skillCount).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
 
-  // 비자/원격 비율
-  const visaCount = thisWeek.filter(j => j.visaSponsored).length;
-  const remoteCount = thisWeek.filter(j => j.remoteType === 'Remote').length;
-  const hybridCount = thisWeek.filter(j => j.remoteType === 'Hybrid').length;
-  const visaPct = thisWeek.length ? Math.round(visaCount/thisWeek.length*100) : 0;
-  const remotePct = thisWeek.length ? Math.round(remoteCount/thisWeek.length*100) : 0;
-  const hybridPct = thisWeek.length ? Math.round(hybridCount/thisWeek.length*100) : 0;
+  var visaCount   = thisWeek.filter(function(j){return j.visaSponsored;}).length;
+  var remoteCount = thisWeek.filter(function(j){return j.remoteType==='Remote';}).length;
+  var hybridCount = thisWeek.filter(function(j){return j.remoteType==='Hybrid';}).length;
+  var total = thisWeek.length || 1;
+  var visaPct   = Math.round(visaCount/total*100);
+  var remotePct = Math.round(remoteCount/total*100);
+  var hybridPct = Math.round(hybridCount/total*100);
+  var totalThis = thisWeek.length;
+  var totalLast = lastWeek.length;
+  var totalDiff = totalThis - totalLast;
+  var diffSign  = totalDiff >= 0 ? '+' : '';
+  var weekStr   = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+Math.ceil(now.getDate()/7)+'주차';
+  var dateStr   = now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+String(now.getDate()).padStart(2,'0');
 
-  const weekStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${Math.ceil(now.getDate()/7)}주차`;
-  const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  var win = window.open('', '_blank');
+  var d = win.document;
+  d.open();
+  d.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">');
+  d.write('<title>EuroGate 주간 리포트 '+weekStr+'</title>');
+  d.write('<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">');
+  d.write('<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:"Noto Sans KR",sans-serif;background:#f8f5f0;color:#1a1a2e}.wrap{max-width:800px;margin:0 auto;background:#fff;box-shadow:0 0 60px rgba(0,0,0,.08)}.hd{background:linear-gradient(135deg,#0f1a3d,#1a2f6b,#0f1a3d);padding:52px 48px 44px;position:relative;overflow:hidden}.hd::before{content:"";position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:rgba(245,166,35,.12)}.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);color:#f5c842;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:20px}.htitle{font-family:"Playfair Display",serif;font-size:42px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:8px}.htitle span{color:#f5c842}.hsub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:32px}.hs{display:flex;gap:32px}.hnum{font-family:"Playfair Display",serif;font-size:36px;font-weight:700;color:#fff;line-height:1}.hnum.pos{color:#3ecfa0}.hnum.neg{color:#f06464}.hlbl{font-size:11px;color:rgba(255,255,255,.5);margin-top:4px}.hdiv{width:1px;background:rgba(255,255,255,.15);align-self:stretch}.sec{padding:40px 48px;border-bottom:1px solid #f0ece6}.slbl{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#b0a898;margin-bottom:6px}.stitle{font-family:"Playfair Display",serif;font-size:24px;font-weight:700;color:#1a1a2e;margin-bottom:24px}.note{background:linear-gradient(135deg,#fff8ed,#fff);border-left:4px solid #f5a623;padding:20px 24px;border-radius:0 12px 12px 0;font-size:14px;line-height:1.9;color:#3d3328}.note strong{color:#1a1a2e}.clist{display:flex;flex-direction:column;gap:14px}.crow{display:flex;align-items:center;gap:12px}.cfn{width:90px;font-size:13px;font-weight:600;flex-shrink:0;display:flex;align-items:center;gap:6px}.cbw{flex:1;height:28px;background:#f5f0eb;border-radius:6px;overflow:hidden;position:relative}.cbl{position:absolute;top:0;left:0;height:100%;background:#e8e0d6;border-radius:6px}.cbt{position:absolute;top:4px;left:0;height:calc(100% - 8px);background:linear-gradient(90deg,#1a2f6b,#4f8ef7);border-radius:4px}.ccnt{width:60px;text-align:right;font-size:13px;font-weight:700;flex-shrink:0}.cdiff{width:44px;text-align:right;font-size:11px;font-weight:600;flex-shrink:0}.dp{color:#2d9e6e}.dn{color:#d94f4f}.dz{color:#b0a898}.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ccard{background:#faf8f5;border:1px solid #ede8e0;border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}.ccard::before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,#1a2f6b,#4f8ef7)}.crkn{font-size:10px;font-weight:700;color:#b0a898;letter-spacing:1px;margin-bottom:4px}.cnm{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:8px}.cnums{display:flex;align-items:baseline;gap:8px}.cnum{font-size:28px;font-weight:700;color:#1a2f6b;font-family:"Playfair Display",serif}.clbl{font-size:11px;color:#b0a898}.cch{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px}.cch.pos{background:#e8f7f0;color:#2d9e6e}.cch.neg{background:#fdecea;color:#d94f4f}.cch.zero{background:#f5f0eb;color:#b0a898}.slist{display:flex;flex-direction:column;gap:10px}.srow{display:flex;align-items:center;gap:12px}.srnk{width:24px;font-size:12px;font-weight:700;color:#b0a898;text-align:center;flex-shrink:0}.snm{width:130px;font-size:13px;font-weight:600;color:#1a1a2e;flex-shrink:0}.sbw{flex:1;height:8px;background:#f0ece6;border-radius:4px;overflow:hidden}.sb{height:100%;background:linear-gradient(90deg,#f5a623,#f06464);border-radius:4px}.scnt{width:40px;text-align:right;font-size:12px;font-weight:600;color:#6b5e52;flex-shrink:0}.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.mcard{background:#faf8f5;border:1px solid #ede8e0;border-radius:12px;padding:20px;text-align:center}.mico{font-size:24px;margin-bottom:8px}.mpct{font-family:"Playfair Display",serif;font-size:32px;font-weight:700;color:#1a2f6b}.mlbl{font-size:12px;color:#8b7d6e;margin-top:4px}.msub{font-size:11px;color:#b0a898;margin-top:2px}.ft{background:#0f1a3d;padding:28px 48px;display:flex;align-items:center;justify-content:space-between}.fbrand{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:#fff}.fbrand span{color:#f5c842}.fcopy{font-size:10px;color:rgba(255,255,255,.4);text-align:right;line-height:1.7}.flink{font-size:11px;color:#f5c842;text-decoration:none;display:block;margin-top:4px}.wm{text-align:center;padding:12px;background:#f8f5f0;font-size:10px;color:#c0b8b0;letter-spacing:1px}</style></head><body><div class="wrap">');
 
-  // 총계
-  const totalThis = thisWeek.length;
-  const totalLast = lastWeek.length;
-  const totalDiff = totalThis - totalLast;
-  const totalDiffStr = totalDiff >= 0 ? `+${totalDiff}` : `${totalDiff}`;
+  // 헤더
+  d.write('<div class="hd"><div class="badge">📊 Weekly Report · '+weekStr+'</div>');
+  d.write('<div class="htitle">유럽 채용 시장<br><span>주간 동향</span></div>');
+  d.write('<div class="hsub">EuroGate 데이터 기반 · '+dateStr+' 기준</div>');
+  d.write('<div class="hs">');
+  d.write('<div><div class="hnum">'+totalThis+'</div><div class="hlbl">이번 주 신규 공고</div></div>');
+  d.write('<div class="hdiv"></div>');
+  d.write('<div><div class="hnum '+(totalDiff>=0?'pos':'neg')+'">'+diffSign+totalDiff+'</div><div class="hlbl">지난 주 대비</div></div>');
+  d.write('<div class="hdiv"></div>');
+  d.write('<div><div class="hnum">'+allJobs.length+'</div><div class="hlbl">총 수집 공고</div></div>');
+  d.write('</div></div>');
 
-  // 리포트 HTML 생성
-  const reportHTML = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EuroGate 주간 리포트 ${weekStr}</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background: #f8f5f0;
-    color: #1a1a2e;
-    min-height: 100vh;
-  }
-  .report-wrap {
-    max-width: 800px;
-    margin: 0 auto;
-    background: #fff;
-    box-shadow: 0 0 60px rgba(0,0,0,0.08);
-  }
+  // 에디터 노트
+  var note = weekStr+' 기준, EuroGate가 수집한 유럽 채용 공고는 총 <strong>'+totalThis+'건</strong>으로 ';
+  note += totalDiff>=0 ? '지난주 대비 <strong style="color:#2d9e6e">'+diffSign+totalDiff+'건 증가</strong>했습니다. ' : '지난주 대비 <strong style="color:#d94f4f">'+totalDiff+'건 감소</strong>했습니다. ';
+  if(catStats[0]) note += '직종별로는 <strong>'+catStats[0].name+'</strong> 분야가 <strong>'+catStats[0].thisWeek+'건</strong>으로 가장 많은 공고를 기록했으며, ';
+  if(countryStats[0]) note += '국가별로는 <strong>'+countryStats[0].flag+' '+countryStats[0].name+'</strong>이 <strong>'+countryStats[0].thisWeek+'건</strong>으로 선두를 유지했습니다. ';
+  note += '원격 근무 가능 포지션은 전체의 <strong>'+remotePct+'%</strong>를 차지하며, 비자 스폰서십 제공 공고는 <strong>'+visaPct+'%</strong>로 집계됐습니다. 한국인 구직자라면 영어 기반 Remote 포지션과 비자 스폰서 공고에 주목하세요.';
+  d.write('<div class="sec"><div class="slbl">Editor\'s Note</div><div class="stitle">이번 주 유럽 채용 시장은</div><div class="note">'+note+'</div></div>');
 
-  /* 헤더 */
-  .report-header {
-    background: linear-gradient(135deg, #0f1a3d 0%, #1a2f6b 50%, #0f1a3d 100%);
-    padding: 52px 48px 44px;
-    position: relative;
-    overflow: hidden;
-  }
-  .report-header::before {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 280px; height: 280px;
-    border-radius: 50%;
-    background: rgba(245,166,35,0.12);
-  }
-  .report-header::after {
-    content: '';
-    position: absolute;
-    bottom: -40px; left: 40px;
-    width: 160px; height: 160px;
-    border-radius: 50%;
-    background: rgba(79,142,247,0.1);
-  }
-  .header-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(245,166,35,0.2);
-    border: 1px solid rgba(245,166,35,0.4);
-    color: #f5c842;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 5px 12px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-  }
-  .report-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 42px;
-    font-weight: 900;
-    color: #fff;
-    line-height: 1.15;
-    margin-bottom: 8px;
-    position: relative;
-  }
-  .report-title span { color: #f5c842; }
-  .report-subtitle {
-    font-size: 14px;
-    color: rgba(255,255,255,0.6);
-    margin-bottom: 32px;
-    position: relative;
-  }
-  .header-stats {
-    display: flex;
-    gap: 32px;
-    position: relative;
-  }
-  .h-stat {
-    text-align: left;
-  }
-  .h-stat-num {
-    font-family: 'Playfair Display', serif;
-    font-size: 36px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1;
-  }
-  .h-stat-num.positive { color: #3ecfa0; }
-  .h-stat-num.negative { color: #f06464; }
-  .h-stat-label {
-    font-size: 11px;
-    color: rgba(255,255,255,0.5);
-    margin-top: 4px;
-    letter-spacing: 0.5px;
-  }
-  .h-divider {
-    width: 1px;
-    background: rgba(255,255,255,0.15);
-    align-self: stretch;
-  }
+  // 국가별
+  d.write('<div class="sec"><div class="slbl">Country Breakdown</div><div class="stitle">🗺️ 국가별 채용 공고 현황</div><div class="clist">');
+  var maxVal = Math.max.apply(null, countryStats.map(function(c){return c.thisWeek;})) || 1;
+  countryStats.forEach(function(c){
+    var diff=c.thisWeek-c.lastWeek, ds=diff>0?'+'+diff:diff===0?'±0':''+diff, dc=diff>0?'dp':diff<0?'dn':'dz';
+    var tw=(c.thisWeek/maxVal*100).toFixed(1), lw=(c.lastWeek/maxVal*100).toFixed(1);
+    d.write('<div class="crow"><div class="cfn">'+c.flag+' '+c.name+'</div><div class="cbw"><div class="cbl" style="width:'+lw+'%"></div><div class="cbt" style="width:'+tw+'%"></div></div><div class="ccnt">'+c.thisWeek+'건</div><div class="cdiff '+dc+'">'+ds+'</div></div>');
+  });
+  d.write('</div><div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:#b0a898;"><span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:8px;background:#e8e0d6;border-radius:2px;display:inline-block"></span>지난주</span><span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:8px;background:linear-gradient(90deg,#1a2f6b,#4f8ef7);border-radius:2px;display:inline-block"></span>이번주</span></div></div>');
 
-  /* 섹션 공통 */
-  .section {
-    padding: 40px 48px;
-    border-bottom: 1px solid #f0ece6;
-  }
-  .section:last-child { border-bottom: none; }
-  .section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #b0a898;
-    margin-bottom: 6px;
-  }
-  .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 24px;
-  }
+  // 직종별
+  d.write('<div class="sec"><div class="slbl">Job Category</div><div class="stitle">💼 직종별 채용 순위</div><div class="cgrid">');
+  catStats.forEach(function(c,i){
+    var diff=c.thisWeek-c.lastWeek, ds=diff>0?'+'+diff:diff===0?'±0':''+diff, dc=diff>0?'pos':diff<0?'neg':'zero';
+    d.write('<div class="ccard"><div class="crkn">#'+(i+1)+'</div><div class="cnm">'+c.name+'</div><div class="cnums"><div class="cnum">'+c.thisWeek+'</div><div class="clbl">건</div><div class="cch '+dc+'">'+ds+'</div></div></div>');
+  });
+  d.write('</div></div>');
 
-  /* 에디터 노트 */
-  .editor-note {
-    background: linear-gradient(135deg, #fff8ed, #fff);
-    border-left: 4px solid #f5a623;
-    padding: 20px 24px;
-    border-radius: 0 12px 12px 0;
-    font-size: 14px;
-    line-height: 1.9;
-    color: #3d3328;
-    margin-bottom: 0;
-  }
-  .editor-note strong { color: #1a1a2e; }
+  // 스킬
+  d.write('<div class="sec"><div class="slbl">In-Demand Skills</div><div class="stitle">🔥 이번 주 인기 스킬 Top 10</div><div class="slist">');
+  var maxSk = topSkills.length>0 ? topSkills[0][1] : 1;
+  topSkills.forEach(function(sk,i){
+    d.write('<div class="srow"><div class="srnk">'+(i+1)+'</div><div class="snm">'+sk[0]+'</div><div class="sbw"><div class="sb" style="width:'+(sk[1]/maxSk*100).toFixed(1)+'%"></div></div><div class="scnt">'+sk[1]+'건</div></div>');
+  });
+  d.write('</div></div>');
 
-  /* 국가별 바 차트 */
-  .country-list { display: flex; flex-direction: column; gap: 14px; }
-  .country-row { display: flex; align-items: center; gap: 12px; }
-  .country-flag-name {
-    width: 90px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1a2e;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .country-bar-wrap {
-    flex: 1;
-    height: 28px;
-    background: #f5f0eb;
-    border-radius: 6px;
-    overflow: hidden;
-    position: relative;
-  }
-  .country-bar-last {
-    position: absolute;
-    top: 0; left: 0;
-    height: 100%;
-    background: #e8e0d6;
-    border-radius: 6px;
-    transition: width 0.8s ease;
-  }
-  .country-bar-this {
-    position: absolute;
-    top: 4px; left: 0;
-    height: calc(100% - 8px);
-    background: linear-gradient(90deg, #1a2f6b, #4f8ef7);
-    border-radius: 4px;
-    transition: width 0.8s ease;
-  }
-  .country-count {
-    width: 60px;
-    text-align: right;
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a1a2e;
-    flex-shrink: 0;
-  }
-  .country-diff {
-    width: 44px;
-    text-align: right;
-    font-size: 11px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-  .diff-pos { color: #2d9e6e; }
-  .diff-neg { color: #d94f4f; }
-  .diff-zero { color: #b0a898; }
+  // 근무조건
+  d.write('<div class="sec"><div class="slbl">Work Conditions</div><div class="stitle">🛂 근무 조건 현황</div><div class="mgrid">');
+  d.write('<div class="mcard"><div class="mico">🏠</div><div class="mpct">'+remotePct+'%</div><div class="mlbl">원격 근무 가능</div><div class="msub">'+remoteCount+'건 / '+totalThis+'건</div></div>');
+  d.write('<div class="mcard"><div class="mico">🏗️</div><div class="mpct">'+hybridPct+'%</div><div class="mlbl">하이브리드</div><div class="msub">'+hybridCount+'건 / '+totalThis+'건</div></div>');
+  d.write('<div class="mcard"><div class="mico">🛂</div><div class="mpct">'+visaPct+'%</div><div class="mlbl">비자 스폰서십</div><div class="msub">'+visaCount+'건 / '+totalThis+'건</div></div>');
+  d.write('</div></div>');
 
-  /* 직종 카드 */
-  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .cat-card {
-    background: #faf8f5;
-    border: 1px solid #ede8e0;
-    border-radius: 12px;
-    padding: 16px 18px;
-    position: relative;
-    overflow: hidden;
-  }
-  .cat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px; height: 100%;
-    background: linear-gradient(180deg, #1a2f6b, #4f8ef7);
-  }
-  .cat-rank {
-    font-size: 10px;
-    font-weight: 700;
-    color: #b0a898;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-  .cat-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 8px;
-  }
-  .cat-nums {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-  .cat-this { font-size: 28px; font-weight: 700; color: #1a2f6b; font-family: 'Playfair Display', serif; }
-  .cat-label { font-size: 11px; color: #b0a898; }
-  .cat-change {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 10px;
-  }
-  .cat-change.pos { background: #e8f7f0; color: #2d9e6e; }
-  .cat-change.neg { background: #fdecea; color: #d94f4f; }
-  .cat-change.zero { background: #f5f0eb; color: #b0a898; }
-
-  /* 스킬 */
-  .skill-list { display: flex; flex-direction: column; gap: 10px; }
-  .skill-row { display: flex; align-items: center; gap: 12px; }
-  .skill-rank {
-    width: 24px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #b0a898;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .skill-name {
-    width: 130px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1a2e;
-    flex-shrink: 0;
-  }
-  .skill-bar-wrap {
-    flex: 1;
-    height: 8px;
-    background: #f0ece6;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .skill-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #f5a623, #f06464);
-    border-radius: 4px;
-  }
-  .skill-count {
-    width: 40px;
-    text-align: right;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b5e52;
-    flex-shrink: 0;
-  }
-
-  /* 비자/원격 */
-  .metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-  .metric-card {
-    background: #faf8f5;
-    border: 1px solid #ede8e0;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-  }
-  .metric-icon { font-size: 24px; margin-bottom: 8px; }
-  .metric-pct {
-    font-family: 'Playfair Display', serif;
-    font-size: 32px;
-    font-weight: 700;
-    color: #1a2f6b;
-  }
-  .metric-label { font-size: 12px; color: #8b7d6e; margin-top: 4px; }
-  .metric-sub { font-size: 11px; color: #b0a898; margin-top: 2px; }
-
-  /* 푸터 */
-  .report-footer {
-    background: #0f1a3d;
-    padding: 28px 48px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .footer-brand {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-  }
-  .footer-brand span { color: #f5c842; }
-  .footer-copy {
-    font-size: 10px;
-    color: rgba(255,255,255,0.4);
-    text-align: right;
-    line-height: 1.7;
-  }
-  .footer-link {
-    font-size: 11px;
-    color: #f5c842;
-    text-decoration: none;
-    margin-top: 4px;
-    display: block;
-  }
-
-  /* 워터마크 */
-  .watermark {
-    text-align: center;
-    padding: 12px;
-    background: #f8f5f0;
-    font-size: 10px;
-    color: #c0b8b0;
-    letter-spacing: 1px;
-  }
-
-  @media print {
-    body { background: #fff; }
-    .report-wrap { box-shadow: none; }
-  }
-</style>
-</head>
-<body>
-<div class="report-wrap">
-
-  <!-- 헤더 -->
-  <div class="report-header">
-    <div class="header-badge">📊 Weekly Report · ${weekStr}</div>
-    <div class="report-title">유럽 채용 시장<br><span>주간 동향</span></div>
-    <div class="report-subtitle">EuroGate 데이터 기반 · ${dateStr} 기준</div>
-    <div class="header-stats">
-      <div class="h-stat">
-        <div class="h-stat-num">${totalThis}</div>
-        <div class="h-stat-label">이번 주 신규 공고</div>
-      </div>
-      <div class="h-divider"></div>
-      <div class="h-stat">
-        <div class="h-stat-num ${totalDiff >= 0 ? 'positive' : 'negative'}">${totalDiffStr}</div>
-        <div class="h-stat-label">지난 주 대비</div>
-      </div>
-      <div class="h-divider"></div>
-      <div class="h-stat">
-        <div class="h-stat-num">${allJobs.length}</div>
-        <div class="h-stat-label">총 수집 공고</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 에디터 노트 -->
-  <div class="section">
-    <div class="section-label">Editor's Note</div>
-    <div class="section-title">이번 주 유럽 채용 시장은</div>
-    <div class="editor-note">
-      ${weekStr} 기준, EuroGate가 수집한 유럽 채용 공고는 총 <strong>${totalThis}건</strong>으로
-      ${totalDiff >= 0
-        ? `지난주 대비 <strong style="color:#2d9e6e">${totalDiffStr}건 증가</strong>했습니다.`
-        : `지난주 대비 <strong style="color:#d94f4f">${totalDiffStr}건 감소</strong>했습니다.`}
-      ${catStats[0] ? `직종별로는 <strong>${catStats[0].name}</strong> 분야가 <strong>${catStats[0].thisWeek}건</strong>으로 가장 많은 공고를 기록했으며,` : ''}
-      ${countryStats[0] ? `국가별로는 <strong>${countryStats[0].flag} ${countryStats[0].name}</strong>이 <strong>${countryStats[0].thisWeek}건</strong>으로 선두를 유지했습니다.` : ''}
-      원격 근무 가능 포지션은 전체의 <strong>${remotePct}%</strong>를 차지하며,
-      비자 스폰서십 제공 공고는 <strong>${visaPct}%</strong>로 집계됐습니다.
-      한국인 구직자라면 영어 기반 Remote 포지션과 비자 스폰서 공고에 주목하세요.
-    </div>
-  </div>
-
-  <!-- 국가별 현황 -->
-  <div class="section">
-    <div class="section-label">Country Breakdown</div>
-    <div class="section-title">🗺️ 국가별 채용 공고 현황</div>
-    <div class="country-list">
-      ${(() => {
-        const maxVal = Math.max(...countryStats.map(c => c.thisWeek), 1);
-        return countryStats.map(c => {
-          const diff = c.thisWeek - c.lastWeek;
-          const diffStr = diff > 0 ? `+${diff}` : diff === 0 ? '±0' : `${diff}`;
-          const diffClass = diff > 0 ? 'diff-pos' : diff < 0 ? 'diff-neg' : 'diff-zero';
-          const thisW = (c.thisWeek / maxVal * 100).toFixed(1);
-          const lastW = (c.lastWeek / maxVal * 100).toFixed(1);
-          return \`<div class="country-row">
-            <div class="country-flag-name">\${c.flag} \${c.name}</div>
-            <div class="country-bar-wrap">
-              <div class="country-bar-last" style="width:\${lastW}%"></div>
-              <div class="country-bar-this" style="width:\${thisW}%"></div>
-            </div>
-            <div class="country-count">\${c.thisWeek}건</div>
-            <div class="country-diff \${diffClass}">\${diffStr}</div>
-          </div>\`;
-        }).join('');
-      })()}
-    </div>
-    <div style="display:flex;gap:16px;margin-top:14px;font-size:11px;color:#b0a898;">
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:8px;background:#e8e0d6;border-radius:2px;display:inline-block"></span>지난주</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:8px;background:linear-gradient(90deg,#1a2f6b,#4f8ef7);border-radius:2px;display:inline-block"></span>이번주</span>
-    </div>
-  </div>
-
-  <!-- 직종별 현황 -->
-  <div class="section">
-    <div class="section-label">Job Category</div>
-    <div class="section-title">💼 직종별 채용 순위</div>
-    <div class="cat-grid">
-      ${catStats.map((c, i) => {
-        const diff = c.thisWeek - c.lastWeek;
-        const diffStr = diff > 0 ? `+${diff}` : diff === 0 ? '±0' : `${diff}`;
-        const diffClass = diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'zero';
-        return \`<div class="cat-card">
-          <div class="cat-rank">#\${i+1}</div>
-          <div class="cat-name">\${c.name}</div>
-          <div class="cat-nums">
-            <div class="cat-this">\${c.thisWeek}</div>
-            <div class="cat-label">건</div>
-            <div class="cat-change \${diffClass}">\${diffStr}</div>
-          </div>
-        </div>\`;
-      }).join('')}
-    </div>
-  </div>
-
-  <!-- 인기 스킬 -->
-  <div class="section">
-    <div class="section-label">In-Demand Skills</div>
-    <div class="section-title">🔥 이번 주 인기 스킬 Top 10</div>
-    <div class="skill-list">
-      ${(() => {
-        const maxSkill = topSkills.length > 0 ? topSkills[0][1] : 1;
-        return topSkills.map(([sk, cnt], i) => \`
-          <div class="skill-row">
-            <div class="skill-rank">\${i+1}</div>
-            <div class="skill-name">\${sk}</div>
-            <div class="skill-bar-wrap">
-              <div class="skill-bar" style="width:\${(cnt/maxSkill*100).toFixed(1)}%"></div>
-            </div>
-            <div class="skill-count">\${cnt}건</div>
-          </div>\`).join('');
-      })()}
-    </div>
-  </div>
-
-  <!-- 비자/원격 현황 -->
-  <div class="section">
-    <div class="section-label">Work Conditions</div>
-    <div class="section-title">🛂 근무 조건 현황</div>
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-icon">🏠</div>
-        <div class="metric-pct">${remotePct}%</div>
-        <div class="metric-label">원격 근무 가능</div>
-        <div class="metric-sub">${remoteCount}건 / ${totalThis}건</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-icon">🏗️</div>
-        <div class="metric-pct">${hybridPct}%</div>
-        <div class="metric-label">하이브리드</div>
-        <div class="metric-sub">${hybridCount}건 / ${totalThis}건</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-icon">🛂</div>
-        <div class="metric-pct">${visaPct}%</div>
-        <div class="metric-label">비자 스폰서십</div>
-        <div class="metric-sub">${visaCount}건 / ${totalThis}건</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 푸터 -->
-  <div class="report-footer">
-    <div>
-      <div class="footer-brand">Euro<span>Gate</span></div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;">유럽 취업의 관문</div>
-    </div>
-    <div class="footer-copy">
-      © ${now.getFullYear()} EuroGate · Sunny Kim. All rights reserved.<br>
-      무단 복제 및 재배포 금지 · Data-driven by EuroGate
-      <a href="https://blog.naver.com/sunnnymind" class="footer-link" target="_blank">blog.naver.com/sunnnymind</a>
-    </div>
-  </div>
-
-  <!-- 워터마크 -->
-  <div class="watermark">
-    © EuroGate by Sunny Kim · blog.naver.com/sunnnymind · 무단 복제 금지
-  </div>
-
-</div>
-</body>
-</html>`;
-
-  const blob = new Blob([reportHTML], {type: 'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  // 푸터
+  d.write('<div class="ft"><div><div class="fbrand">Euro<span>Gate</span></div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">유럽 취업의 관문</div></div><div class="fcopy">&copy; '+now.getFullYear()+' EuroGate &middot; Sunny Kim. All rights reserved.<br>무단 복제 및 재배포 금지 &middot; Data-driven by EuroGate<a href="https://blog.naver.com/sunnnymind" class="flink" target="_blank">blog.naver.com/sunnnymind</a></div></div>');
+  d.write('<div class="wm">&copy; EuroGate by Sunny Kim &middot; blog.naver.com/sunnnymind &middot; 무단 복제 금지</div>');
+  d.write('</div></body></html>');
+  d.close();
 }
+
 
 async function adminFetch(force = false) {
   const log = document.getElementById('adminFetchLog');
