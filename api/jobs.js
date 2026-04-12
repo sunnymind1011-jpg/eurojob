@@ -158,11 +158,7 @@ function normalizeAdzuna(raw, countryCode) {
   const desc = raw.description || '';
   const salary = (() => {
     const mn = raw.salary_min, mx = raw.salary_max;
-    if (!mn || !mx) {
-      // 디버그: salary 필드 확인
-      if (Math.random() < 0.05) console.log('AZ salary fields:', JSON.stringify({ salary_min: raw.salary_min, salary_max: raw.salary_max, salary: raw.salary, keys: Object.keys(raw).filter(k => k.includes('salary') || k.includes('Salary') || k.includes('pay') || k.includes('wage')) }));
-      return null;
-    }
+    if (!mn || !mx) return null;
     const cur = (raw.currency || 'EUR').toUpperCase();
     // 시급 감지: 값이 매우 작으면 (500 미만) 시급으로 간주 — 표시만 하고 연봉 변환 안 함
     if (mn < 500) {
@@ -214,7 +210,7 @@ function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
       app_id: ADZUNA_APP_ID, app_key: ADZUNA_APP_KEY,
-      results_per_page: '20', max_days_old: '21',
+      results_per_page: '20', max_days_old: '21', 'content-type': 'full_time',
     });
     const req = https.request({
       hostname: 'api.adzuna.com',
@@ -239,7 +235,7 @@ function fetchAdzunaKeyword(countryCode, keyword) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
       app_id: ADZUNA_APP_ID, app_key: ADZUNA_APP_KEY,
-      results_per_page: '20', max_days_old: '21', what: keyword,
+      results_per_page: '20', max_days_old: '21', what: keyword, 'content-type': 'full_time',
     });
     const req = https.request({
       hostname: 'api.adzuna.com',
