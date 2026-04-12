@@ -2492,8 +2492,9 @@ function toggleSave(id, btn) {
   }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
-  trackerJobs = []; // 저장 변경 시 트래커 캐시 무효화 → 다음 진입 시 재조회
+  trackerJobs = []; // 저장 변경 시 트래커 캐시 무효화
   renderSaved();
+  loadTracker();
 }
 
 function toggleSaveFromDrawer(id, btn) {
@@ -2509,13 +2510,15 @@ function toggleSaveFromDrawer(id, btn) {
   }
   localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
   document.getElementById("nb-saved").textContent = savedIds.size;
-  trackerJobs = []; // 저장 변경 시 트래커 캐시 무효화
+  trackerJobs = []; // 저장 변경 시 트래커 캐시 무효화 → loadTracker로 재조회
   const cardBtn = document.querySelector(`.save-btn[onclick*="${id}"]`);
   if (cardBtn) {
     cardBtn.textContent = savedIds.has(id) ? "♥" : "♡";
     savedIds.has(id) ? cardBtn.classList.add("saved") : cardBtn.classList.remove("saved");
   }
   renderSaved();
+  // 트래커 즉시 반영 (비동기)
+  loadTracker();
 }
 
 // ════════════════════════════════════════
@@ -2560,8 +2563,8 @@ async function loadTracker() {
   const { data, error } = await sb.from('saved_jobs').select('*').eq('user_id', currentUser.id).order('saved_at', { ascending: false });
   if (error) { console.log('tracker load err:', error.message); return; }
   trackerJobs = data || [];
-  // Supabase 기준으로 savedIds 재동기화 (새로고침 없이도 최신 반영)
-  trackerJobs.forEach(j => savedIds.add(j.job_id));
+  // Supabase 기준으로 savedIds 완전 재설정 (삭제된 공고 제거)
+  savedIds = new Set(trackerJobs.map(j => j.job_id));
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
   renderSaved();
