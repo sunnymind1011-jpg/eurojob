@@ -1329,6 +1329,16 @@ function nav(id, el) {
     const countEl = document.getElementById('jobmatchJobCount');
     if (checkEl) checkEl.innerHTML = resume ? '<span style="color:var(--accent3)">✅ 이력서 저장됨</span>' : '<span style="color:var(--warn)">⚠️ 매칭 분석 메뉴에서 이력서를 먼저 저장해주세요</span>';
     if (countEl) countEl.textContent = allJobs.length ? `현재 ${allJobs.length}개 공고 분석 대상` : '공고를 먼저 불러오세요';
+    // 오늘 캐시 있으면 바로 복원
+    const cache = loadMatchCache();
+    if (cache && cache.matches && allJobs.length > 0) {
+      const statusEl = document.getElementById('matchStatus');
+      const statusIcon = document.getElementById('matchStatusIcon');
+      const statusText = document.getElementById('matchStatusText');
+      const resultsEl = document.getElementById('matchResults');
+      if (statusEl) { statusEl.style.display = 'flex'; statusIcon.textContent = '✅'; statusText.textContent = cache.statusText; }
+      if (resultsEl) renderMatchResults(cache.matches, resultsEl);
+    }
   }
 }
 
@@ -2090,6 +2100,63 @@ function openClaudeWithJD(jobId, type) {
 
 
 // ── AI 잡 매칭 ────────────────────────────────────────────
+const MATCH_CACHE_KEY = 'ej_jobmatch_cache';
+
+function loadMatchCache() {
+  try {
+    const raw = localStorage.getItem(MATCH_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw);
+    const today = new Date().toDateString();
+    if (cache.date !== today) return null; // 날짜 다르면 무효
+    return cache;
+  } catch(e) { return null; }
+}
+
+function saveMatchCache(matches, statusText) {
+  try {
+    localStorage.setItem(MATCH_CACHE_KEY, JSON.stringify({
+      date: new Date().toDateString(),
+      matches,
+      statusText,
+    }));
+  } catch(e) {}
+}
+
+function renderMatchResults(matches, resultsEl) {
+  resultsEl.innerHTML = '';
+  matches.forEach((m, rank) => {
+    const job = allJobs[m.index];
+    if (!job) return;
+    const score = Math.round((m.score || 0) <= 1 ? (m.score || 0) * 100 : (m.score || 0));
+    const scoreColor = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--text3)';
+    const scoreBg = score >= 80 ? 'rgba(62,207,160,.12)' : score >= 60 ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.05)';
+    const safeUrl = (job.url || '#').replace(/[\n\r]/g, '');
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;cursor:pointer';
+    card.onmouseover = () => card.style.borderColor = 'rgba(79,142,247,.35)';
+    card.onmouseout = () => card.style.borderColor = 'var(--border)';
+    card.onclick = () => window.open(safeUrl, '_blank');
+    card.innerHTML = `
+      <div style="font-size:22px;font-weight:800;color:var(--text3);width:28px;text-align:center;flex-shrink:0">${rank+1}</div>
+      <div style="font-size:22px;flex-shrink:0">${job.logo||'🏢'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${job.title||''}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${job.flag||''} ${job.company||''} · ${job.location||job.country||''}</div>
+        <div style="font-size:11px;color:var(--accent);margin-top:5px;font-style:italic">"${m.reason||''}"</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+        <div style="background:${scoreBg};border:1px solid ${scoreColor};border-radius:8px;padding:6px 14px;font-size:18px;font-weight:800;color:${scoreColor}">${score}%</div>
+        <div style="font-size:10px;color:var(--text3)">매칭</div>
+      </div>
+      <button style="flex-shrink:0;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:rgba(79,142,247,.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+        지원하기 →
+      </button>`;
+    card.querySelector('button').onclick = (e) => { e.stopPropagation(); window.open(safeUrl, '_blank'); };
+    resultsEl.appendChild(card);
+  });
+}
+
 async function runJobMatch() {
   const resume = document.getElementById('resumeText').value.trim();
   if (!resume) {
@@ -2135,47 +2202,8 @@ async function runJobMatch() {
     statusIcon.textContent = '✅';
     statusText.textContent = `${matches.length}개의 맞춤 공고를 찾았어요!`;
 
-    // 결과 카드 DOM으로 생성 (템플릿 리터럴 내 특수문자 오류 방지)
-    resultsEl.innerHTML = '';
-    matches.forEach((m, rank) => {
-      const job = allJobs[m.index];
-      if (!job) return;
-      // Groq이 0-1 소수로 반환할 경우 100 곱해서 정수로 변환
-      const score = Math.round((m.score || 0) <= 1 ? (m.score || 0) * 100 : (m.score || 0));
-      const scoreColor = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--text3)';
-      const scoreBg = score >= 80 ? 'rgba(62,207,160,.12)' : score >= 60 ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.05)';
-      const safeUrl = (job.url || '#').replace(/[\n\r]/g, '');
-
-      const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;cursor:pointer';
-      card.onmouseover = () => card.style.borderColor = 'rgba(79,142,247,.35)';
-      card.onmouseout = () => card.style.borderColor = 'var(--border)';
-      card.onclick = () => window.open(safeUrl, '_blank');
-
-      card.innerHTML = `
-        <div style="font-size:22px;font-weight:800;color:var(--text3);width:28px;text-align:center;flex-shrink:0">${rank+1}</div>
-        <div style="font-size:22px;flex-shrink:0">${job.logo||'🏢'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${job.title||''}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${job.flag||''} ${job.company||''} · ${job.location||job.country||''}</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:5px;font-style:italic">"${m.reason||''}"</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
-          <div style="background:${scoreBg};border:1px solid ${scoreColor};border-radius:8px;padding:6px 14px;font-size:18px;font-weight:800;color:${scoreColor}">${score}%</div>
-          <div style="font-size:10px;color:var(--text3)">매칭</div>
-        </div>
-        <button style="flex-shrink:0;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:rgba(79,142,247,.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
-          지원하기 →
-        </button>`;
-
-      // 지원하기 버튼 이벤트
-      card.querySelector('button').onclick = (e) => {
-        e.stopPropagation();
-        window.open(safeUrl, '_blank');
-      };
-
-      resultsEl.appendChild(card);
-    });
+    renderMatchResults(matches, resultsEl);
+    saveMatchCache(matches, `${matches.length}개의 맞춤 공고를 찾았어요!`);
 
   } catch(e) {
     statusIcon.textContent = '❌';
