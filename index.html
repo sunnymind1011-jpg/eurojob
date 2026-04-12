@@ -708,13 +708,7 @@ textarea::placeholder{color:var(--text3);}
         <div class="chip" data-f="level:Lead" onclick="toggleChip(this)">🔴 Lead/Principal</div>
         <div class="chip" data-f="level:Director" onclick="toggleChip(this)">⭐ Director/VP</div>
       </div>
-      <div class="job-grid" id="jobGrid">
-        <div class="empty" style="grid-column:1/-1">
-          <div class="empty-icon">💼</div>
-          <div class="empty-title">공고를 불러오세요</div>
-          <div class="empty-text">상단 「샘플 데이터」 또는 Apify 수집으로 시작하세요.</div>
-        </div>
-      </div>
+      <div class="job-grid" id="jobGrid"></div>
     </div>
 
     <!-- ★ SAVED ─────────────────────────────────────── -->
@@ -1378,6 +1372,7 @@ async function startJSearch(force = false) {
     }
   }
   setStatus('loading', '채용공고 불러오는 중...', 0);
+  document.getElementById('jobGrid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏳</div><div class="empty-title">채용공고 수집 중...</div><div class="empty-text">잠시만 기다려주세요.</div></div>';
   addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
   try {
     const url = `${API_URL}/api/jobs${force ? '?refresh=1' : ''}`;
