@@ -3552,7 +3552,7 @@ async function toggleUserRole(userId, currentRole) {
 }
 
 
-// ── 주간 리포트 생성 v2 ─────────────────────────────────────
+// ── 주간 리포트 생성 v3 ─────────────────────────────────────
 function generateWeeklyReport() {
   if (!allJobs || allJobs.length === 0) { alert('채용공고를 먼저 불러와주세요!'); return; }
 
@@ -3562,7 +3562,7 @@ function generateWeeklyReport() {
   var thisWeek = allJobs.filter(function(j){ return new Date(j.postedAt) >= oneWeekAgo; });
   var lastWeek = allJobs.filter(function(j){ var d=new Date(j.postedAt); return d>=twoWeeksAgo && d<oneWeekAgo; });
 
-  // ── Top 5 국가 (Adzuna 주요 커버 기준)
+  // ── Top 5 국가
   var TOP5 = [
     {code:'GB',flag:'🇬🇧',name:'영국'},
     {code:'DE',flag:'🇩🇪',name:'독일'},
@@ -3575,7 +3575,7 @@ function generateWeeklyReport() {
     lastWeek: lastWeek.filter(function(j){return j.country===c.code;}).length,
   });}).sort(function(a,b){return b.thisWeek-a.thisWeek;});
 
-  // ── 직종 정의
+  // ── 직종
   var catDefs = [
     {key:'data',name:'데이터/AI',icon:'📊'},
     {key:'dev',name:'개발/엔지니어링',icon:'💻'},
@@ -3590,76 +3590,71 @@ function generateWeeklyReport() {
     lastWeek: lastWeek.filter(function(j){return (regex[c.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length,
   });}).sort(function(a,b){return b.thisWeek-a.thisWeek;});
 
-  // ── 국가 × 직종 핫스팟 (변화량 기준 Top 3)
+  // ── 핫스팟 (% 기준)
   var hotspots = [];
   TOP5.forEach(function(c){
     catDefs.forEach(function(cat){
       var tw = thisWeek.filter(function(j){return j.country===c.code && (regex[cat.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length;
       var lw = lastWeek.filter(function(j){return j.country===c.code && (regex[cat.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length;
-      if (tw > 0) hotspots.push({country:c.name, flag:c.flag, cat:cat.name, icon:cat.icon, tw:tw, lw:lw, diff:tw-lw});
+      var pct = lw > 0 ? Math.round((tw-lw)/lw*100) : (tw > 0 ? 100 : 0);
+      if (tw > 0) hotspots.push({country:c.name, flag:c.flag, cat:cat.name, icon:cat.icon, tw:tw, lw:lw, diff:tw-lw, pct:pct});
     });
   });
-  hotspots.sort(function(a,b){return b.diff-a.diff;});
-  var topHotspots = hotspots.slice(0,3);
-  var topDrops = hotspots.slice().sort(function(a,b){return a.diff-b.diff;}).filter(function(h){return h.diff<0;}).slice(0,2);
+  hotspots.sort(function(a,b){return b.pct-a.pct;});
+  var topHotspots = hotspots.filter(function(h){return h.pct>0;}).slice(0,3);
+  var topDrops = hotspots.slice().sort(function(a,b){return a.pct-b.pct;}).filter(function(h){return h.pct<0;}).slice(0,2);
 
-  // ── 스킬 (직종 태그 포함)
+  // ── 스킬 (2개 이상 직군에 걸친 것만, Top 5)
   var skillDefs = [
     {name:'Python',    cats:['data','dev']},
-    {name:'SQL',       cats:['data','dev','finance']},
+    {name:'SQL',       cats:['data','dev','management']},
     {name:'Excel',     cats:['data','hr','ops','management']},
-    {name:'Machine Learning', cats:['data']},
+    {name:'Machine Learning', cats:['data','dev']},
     {name:'AWS',       cats:['dev','data']},
     {name:'Azure',     cats:['dev','data']},
-    {name:'Tableau',   cats:['data']},
     {name:'Power BI',  cats:['data','management']},
-    {name:'Google Ads',cats:['marketing']},
-    {name:'Meta Ads',  cats:['marketing']},
-    {name:'SEO',       cats:['marketing']},
-    {name:'HubSpot',   cats:['marketing','hr']},
+    {name:'Google Ads',cats:['marketing','data']},
     {name:'Salesforce',cats:['marketing','management']},
-    {name:'Workday',   cats:['hr']},
-    {name:'SAP',       cats:['ops','management']},
-    {name:'dbt',       cats:['data']},
-    {name:'Kubernetes',cats:['dev']},
-    {name:'Docker',    cats:['dev']},
-    {name:'Git',       cats:['dev','data']},
-    {name:'Looker',    cats:['data']},
+    {name:'HubSpot',   cats:['marketing','hr']},
     {name:'GA4',       cats:['marketing','data']},
     {name:'A/B Testing',cats:['marketing','data']},
-    {name:'TensorFlow',cats:['data']},
-    {name:'PyTorch',   cats:['data']},
-    {name:'Spark',     cats:['data']},
-    {name:'Figma',     cats:['dev']},
+    {name:'Git',       cats:['dev','data']},
+    {name:'Docker',    cats:['dev','data']},
+    {name:'Tableau',   cats:['data','management']},
   ];
-  var catIconMap = {data:'📊',dev:'💻',marketing:'📣',hr:'🤝',ops:'🚛',management:'🏢',finance:'💰'};
+  var catIconMap = {data:'📊',dev:'💻',marketing:'📣',hr:'🤝',ops:'🚛',management:'🏢'};
   skillDefs.forEach(function(sk){
-    var t = '';
+    var cnt = 0;
     thisWeek.forEach(function(j){
-      t += ((j.title||'')+' '+(j.description||'')).toLowerCase()+' ';
+      var t = ((j.title||'')+' '+(j.description||'')).toLowerCase();
+      if(new RegExp('\\b'+sk.name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(t)) cnt++;
     });
-    sk.count = (t.match(new RegExp('\\b'+sk.name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'))||[]).length;
+    sk.count = cnt;
   });
-  var topSkills = skillDefs.filter(function(sk){return sk.count>0;}).sort(function(a,b){return b.count-a.count;}).slice(0,10);
+  // 2개 이상 직군 + count > 0 + Top 5
+  var topSkills = skillDefs.filter(function(sk){return sk.count>0 && sk.cats.length>=2;}).sort(function(a,b){return b.count-a.count;}).slice(0,5);
 
-  // ── 한국인 주목 지표
+  // ── 한국인 주목 (영국 제외하고 영어 % 계산)
+  var nonGBJobs = thisWeek.filter(function(j){return j.country !== 'GB';});
+  var enOnlyNonGB = nonGBJobs.filter(function(j){
+    var langs = j.languageReqs||[];
+    return langs.length===1 && langs[0]==='English';
+  });
+  var enPct = nonGBJobs.length > 0 ? Math.round(enOnlyNonGB.length/nonGBJobs.length*100) : 0;
+
   var korFriendly = thisWeek.filter(function(j){
     var hasEn = (j.languageReqs||[]).some(function(l){return l==='English';});
-    var hasVisa = j.visaSponsored;
-    var isRemote = j.remoteType==='Remote';
-    return hasEn && (hasVisa || isRemote);
+    return hasEn && (j.visaSponsored || j.remoteType==='Remote');
   });
   var korFriendlyLast = lastWeek.filter(function(j){
     var hasEn = (j.languageReqs||[]).some(function(l){return l==='English';});
     return hasEn && (j.visaSponsored || j.remoteType==='Remote');
   });
   var visaRemote = thisWeek.filter(function(j){return j.visaSponsored && j.remoteType==='Remote';});
-  var enOnly = thisWeek.filter(function(j){
-    var langs = j.languageReqs||[];
-    return langs.length===1 && langs[0]==='English';
-  });
+  var korDiff = korFriendly.length - korFriendlyLast.length;
+  var korDiffStr = korDiff >= 0 ? '+'+korDiff : ''+korDiff;
 
-  // ── 근무/언어
+  // ── 근무조건
   var visaCount   = thisWeek.filter(function(j){return j.visaSponsored;}).length;
   var remoteCount = thisWeek.filter(function(j){return j.remoteType==='Remote';}).length;
   var hybridCount = thisWeek.filter(function(j){return j.remoteType==='Hybrid';}).length;
@@ -3667,18 +3662,17 @@ function generateWeeklyReport() {
   var visaPct   = Math.round(visaCount/total*100);
   var remotePct = Math.round(remoteCount/total*100);
   var hybridPct = Math.round(hybridCount/total*100);
-  var enPct     = Math.round(enOnly.length/total*100);
 
-  // ── 비자스폰서 핫 직종
+  // ── 신규 공고 (3일 이내)
+  var freshCount = thisWeek.filter(function(j){return new Date(j.postedAt) >= new Date(now - 3*24*3600*1000);}).length;
+  var freshPct = Math.round(freshCount/total*100);
+
+  // ── 비자스폰서 핫직종
   var visaCats = catDefs.map(function(c){
     var tw = thisWeek.filter(function(j){return j.visaSponsored && (regex[c.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length;
     var lw = lastWeek.filter(function(j){return j.visaSponsored && (regex[c.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length;
     return Object.assign({},c,{tw:tw,lw:lw,diff:tw-lw});
   }).filter(function(c){return c.tw>0;}).sort(function(a,b){return b.tw-a.tw;}).slice(0,3);
-
-  // ── 신선도
-  var freshCount = thisWeek.filter(function(j){return new Date(j.postedAt) >= new Date(now - 3*24*3600*1000);}).length;
-  var freshPct = Math.round(freshCount/total*100);
 
   var totalThis = thisWeek.length;
   var totalLast = lastWeek.length;
@@ -3687,20 +3681,19 @@ function generateWeeklyReport() {
   var weekStr   = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+Math.ceil(now.getDate()/7)+'주차';
   var dateStr   = now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+String(now.getDate()).padStart(2,'0');
 
-  // 에디터 노트 자동 생성
+  // 에디터 노트
   var topCat = catStats[0];
   var topCtry = countryStats[0];
-  var korDiff = korFriendly.length - korFriendlyLast.length;
-  var korDiffStr = korDiff >= 0 ? '+'+korDiff : ''+korDiff;
   var editorNote = weekStr+' 기준, EuroGate가 수집한 유럽 신규 채용 공고는 총 <strong>'+totalThis+'건</strong>으로 ';
   editorNote += totalDiff>=0
     ? '지난주 대비 <strong style="color:#2d9e6e">'+diffSign+totalDiff+'건 증가</strong>했습니다. '
     : '지난주 대비 <strong style="color:#d94f4f">'+totalDiff+'건 감소</strong>했습니다. ';
   if(topCat) editorNote += '<strong>'+topCat.name+'</strong> 직군이 '+topCat.thisWeek+'건으로 가장 활발하며, ';
   if(topCtry) editorNote += '<strong>'+topCtry.flag+' '+topCtry.name+'</strong>이 '+topCtry.thisWeek+'건으로 선두입니다. ';
-  editorNote += '한국인 구직자 조건(영어 가능 + 비자/원격) 충족 공고는 <strong>'+korFriendly.length+'건</strong>(지난주 대비 <strong style="color:'+(korDiff>=0?'#2d9e6e':'#d94f4f')+'">'+korDiffStr+'건</strong>)으로 집계됐습니다.';
+  editorNote += '한국인 구직자 조건(영어 가능 + 비자/원격) 충족 공고는 <strong>'+korFriendly.length+'건</strong>(지난주 대비 <strong style="color:'+(korDiff>=0?'#2d9e6e':'#d94f4f')+'">'+korDiffStr+'건</strong>)으로 집계됐습니다. ';
+  editorNote += '<br><br><span style="font-size:12px;color:#8b7d6e">📌 본 리포트는 Adzuna, Himalayas, Remotive 등 EuroGate가 수집하는 주요 채용 플랫폼 기준이며, 일부 유럽 국가(북유럽 등)는 데이터 수집 범위에 포함되지 않을 수 있습니다. 수록된 공고는 대표적인 유럽 주요국 기준입니다.</span>';
 
-  // ── HTML 생성
+  // ── HTML 렌더링
   var w = window.open('', '_blank');
   var d = w.document;
   d.open();
@@ -3711,33 +3704,29 @@ function generateWeeklyReport() {
   d.write('*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}');
   d.write('body{font-family:"Sora",sans-serif;background:#f7f4ef;color:#1a1a2e}');
   d.write('.wrap{max-width:800px;margin:0 auto;background:#fff;box-shadow:0 0 80px rgba(0,0,0,.1)}');
-  // 헤더
   d.write('.hd{background:linear-gradient(135deg,#0a1628,#162447,#0a1628);padding:48px 44px 40px;position:relative;overflow:hidden}');
   d.write('.hd::after{content:"";position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,220,100,.15)}');
   d.write('.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,220,100,.15);border:1px solid rgba(255,220,100,.35);color:#ffd864;font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;padding:4px 11px;border-radius:20px;margin-bottom:18px}');
-  d.write('.htitle{font-family:"Playfair Display",serif;font-size:38px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:6px}');
+  d.write('.htitle{font-family:"Sora",sans-serif;font-size:36px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:6px}');
   d.write('.htitle em{color:#ffd864;font-style:normal}');
   d.write('.hsub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:28px;letter-spacing:.3px}');
-  d.write('.hs{display:flex;gap:24px}.hstat{}');
-  d.write('.hnum{font-family:"Playfair Display",serif;font-size:34px;font-weight:700;color:#fff;line-height:1}');
+  d.write('.hs{display:flex;gap:24px}');
+  d.write('.hnum{font-family:"Sora",sans-serif;font-size:32px;font-weight:800;color:#fff;line-height:1}');
   d.write('.hnum.pos{color:#4dd9a0}.hnum.neg{color:#f06464}');
   d.write('.hlbl{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;letter-spacing:.5px}');
   d.write('.hdiv{width:1px;background:rgba(255,255,255,.1);align-self:stretch}');
-  // 섹션
   d.write('.sec{padding:32px 44px;border-bottom:1px solid #ece7df;background:#fff}');
   d.write('.slbl{font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#c5bdb0;margin-bottom:5px}');
   d.write('.stitle{font-family:"Sora",sans-serif;font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:18px}');
-  // 에디터 노트
   d.write('.note{background:#fffbf4;border-left:3px solid #f5a623;padding:16px 20px;border-radius:0 10px 10px 0;font-size:13px;line-height:1.9;color:#3d3328}');
   d.write('.note strong{color:#1a1a2e;font-weight:700}');
-  // 한국인 주목 카드
-  d.write('.kor-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}');
+  d.write('.kor-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}');
   d.write('.kor-card{background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(124,106,240,.08));border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px;text-align:center}');
   d.write('.kor-num{font-family:"Sora",sans-serif;font-size:24px;font-weight:800;color:#4f8ef7}');
+  d.write('.kor-num.neg{color:#d94f4f}');
   d.write('.kor-lbl{font-size:10px;color:#5a6a8a;margin-top:3px;line-height:1.4}');
-  d.write('.kor-note{background:rgba(79,142,247,.05);border-radius:8px;padding:12px 16px;font-size:12px;color:#3a4a6a;line-height:1.8}');
+  d.write('.kor-note{background:rgba(79,142,247,.05);border-radius:8px;padding:12px 16px;font-size:12px;color:#3a4a6a;line-height:1.8;border:1px solid rgba(79,142,247,.12)}');
   d.write('.kor-note strong{color:#1a1a2e}');
-  // 국가 바 차트
   d.write('.clist{display:flex;flex-direction:column;gap:12px}');
   d.write('.crow{display:flex;align-items:center;gap:10px}');
   d.write('.cfn{width:82px;font-size:12px;font-weight:600;color:#2a2a3e;flex-shrink:0}');
@@ -3749,15 +3738,13 @@ function generateWeeklyReport() {
   d.write('.dp{color:#2d9e6e}.dn{color:#d94f4f}.dz{color:#b0a898}');
   d.write('.legend{display:flex;gap:14px;margin-top:12px;font-size:10px;color:#b0a898}');
   d.write('.leg-dot{width:10px;height:6px;border-radius:2px;display:inline-block}');
-  // 핫스팟
   d.write('.hot-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}');
-  d.write('.hot-card{background:#faf8f5;border:1px solid #ede8e0;border-radius:8px;padding:12px 14px}');
+  d.write('.hot-card{background:#faf8f5;border:1px solid #ede8e0;border-radius:8px;padding:14px}');
   d.write('.hot-top{font-size:10px;color:#b0a898;margin-bottom:4px}');
-  d.write('.hot-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px}');
-  d.write('.hot-num{font-size:20px;font-weight:800;color:#2d9e6e;font-family:"Sora",sans-serif}');
-  d.write('.hot-sub{font-size:10px;color:#b0a898;margin-top:1px}');
+  d.write('.hot-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px}');
+  d.write('.hot-pct{font-size:26px;font-weight:800;color:#2d9e6e;font-family:"Sora",sans-serif}');
+  d.write('.hot-sub{font-size:10px;color:#b0a898;margin-top:2px}');
   d.write('.drop-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fdecea;border-radius:8px;margin-top:8px;font-size:12px;color:#a32d2d}');
-  // 직종 카드
   d.write('.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}');
   d.write('.cat-card{background:#faf8f5;border:1px solid #ede8e0;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}');
   d.write('.cat-card::before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,#4f8ef7,#7c6af0)}');
@@ -3768,74 +3755,77 @@ function generateWeeklyReport() {
   d.write('.cat-lbl{font-size:10px;color:#b0a898}');
   d.write('.cat-ch{font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px}');
   d.write('.cat-ch.pos{background:#e8f7f0;color:#2d9e6e}.cat-ch.neg{background:#fdecea;color:#d94f4f}.cat-ch.zero{background:#f5f0eb;color:#b0a898}');
-  // 스킬
-  d.write('.sk-list{display:flex;flex-direction:column;gap:9px}');
+  d.write('.sk-list{display:flex;flex-direction:column;gap:10px}');
   d.write('.sk-row{display:flex;align-items:center;gap:10px}');
   d.write('.sk-rk{width:18px;font-size:11px;font-weight:700;color:#c5bdb0;flex-shrink:0;text-align:right}');
   d.write('.sk-nm{width:115px;font-size:12px;font-weight:600;color:#1a1a2e;flex-shrink:0}');
-  d.write('.sk-tags{display:flex;gap:3px;flex-shrink:0;width:90px}');
-  d.write('.sk-tag{font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(79,142,247,.1);color:#4f6ab0;font-weight:600}');
+  d.write('.sk-tags{display:flex;gap:3px;flex-shrink:0;width:80px}');
+  d.write('.sk-tag{font-size:10px;padding:1px 4px;border-radius:4px;background:rgba(79,142,247,.1);color:#4f6ab0;font-weight:600}');
   d.write('.sk-bw{flex:1;height:6px;background:#f0ebe2;border-radius:3px;overflow:hidden}');
   d.write('.sk-b{height:100%;background:linear-gradient(90deg,#f5a623,#e05c6e);border-radius:3px}');
   d.write('.sk-cnt{width:36px;text-align:right;font-size:11px;font-weight:600;color:#7a6e62;flex-shrink:0}');
   d.write('.sk-note{margin-top:14px;font-size:11px;color:#8b7d6e;background:#faf8f5;border-radius:8px;padding:10px 14px;line-height:1.7}');
-  // 근무조건
-  d.write('.m-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}');
+  d.write('.m-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}');
   d.write('.m-card{background:#faf8f5;border:1px solid #ede8e0;border-radius:10px;padding:14px;text-align:center}');
   d.write('.m-ico{font-size:18px;margin-bottom:5px}');
   d.write('.m-pct{font-family:"Sora",sans-serif;font-size:24px;font-weight:800;color:#1a1a2e}');
   d.write('.m-lbl{font-size:10px;color:#8b7d6e;margin-top:2px;line-height:1.4}');
   d.write('.m-sub{font-size:9px;color:#c5bdb0;margin-top:1px}');
-  // 비자 핫직종
   d.write('.visa-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#faf8f5;border-radius:8px;margin-bottom:8px;border-left:3px solid #4f8ef7}');
   d.write('.visa-rank{font-size:11px;font-weight:700;color:#b0a898;width:20px;flex-shrink:0}');
   d.write('.visa-name{flex:1;font-size:13px;font-weight:700;color:#1a1a2e}');
   d.write('.visa-cnt{font-size:18px;font-weight:800;color:#4f8ef7;font-family:"Sora",sans-serif}');
   d.write('.visa-ch{font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;margin-left:4px}');
   d.write('.visa-ch.pos{background:#e8f7f0;color:#2d9e6e}.visa-ch.neg{background:#fdecea;color:#d94f4f}.visa-ch.zero{background:#f5f0eb;color:#b0a898}');
-  // 푸터
   d.write('.ft{background:#0a1628;padding:24px 44px;display:flex;align-items:center;justify-content:space-between}');
   d.write('.fbrand{font-family:"Sora",sans-serif;font-size:16px;font-weight:800;color:#fff}');
   d.write('.fbrand span{color:#ffd864}');
   d.write('.fcopy{font-size:9px;color:rgba(255,255,255,.35);text-align:right;line-height:1.8}');
   d.write('.flink{font-size:10px;color:#ffd864}');
   d.write('.wm{text-align:center;padding:10px;background:#f0ebe2;font-size:9px;color:#c5bdb0;letter-spacing:1px}');
+  d.write('.ins{font-size:11px;color:#8b7d6e;line-height:1.7;background:#faf8f5;border-radius:8px;padding:10px 14px;margin-top:14px}');
   d.write('</style></head><body><div class="wrap">');
 
   // ── 헤더
   d.write('<div class="hd">');
   d.write('<div class="badge">📊 Weekly Report · '+weekStr+'</div>');
-  d.write('<div class="htitle">유럽 채용 시장<br><em>주간 동향</em></div>');
+  d.write('<div class="htitle">유럽 채용 시장 <em>주간 동향</em></div>');
   d.write('<div class="hsub">EuroGate 데이터 기반 · '+dateStr+' 기준 · 주요 5개국(GB·DE·NL·ES·FR) 중심</div>');
   d.write('<div class="hs">');
-  d.write('<div class="hstat"><div class="hnum">'+totalThis+'</div><div class="hlbl">이번 주 신규 공고</div></div>');
+  d.write('<div><div class="hnum">'+totalThis+'</div><div class="hlbl">이번 주 신규 공고</div></div>');
   d.write('<div class="hdiv"></div>');
-  d.write('<div class="hstat"><div class="hnum '+(totalDiff>=0?'pos':'neg')+'">'+diffSign+totalDiff+'</div><div class="hlbl">지난 주 대비</div></div>');
+  d.write('<div><div class="hnum '+(totalDiff>=0?'pos':'neg')+'">'+diffSign+totalDiff+'</div><div class="hlbl">지난 주 대비</div></div>');
   d.write('<div class="hdiv"></div>');
-  d.write('<div class="hstat"><div class="hnum">'+allJobs.length+'</div><div class="hlbl">총 수집 공고</div></div>');
+  d.write('<div><div class="hnum">'+allJobs.length+'</div><div class="hlbl">총 수집 공고</div></div>');
   d.write('<div class="hdiv"></div>');
-  d.write('<div class="hstat"><div class="hnum">'+freshPct+'%</div><div class="hlbl">3일 이내 신선 공고</div></div>');
+  d.write('<div><div class="hnum">'+freshPct+'%</div><div class="hlbl">3일 이내 신규 공고</div></div>');
   d.write('</div></div>');
 
   // ── 에디터 노트
   d.write('<div class="sec"><div class="slbl">Editor\'s Note</div><div class="stitle">이번 주 유럽 채용 시장은</div>');
   d.write('<div class="note">'+editorNote+'</div></div>');
 
-  // ── 한국인 주목 지표
+  // ── 한국인 주목
   d.write('<div class="sec"><div class="slbl">For Korean Job Seekers</div><div class="stitle">🇰🇷 한국인 구직자 주목 지표</div>');
   d.write('<div class="kor-grid">');
   d.write('<div class="kor-card"><div class="kor-num">'+korFriendly.length+'</div><div class="kor-lbl">영어 OK +<br>비자/원격 공고</div></div>');
   d.write('<div class="kor-card"><div class="kor-num">'+visaRemote.length+'</div><div class="kor-lbl">비자스폰서 +<br>원격 동시 충족</div></div>');
-  d.write('<div class="kor-card"><div class="kor-num">'+enPct+'%</div><div class="kor-lbl">영어만으로<br>지원 가능</div></div>');
-  d.write('<div class="kor-card"><div class="kor-num '+(korDiff>=0?'':'dn')+'">'+korDiffStr+'</div><div class="kor-lbl">지난주 대비<br>변화</div></div>');
+  d.write('<div class="kor-card"><div class="kor-num">'+enPct+'%</div><div class="kor-lbl">영어만 OK<br>(영국 제외 기준)</div></div>');
+  d.write('<div class="kor-card"><div class="kor-num '+(korDiff<0?'neg':'')+'">'+korDiffStr+'</div><div class="kor-lbl">지난주 대비<br>변화</div></div>');
   d.write('</div>');
+  // 한국인 인사이트 — visaRemote 0이면 멘트 다르게
   var korTopCat = catDefs.map(function(c){
     return {name:c.name, cnt: korFriendly.filter(function(j){return (regex[c.key]||[]).some(function(rx){return rx.test((j.title||'').toLowerCase());});}).length};
   }).sort(function(a,b){return b.cnt-a.cnt;})[0];
-  d.write('<div class="kor-note">💡 영어 기반 원격·비자 공고 중 <strong>'+( korTopCat?korTopCat.name:'—' )+'</strong> 직군이 가장 많습니다. ');
-  d.write('비자스폰서와 원격 조건을 동시에 만족하는 공고 <strong>'+visaRemote.length+'건</strong>은 한국 거주자도 바로 지원 가능한 기회입니다.</div></div>');
+  var korNoteText = '💡 영어 기반 원격·비자 공고 중 <strong>'+(korTopCat&&korTopCat.cnt>0?korTopCat.name:'—')+'</strong> 직군이 가장 많습니다. ';
+  if (visaRemote.length > 0) {
+    korNoteText += '비자스폰서와 원격을 동시에 만족하는 공고 <strong>'+visaRemote.length+'건</strong>은 한국 거주자도 바로 지원 가능한 기회입니다.';
+  } else {
+    korNoteText += '이번 주는 비자스폰서+원격을 동시에 만족하는 공고가 없습니다. 비자스폰서 공고 또는 원격 공고를 각각 확인해보세요.';
+  }
+  d.write('<div class="kor-note">'+korNoteText+'</div></div>');
 
-  // ── 국가별 현황
+  // ── 국가별
   d.write('<div class="sec"><div class="slbl">Country Breakdown</div><div class="stitle">🗺️ 국가별 채용 공고 현황 (주요 5개국)</div>');
   d.write('<div class="clist">');
   var maxVal = Math.max.apply(null, countryStats.map(function(c){return c.thisWeek;})) || 1;
@@ -3844,63 +3834,74 @@ function generateWeeklyReport() {
     var tw=(c.thisWeek/maxVal*100).toFixed(1), lw=(c.lastWeek/maxVal*100).toFixed(1);
     d.write('<div class="crow"><div class="cfn">'+c.flag+' '+c.name+'</div><div class="cbw"><div class="cbl" style="width:'+lw+'%"></div><div class="cbt" style="width:'+tw+'%"></div></div><div class="ccnt">'+c.thisWeek+'건</div><div class="cdiff '+dc+'">'+ds+'</div></div>');
   });
-  d.write('</div>');
-  d.write('<div class="legend"><span style="display:flex;align-items:center;gap:4px"><span class="leg-dot" style="background:#dde5f5"></span>지난주</span><span style="display:flex;align-items:center;gap:4px"><span class="leg-dot" style="background:linear-gradient(90deg,#4f8ef7,#7c6af0)"></span>이번주</span></div></div>');
+  d.write('</div><div class="legend"><span style="display:flex;align-items:center;gap:4px"><span class="leg-dot" style="background:#dde5f5"></span>지난주</span><span style="display:flex;align-items:center;gap:4px"><span class="leg-dot" style="background:linear-gradient(90deg,#4f8ef7,#7c6af0)"></span>이번주</span></div></div>');
 
-  // ── 국가 × 직종 핫스팟
+  // ── 핫스팟 (% 기준)
   d.write('<div class="sec"><div class="slbl">Country × Job Hotspot</div><div class="stitle">🔥 이번 주 급등 포지션</div>');
-  d.write('<div class="hot-grid">');
-  topHotspots.forEach(function(h){
-    d.write('<div class="hot-card"><div class="hot-top">'+h.flag+' '+h.country+' · '+h.icon+'</div><div class="hot-title">'+h.cat+'</div><div class="hot-num">+'+h.diff+'</div><div class="hot-sub">이번주 '+h.tw+'건</div></div>');
-  });
-  d.write('</div>');
+  if(topHotspots.length > 0) {
+    d.write('<div class="hot-grid">');
+    topHotspots.forEach(function(h){
+      var pctStr = h.lw > 0 ? '+'+h.pct+'%' : 'NEW';
+      d.write('<div class="hot-card"><div class="hot-top">'+h.flag+' '+h.country+' · '+h.icon+'</div><div class="hot-title">'+h.cat+'</div><div class="hot-pct">'+pctStr+'</div><div class="hot-sub">이번주 '+h.tw+'건 · 지난주 '+h.lw+'건</div></div>');
+    });
+    d.write('</div>');
+  }
   if(topDrops.length>0){
     d.write('<div style="font-size:10px;font-weight:700;color:#d94f4f;letter-spacing:1px;margin:12px 0 6px">📉 감소 주의</div>');
     topDrops.forEach(function(h){
-      d.write('<div class="drop-row">'+h.flag+' '+h.country+' · '+h.icon+' '+h.cat+' &nbsp; <strong>'+h.diff+'건</strong> 감소 (이번주 '+h.tw+'건)</div>');
+      var pctStr = h.lw > 0 ? Math.round((h.tw-h.lw)/h.lw*100)+'%' : '-';
+      d.write('<div class="drop-row">'+h.flag+' '+h.country+' · '+h.icon+' '+h.cat+' &nbsp; <strong>'+pctStr+'</strong> 감소 (이번주 '+h.tw+'건 · 지난주 '+h.lw+'건)</div>');
     });
   }
-  d.write('<div style="font-size:11px;color:#8b7d6e;margin-top:14px;line-height:1.7;background:#faf8f5;border-radius:8px;padding:10px 14px">💡 급등 포지션은 채용 수요가 빠르게 늘고 있어 지원 타이밍이 중요합니다. 반대로 감소 포지션은 경쟁률이 낮아질 수 있어 오히려 기회가 될 수 있습니다.</div></div>');
+  d.write('<div class="ins">💡 % 수치는 지난주 대비 이번주 변화율입니다. 급등 포지션은 채용 수요가 빠르게 늘고 있어 지원 타이밍이 중요합니다.</div></div>');
 
-  // ── 직종별 순위
+  // ── 직종별
   d.write('<div class="sec"><div class="slbl">Job Category</div><div class="stitle">💼 직종별 채용 순위</div>');
   d.write('<div class="cat-grid">');
   catStats.forEach(function(c,i){
     var diff=c.thisWeek-c.lastWeek, ds=diff>0?'+'+diff:diff===0?'±0':''+diff, dc=diff>0?'pos':diff<0?'neg':'zero';
     d.write('<div class="cat-card"><div class="cat-rk">#'+(i+1)+' '+c.icon+'</div><div class="cat-nm">'+c.name+'</div><div class="cat-nums"><div class="cat-n">'+c.thisWeek+'</div><div class="cat-lbl">건</div><div class="cat-ch '+dc+'">'+ds+'</div></div></div>');
   });
-  d.write('</div>');
-  d.write('<div style="font-size:11px;color:#8b7d6e;margin-top:14px;line-height:1.7;background:#faf8f5;border-radius:8px;padding:10px 14px">📌 순위는 이번주 7일간 새로 올라온 공고 기준입니다. 전체 누적 공고와는 다를 수 있습니다.</div></div>');
+  d.write('</div><div class="ins">📌 이번주 7일간 신규 공고 기준입니다. 전체 누적 공고와는 다를 수 있습니다.</div></div>');
 
-  // ── 스킬 Top 10
-  d.write('<div class="sec"><div class="slbl">In-Demand Skills</div><div class="stitle">🛠️ 이번 주 인기 스킬 Top 10</div>');
-  d.write('<div class="sk-list">');
-  var maxSk = topSkills.length>0 ? topSkills[0].count : 1;
-  topSkills.forEach(function(sk,i){
-    var pct = (sk.count/maxSk*100).toFixed(1);
-    var tags = sk.cats.map(function(c){ return '<span class="sk-tag">'+( catIconMap[c]||'' )+'</span>'; }).join('');
-    d.write('<div class="sk-row"><div class="sk-rk">'+(i+1)+'</div><div class="sk-nm">'+sk.name+'</div><div class="sk-tags">'+tags+'</div><div class="sk-bw"><div class="sk-b" style="width:'+pct+'%"></div></div><div class="sk-cnt">'+sk.count+'건</div></div>');
-  });
+  // ── 스킬 Top 5 (2개 이상 직군)
+  d.write('<div class="sec"><div class="slbl">In-Demand Skills</div><div class="stitle">🛠️ 이번 주 주목 스킬 Top 5</div>');
+  if(topSkills.length > 0) {
+    d.write('<div class="sk-list">');
+    var maxSk = topSkills[0].count;
+    topSkills.forEach(function(sk,i){
+      var pct = (sk.count/maxSk*100).toFixed(1);
+      var tags = sk.cats.map(function(c){ return '<span class="sk-tag">'+(catIconMap[c]||'')+'</span>'; }).join('');
+      d.write('<div class="sk-row"><div class="sk-rk">'+(i+1)+'</div><div class="sk-nm">'+sk.name+'</div><div class="sk-tags">'+tags+'</div><div class="sk-bw"><div class="sk-b" style="width:'+pct+'%"></div></div><div class="sk-cnt">'+sk.count+'건</div></div>');
+    });
+    d.write('</div>');
+    d.write('<div class="sk-note">💡 여러 직군 아이콘이 붙은 스킬은 직군 전환 시에도 유용한 범용 스킬입니다. 📊데이터 · 💻개발 · 📣마케팅 · 🤝HR · 🚛운영 · 🏢경영</div>');
+  } else {
+    d.write('<div class="ins">이번 주 데이터가 충분하지 않습니다.</div>');
+  }
   d.write('</div>');
-  d.write('<div class="sk-note">💡 아이콘은 해당 스킬이 주로 요구되는 직군을 나타냅니다. 📊데이터/AI · 💻개발 · 📣마케팅 · 🤝HR · 🚛운영 · 🏢경영<br>여러 직군에 걸쳐 있는 스킬(예: SQL, Excel)은 직군 전환 시에도 유용한 범용 스킬입니다.</div></div>');
 
-  // ── 근무조건 + 언어
+  // ── 근무조건
   d.write('<div class="sec"><div class="slbl">Work Conditions & Language</div><div class="stitle">🛂 근무 조건 및 언어 요건</div>');
   d.write('<div class="m-grid">');
   d.write('<div class="m-card"><div class="m-ico">🏠</div><div class="m-pct">'+remotePct+'%</div><div class="m-lbl">원격 근무<br>가능</div><div class="m-sub">'+remoteCount+'건</div></div>');
-  d.write('<div class="m-card"><div class="m-ico">🏗️</div><div class="m-pct">'+hybridPct+'%</div><div class="m-lbl">하이브리드<br></div><div class="m-sub">'+hybridCount+'건</div></div>');
+  d.write('<div class="m-card"><div class="m-ico">🏗️</div><div class="m-pct">'+hybridPct+'%</div><div class="m-lbl">하이브리드</div><div class="m-sub">'+hybridCount+'건</div></div>');
   d.write('<div class="m-card"><div class="m-ico">🛂</div><div class="m-pct">'+visaPct+'%</div><div class="m-lbl">비자<br>스폰서십</div><div class="m-sub">'+visaCount+'건</div></div>');
-  d.write('<div class="m-card"><div class="m-ico">🌐</div><div class="m-pct">'+enPct+'%</div><div class="m-lbl">영어만으로<br>지원 가능</div><div class="m-sub">'+enOnly.length+'건</div></div>');
+  d.write('<div class="m-card"><div class="m-ico">🌐</div><div class="m-pct">'+enPct+'%</div><div class="m-lbl">영어만 OK<br><span style="font-size:9px;color:#c5bdb0">(영국 제외)</span></div><div class="m-sub">'+enOnlyNonGB.length+'건</div></div>');
   d.write('</div>');
-  d.write('<div style="font-size:11px;color:#8b7d6e;line-height:1.7;background:#faf8f5;border-radius:8px;padding:10px 14px">💡 영어만으로 지원 가능한 비율이 <strong>'+enPct+'%</strong>로, 현지어 없이도 도전할 수 있는 포지션이 꾸준히 존재합니다. 원격+영어 조합 공고는 한국에서도 바로 지원 가능합니다.</div></div>');
+  d.write('<div class="ins">💡 영어만으로 지원 가능한 비율은 영국 공고를 제외한 수치입니다(영국은 기본 영어권이라 의미가 없어요). 원격+영어 조합은 한국에서도 바로 도전 가능합니다.</div></div>');
 
-  // ── 비자스폰서 핫 직종
+  // ── 비자스폰서 핫직종
   d.write('<div class="sec" style="border-bottom:none"><div class="slbl">Visa Sponsor Hot Jobs</div><div class="stitle">✈️ 비자 스폰서 핫 직종 Top 3</div>');
-  visaCats.forEach(function(c,i){
-    var ds=c.diff>0?'+'+c.diff:c.diff===0?'±0':''+c.diff, dc=c.diff>0?'pos':c.diff<0?'neg':'zero';
-    d.write('<div class="visa-row"><div class="visa-rank">#'+(i+1)+'</div><div class="visa-name">'+c.icon+' '+c.name+'</div><div class="visa-cnt">'+c.tw+'</div><div class="visa-ch '+dc+'">'+ds+'</div></div>');
-  });
-  d.write('<div style="font-size:11px;color:#8b7d6e;margin-top:12px;line-height:1.7;background:rgba(79,142,247,.05);border-radius:8px;padding:10px 14px;border:1px solid rgba(79,142,247,.15)">💡 비자 스폰서를 제공하는 기업은 외국인 채용 경험이 있고 국제적인 환경일 가능성이 높습니다. 이 직군을 우선 타겟으로 삼는 것을 추천합니다.</div></div>');
+  if(visaCats.length > 0) {
+    visaCats.forEach(function(c,i){
+      var ds=c.diff>0?'+'+c.diff:c.diff===0?'±0':''+c.diff, dc=c.diff>0?'pos':c.diff<0?'neg':'zero';
+      d.write('<div class="visa-row"><div class="visa-rank">#'+(i+1)+'</div><div class="visa-name">'+c.icon+' '+c.name+'</div><div class="visa-cnt">'+c.tw+'</div><div class="visa-ch '+dc+'">'+ds+'</div></div>');
+    });
+  } else {
+    d.write('<div class="ins">이번 주 비자 스폰서 공고 데이터가 충분하지 않습니다.</div>');
+  }
+  d.write('<div class="ins" style="border:1px solid rgba(79,142,247,.15);background:rgba(79,142,247,.05)">💡 비자 스폰서를 제공하는 기업은 외국인 채용 경험이 있고 국제적인 환경일 가능성이 높습니다. 이 직군을 우선 타겟으로 삼는 것을 추천합니다.</div></div>');
 
   // ── 푸터
   d.write('<div class="ft"><div><div class="fbrand">Euro<span>Gate</span></div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:3px">유럽 커리어 파트너</div></div>');
