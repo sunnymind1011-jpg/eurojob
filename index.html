@@ -2800,7 +2800,18 @@ function analyzeJD() {
 
   // 1. 기본 정보 추출
   const sourceHint = document.getElementById('jdAnalIn').dataset.sourceHint || '';
-  const remote = sourceHint === 'himalayas' ? 'Remote' : detectRemote(jd);
+  // Workplace Arrangement 섹션 명시 우선 (가장 신뢰도 높음)
+  function detectWorkplaceSection(text) {
+    const m = text.match(/workplace arrangement[s]?[\s\S]{0,10}\n([^\n]+)/i);
+    if (!m) return null;
+    const line = m[1].trim().toLowerCase();
+    if (/^remote/.test(line)) return 'Remote';
+    if (/^hybrid/.test(line)) return 'Hybrid';
+    if (/^on.?site|^office|^in.?person/.test(line)) return 'On-site';
+    return null;
+  }
+  const workplaceSection = detectWorkplaceSection(jd);
+  const remote = workplaceSection || (sourceHint === 'himalayas' ? 'Remote' : detectRemote(jd));
   const langs = detectLangs(jd);
   const relocation = detectRelocation ? detectRelocation(jd) : false;
 
@@ -2811,14 +2822,15 @@ function analyzeJD() {
   // 3. 급여 추출 (GMV/ARR/revenue 등 회사 지표 제외)
   // 3. 급여 추출 (복지/수당 문맥 + GMV/ARR 등 회사 지표 제외)
   function extractSalary(text) {
-    // 복지/수당/보너스 문맥 제거 (stipend, allowance, wellness, bonus 등)
+    // 복지/수당 문맥 제거: "X allowance", "X stipend", "X/month Stipend" 등 줄 단위로 제거
     const cleaned = text
-      .replace(/(stipend|allowance|wellness|reimbursement|bonus|perks?|benefit|subsid[yi]).{0,100}/gi, ' ')
+      .replace(/[^\n]*(stipend|wellness|reimbursement|perks?|merchandise allowance|work from home allowance|clothing allowance)[^\n]*/gi, ' ')
       .replace(/(gmv|arr|revenue|funding|valuation|annual recurring|gross merchandise|raised|series [a-z]|mrr|budget|investment|market cap).{0,80}/gi, ' ');
-    // 연봉 명시된 패턴 우선 (연 단위만: year/yr/annum)
+    // Workplace Arrangement 섹션에서 명시된 경우 우선 — 급여와 무관
+    // 연봉 명시된 패턴 우선 (연 단위: year/yr/annum) — 최소 4자리
     const withYear = cleaned.match(/[€£$][\d,]+(?:\.?\d+)?k?\s*(?:[-–]\s*[€£$]?[\d,]+(?:\.?\d+)?k?)?\s*(?:\/|per)\s*(?:year|yr|annum)/i);
     if (withYear) return withYear[0].trim();
-    // 범위 패턴 최소 5자리 이상 (€10,000–)
+    // 범위 패턴 최소 5자리 이상
     const range = cleaned.match(/[€£$][\d,]{5,}\s*[-–]\s*[€£$]?[\d,]{5,}/);
     if (range) return range[0].trim();
     // 단독 금액 최소 5자리 이상
@@ -2827,21 +2839,6 @@ function analyzeJD() {
     return null;
   }
   const salary = extractSalary(jd) || '미공개';
-
-  // 3-1. 직급 레벨 감지
-  function extractLevel(text) {
-    const t = text.slice(0, 400);
-    if (/\b(vp|vice president|c-level|cmo|cto|ceo|chief)\b/i.test(t)) return 'Director/VP';
-    if (/\b(director)\b/i.test(t)) return 'Director/VP';
-    if (/\b(lead|principal|head of|staff engineer)\b/i.test(t)) return 'Lead/Principal';
-    if (/\b(senior|sr\.?)\b/i.test(t)) return 'Senior';
-    if (/\b(mid.?level|mid.?senior)\b/i.test(t)) return 'Mid-level';
-    if (/\b(junior|jr\.?)\b/i.test(t)) return 'Junior';
-    if (/\b(intern|entry.?level|graduate|trainee)\b/i.test(t)) return 'Entry/Intern';
-    if (/\b(manager)\b/i.test(t)) return 'Mid-level';
-    return null;
-  }
-  const level = extractLevel(jd);
 
   
 
@@ -2896,7 +2893,6 @@ const foundSkills = skillKeywords.filter(sk => {
     <h3>📋 핵심 정보</h3>
     <div class="visa-table">
       <div class="visa-row"><span style="color:var(--text2)">급여</span><span style="color:var(--accent3)">${salary}</span></div>
-      ${level ? `<div class="visa-row"><span style="color:var(--text2)">직급 레벨</span><span>${level === 'Director/VP' ? '⭐ Director/VP' : level === 'Lead/Principal' ? '🔴 Lead/Principal' : level === 'Senior' ? '🟠 Senior' : level === 'Mid-level' ? '🟡 Mid-level' : level === 'Junior' ? '🔵 Junior' : '🌱 ' + level}</span></div>` : ''}
       <div class="visa-row"><span style="color:var(--text2)">근무 형태</span><span style="color:${remote==='Unknown'?'var(--text3)':'var(--text)'}">${remote==='Remote'?'🏠 원격':remote==='Hybrid'?'🏗️ 하이브리드':remote==='On-site'?'🏢 출근':'❓ 확인 필요 (언급 없음)'}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">언어 요건</span><span>${langs.join(', ')}</span></div>
       <div class="visa-row"><span style="color:var(--text2)">Relocation</span><span style="color:${relocation?'#3ecfa0':noRightToWork||noVisa?'#f06464':timezoneRestricted?'#f5a623':'var(--text3)'}">${relocation?'✅ 지원':noRightToWork||noVisa?'❌ 불가 (현지 거주/취업권 필요)':timezoneRestricted?'⚠️ 지역제한 원격 (현지 거주 권장)':'정보 없음'}</span></div>
