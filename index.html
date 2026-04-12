@@ -2888,12 +2888,20 @@ const foundSkills = skillKeywords.filter(sk => {
       <div class="visa-row"><span style="color:var(--text2)">외국인 지원 가능성</span><span style="color:${koreanColor}">${koreanLabel} (${koreanScore}점)</span></div>
     </div>`;
 
+  // langs에서 공고 작성 언어 외 추가 언어 요건 → 스킬 카드에 표시
+  const langSkills = langs.filter(l => l !== langs[0]); // 첫 번째(작성 언어) 제외
+  const allSkills = [...foundSkills];
+  langSkills.forEach(l => { if (!allSkills.includes(l)) allSkills.push(l); });
+
   document.getElementById('jdSkillCard').innerHTML = `
     <h3>🛠️ 발견된 스킬</h3>
-    <div class="sub" style="margin-bottom:12px">${foundSkills.length}개 키워드 발견</div>
+    <div class="sub" style="margin-bottom:12px">${allSkills.length}개 키워드 발견</div>
     <div class="skill-tags">
-      ${foundSkills.length
-        ? foundSkills.map(s=>`<span class="sk-hit">${s}</span>`).join('')
+      ${allSkills.length
+        ? [
+            ...foundSkills.map(s=>`<span class="sk-hit">${s}</span>`),
+            ...langSkills.filter(l=>!foundSkills.includes(l)).map(l=>`<span class="sk-hit" style="background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.25);color:#4f8ef7">🌐 ${l} 요구</span>`)
+          ].join('')
         : '<span style="color:var(--text3);font-size:13px">스킬 키워드를 찾지 못했어요</span>'
       }
     </div>`;
