@@ -333,9 +333,8 @@ function fetchHimalayasCountry(country, code) {
               return !keys.every(k => NON_EU_HM.some(n => k.includes(n)));
             })
             .map(j => {
-              if (Math.random() < 0.1) console.log('HM job sample:', JSON.stringify({ company: j.company, companyName: j.companyName, organization: j.organization, keys: Object.keys(j) }));
               // 1. 공고마다 절대 겹치지 않도록 제목, 회사명, 랜덤 숫자를 조합해서 새 ID를 만듭니다.
-              const uniqueId = `${j.title}-${j.company?.name}-${Math.random().toString(36).slice(2, 9)}`;
+              const uniqueId = `${j.title}-${j.companyName}-${Math.random().toString(36).slice(2, 9)}`;
               const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_'); 
  
               return {
@@ -343,11 +342,11 @@ function fetchHimalayasCountry(country, code) {
                 id:          `hm_${code}_${safeId}`,
                 title:       j.title || '',
                 level:       detectLevel(j.title || '', j.description || ''),
-                company:     j.company?.name || '',
+                company:     j.companyName || '',
                 location:    country,
                 country:     code,
                 flag:        HIMALAYAS_FLAG[code] || '🌍',
-                logo:        companyEmoji(j.company?.name || ''),
+                logo:        companyEmoji(j.companyName || ''),
                 description: j.description || '',
                 url:         j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
                 salary:      j.salary ? `${j.salary}` : null,
