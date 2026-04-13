@@ -3600,9 +3600,11 @@ function generateWeeklyReport() {
       if (tw > 0) hotspots.push({country:c.name, flag:c.flag, cat:cat.name, icon:cat.icon, tw:tw, lw:lw, diff:tw-lw, pct:pct});
     });
   });
-  hotspots.sort(function(a,b){return b.pct-a.pct;});
-  var topHotspots = hotspots.filter(function(h){return h.pct>0;}).slice(0,3);
-  var topDrops = hotspots.slice().sort(function(a,b){return a.pct-b.pct;}).filter(function(h){return h.pct<0;}).slice(0,2);
+  // 통계적 유의성 필터: 이번주 10건 이상 + 지난주 5건 이상인 경우만
+  var validHotspots = hotspots.filter(function(h){return h.tw >= 10 && h.lw >= 5;});
+  validHotspots.sort(function(a,b){return b.diff-a.diff;});
+  var topHotspots = validHotspots.filter(function(h){return h.diff>0;}).slice(0,3);
+  var topDrops = validHotspots.slice().sort(function(a,b){return a.diff-b.diff;}).filter(function(h){return h.diff<0;}).slice(0,2);
 
   // ── 스킬 (2개 이상 직군에 걸친 것만, Top 5)
   var skillDefs = [
@@ -3841,19 +3843,21 @@ function generateWeeklyReport() {
   if(topHotspots.length > 0) {
     d.write('<div class="hot-grid">');
     topHotspots.forEach(function(h){
-      var pctStr = h.lw > 0 ? '+'+h.pct+'%' : 'NEW';
-      d.write('<div class="hot-card"><div class="hot-top">'+h.flag+' '+h.country+' · '+h.icon+'</div><div class="hot-title">'+h.cat+'</div><div class="hot-pct">'+pctStr+'</div><div class="hot-sub">이번주 '+h.tw+'건 · 지난주 '+h.lw+'건</div></div>');
+      var diffStr = '+'+h.diff;
+      d.write('<div class="hot-card"><div class="hot-top">'+h.flag+' '+h.country+' · '+h.icon+'</div><div class="hot-title">'+h.cat+'</div><div class="hot-pct">'+diffStr+'건</div><div class="hot-sub">이번주 '+h.tw+'건 · 지난주 '+h.lw+'건</div></div>');
     });
     d.write('</div>');
   }
   if(topDrops.length>0){
     d.write('<div style="font-size:10px;font-weight:700;color:#d94f4f;letter-spacing:1px;margin:12px 0 6px">📉 감소 주의</div>');
     topDrops.forEach(function(h){
-      var pctStr = h.lw > 0 ? Math.round((h.tw-h.lw)/h.lw*100)+'%' : '-';
-      d.write('<div class="drop-row">'+h.flag+' '+h.country+' · '+h.icon+' '+h.cat+' &nbsp; <strong>'+pctStr+'</strong> 감소 (이번주 '+h.tw+'건 · 지난주 '+h.lw+'건)</div>');
+      d.write('<div class="drop-row">'+h.flag+' '+h.country+' · '+h.icon+' '+h.cat+' &nbsp; <strong>'+h.diff+'건</strong> 감소 (이번주 '+h.tw+'건 · 지난주 '+h.lw+'건)</div>');
     });
   }
-  d.write('<div class="ins">💡 % 수치는 지난주 대비 이번주 변화율입니다. 급등 포지션은 채용 수요가 빠르게 늘고 있어 지원 타이밍이 중요합니다.</div></div>');
+  if(topHotspots.length === 0 && topDrops.length === 0) {
+    d.write('<div class="ins">이번 주는 유의미한 변화 데이터가 충분하지 않습니다. (기준: 이번주 10건↑ + 지난주 5건↑)</div>');
+  }
+  d.write('<div class="ins">💡 증감 수치는 지난주 대비 절대 변화량입니다. 샘플이 충분한(이번주 10건↑) 데이터만 표시합니다.</div></div>');
 
   // ── 직종별
   d.write('<div class="sec"><div class="slbl">Job Category</div><div class="stitle">💼 직종별 채용 순위</div>');
