@@ -977,6 +977,9 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
           <button class="btn btn-ghost btn-sm" onclick="openClaudeJD()">🤖 ChatGPT로 상세 분석</button>
           <button class="btn btn-ghost btn-sm" onclick="document.getElementById('jdAnalIn').value='';document.getElementById('jdAnalIn').dataset.sourceHint='';document.getElementById('jdResult').style.display='none';document.getElementById('jdUrlInput').value='';document.getElementById('jdUrlStatus').style.display='none';" style="color:var(--red);border-color:rgba(240,100,100,.3);margin-left:auto">🗑 초기화</button>
         </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.7">
+          💡 <strong style="color:var(--text2)">즉시 분석</strong>은 NLP 기반 자동 분석으로, ChatGPT 상세 분석과 달리 일부 항목에서 오차가 발생할 수 있어요. 더 나은 정확도를 위해 지속적으로 개선 중입니다.
+        </div>
       </div>
       <div id="jdResult" style="display:none">
         <div class="two-col">
