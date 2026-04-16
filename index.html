@@ -558,9 +558,9 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
     <div class="nav-item" onclick="nav('saved',this)"><span class="nav-icon">🔖</span>저장목록<span class="nav-badge warn" id="nb-saved">0</span></div>
     <div class="nav-item" id="nav-tracker" style="display:none" onclick="nav('tracker',this)"><span class="nav-icon">📋</span>지원 트래커</div>
     <div class="nav-section" id="nav-section-ai" style="display:none">AI 도구</div>
-<div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>매칭 분석</div>
-<div class="nav-item" id="nav-jobmatch" style="display:none" onclick="nav('jobmatch',this)"><span class="nav-icon">🎯</span>추천 포지션</div>
-<div class="nav-item" id="nav-coverletter" style="display:none" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>지원서 작성</div>
+<div class="nav-item" id="nav-ai" style="display:none" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>매칭 적합도</div>
+<div class="nav-item" id="nav-jobmatch" style="display:none" onclick="nav('jobmatch',this)"><span class="nav-icon">🎯</span>AI 추천 공고</div>
+<div class="nav-item" id="nav-coverletter" style="display:none" onclick="nav('coverletter',this)"><span class="nav-icon">✍️</span>커버레터 작성</div>
 <div class="nav-item" id="nav-jdanalysis" style="display:none" onclick="nav('jdanalysis',this)"><span class="nav-icon">🔍</span>JD 인사이트</div>
 <div class="nav-section" id="nav-section-info" style="display:none">정보</div>
 <div class="nav-item" id="nav-trends" style="display:none" onclick="nav('trends',this)"><span class="nav-icon">📊</span>직종 트렌드</div>
@@ -622,7 +622,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
         <p>스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.</p>
         <div class="hero-actions">
           <button class="btn btn-primary" onclick="nav('jobs',null)">🔍 채용공고 보기</button>
-          <button class="btn btn-ghost" onclick="nav('ai',null)">🤖 매칭 분석 시작</button>
+          <button class="btn btn-ghost" onclick="nav('ai',null)">🤖 매칭 적합도 시작</button>
         </div>
       </div>
       <div class="stats4">
@@ -796,7 +796,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
     <!-- ★ AI MATCHING ───────────────────────────────── -->
     <div class="page" id="page-ai">
       <div class="sec-hd" style="margin-bottom:18px">
-        <div><div class="sec-title">🤖 매칭 분석</div><div class="sec-sub">ChatGPT로 적합도 분석 — 로그인 없이 사용 가능!</div></div>
+        <div><div class="sec-title">🤖 매칭 적합도</div><div class="sec-sub">ChatGPT로 적합도 분석 — 로그인 없이 사용 가능!</div></div>
       </div>
 
       <!-- HOW IT WORKS -->
@@ -869,11 +869,11 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
     <!-- ★ AI 공고 추천 ──────────────────────────────── -->
     <div class="page" id="page-jobmatch">
       <div class="sec-hd" style="margin-bottom:18px">
-        <div><div class="sec-title">🎯 추천 포지션</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 서류 통과 및 면접 기회 가능성이 높은 공고를 찾아드려요</div></div>
+        <div><div class="sec-title">🎯 AI 추천 공고</div><div class="sec-sub">이력서 기반으로 현재 수집된 공고 중 서류 통과 및 면접 기회 가능성이 높은 공고를 찾아드려요</div></div>
       </div>
 
       <div style="background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;font-size:13px;color:var(--text2)">
-        💡 <strong style="color:var(--text)">매칭 분석</strong> 메뉴에서 이력서를 먼저 저장해두면 바로 사용할 수 있어요.
+        💡 <strong style="color:var(--text)">매칭 적합도</strong> 메뉴에서 이력서를 먼저 저장해두면 바로 사용할 수 있어요.
         <span id="jobmatchResumeCheck" style="margin-left:8px"></span>
       </div>
 
@@ -897,7 +897,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
     <!-- ★ COVER LETTER ──────────────────────────────── -->
     <div class="page" id="page-coverletter">
       <div class="sec-hd" style="margin-bottom:18px">
-        <div><div class="sec-title">✍️ 지원서 작성</div><div class="sec-sub">ChatGPT로 커버레터 작성 — 로그인 없이 사용 가능!</div></div>
+        <div><div class="sec-title">✍️ 커버레터 작성</div><div class="sec-sub">ChatGPT로 커버레터 작성 — 로그인 없이 사용 가능!</div></div>
       </div>
 
       <div style="background:linear-gradient(135deg,rgba(124,106,240,.07),rgba(79,142,247,.07));border:1px solid rgba(124,106,240,.18);border-radius:var(--radius);padding:20px 24px;margin-bottom:22px">
@@ -1332,7 +1332,7 @@ function nav(id, el) {
     const resume = document.getElementById('resumeText').value.trim() || localStorage.getItem('eurogate_resume') || '';
     const checkEl = document.getElementById('jobmatchResumeCheck');
     const countEl = document.getElementById('jobmatchJobCount');
-    if (checkEl) checkEl.innerHTML = resume ? '<span style="color:var(--accent3)">✅ 이력서 저장됨</span>' : '<span style="color:var(--warn)">⚠️ 매칭 분석 메뉴에서 이력서를 먼저 저장해주세요</span>';
+    if (checkEl) checkEl.innerHTML = resume ? '<span style="color:var(--accent3)">✅ 이력서 저장됨</span>' : '<span style="color:var(--warn)">⚠️ 매칭 적합도 메뉴에서 이력서를 먼저 저장해주세요</span>';
     if (countEl) countEl.textContent = allJobs.length ? `현재 ${allJobs.length}개 공고 분석 대상` : '공고를 먼저 불러오세요';
     // 오늘 캐시 있으면 바로 복원
     const cache = loadMatchCache();
@@ -2006,7 +2006,7 @@ function openDrawer(id) {
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:22px;height:22px;border-radius:6px;background:#1a1a2e;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">k</div>
+          <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏢</div>
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--text)">kununu 직원 평가</div>
             <div style="font-size:11px;color:var(--text3)">독일어권 최대 고용주 리뷰 플랫폼</div>
@@ -2024,7 +2024,7 @@ function openDrawer(id) {
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:22px;height:22px;border-radius:50%;background:#ff4500;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0">r</div>
+          <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">💬</div>
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--text)">Reddit 커뮤니티 후기</div>
             <div style="font-size:11px;color:var(--text3)">${j.company} 관련 면접·근무 경험</div>
