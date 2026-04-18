@@ -1705,7 +1705,7 @@ const CAT_KEYWORDS = {
     'hr','hr manager','hr director','hr business partner','hr generalist','hr specialist',
     'hr officer','hr advisor','hr coordinator','human resources','talent acquisition',
     'talent management','recruiter','recruiting','recruitment','headhunter',
-    'people operations','people partner','people manager','hris','payroll',
+    'people operations','people partner','people manager','people ops','people specialist','people director','hris','payroll',
     'compensation','benefits','employee relations','labor relations','workforce',
     'onboarding','employer branding','organizational development',
     // DE
@@ -1742,10 +1742,14 @@ const CAT_KEYWORDS = {
     'gerente de producto','gerente de proyecto','director general','consultor de estrategia',
   ],
   ops:        [
-    'operations','logistics','supply chain','warehouse','almacén','almacen',
+    // 'operations' 단독 제거 — people operations 등 HR 오탐 방지
+    'logistics','supply chain','warehouse','almacén','almacen',
     'logística','logistica','procurement','inventory','fulfillment','dispatch',
-    'transport','shipping','freight','import','export','customs','planning',
-    'demand planning','distribution',
+    'transport','shipping','freight','import','export','customs',
+    'demand planning','distribution','fleet','scm manager',
+    'logistics manager','logistics coordinator','logistics specialist',
+    'supply chain manager','supply chain analyst','operations manager',
+    'operations coordinator','operations specialist',
     // DE
     'logistik','lagerleiter','lagerverwaltung','einkauf','beschaffung',
     // FR
