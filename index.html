@@ -1801,9 +1801,13 @@ function filterJobs() {
     // 직종 OR 조건
     if (selectedCats.length > 0) {
       const titleLower = (j.title||'').toLowerCase();
-      const matched = selectedCats.some(cat =>
-        (getCatRegex()[cat]||[]).some(rx => rx.test(titleLower))
-      );
+      const regex = getCatRegex();
+      // HR 우선순위: title이 hr 키워드에 매칭되면 ops로 분류 안 함
+      const isHR = (regex['hr']||[]).some(rx => rx.test(titleLower));
+      const matched = selectedCats.some(cat => {
+        if (cat === 'ops' && isHR) return false; // hr 키워드 있으면 ops 필터에서 제외
+        return (regex[cat]||[]).some(rx => rx.test(titleLower));
+      });
       if (!matched) return false;
     }
     // 나머지 AND 조건
