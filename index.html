@@ -2664,7 +2664,7 @@ async function toggleSave(id, btn) {
   document.getElementById('nb-saved').textContent = savedIds.size;
   trackerJobs = [];
   renderSaved();
-  loadTracker();
+  await loadTracker();
 }
 
 async function toggleSaveFromDrawer(id, btn) {
@@ -2687,8 +2687,7 @@ async function toggleSaveFromDrawer(id, btn) {
     savedIds.has(id) ? cardBtn.classList.add("saved") : cardBtn.classList.remove("saved");
   }
   renderSaved();
-  // 트래커 즉시 반영 (비동기)
-  loadTracker();
+  await loadTracker();
 }
 
 // ════════════════════════════════════════
