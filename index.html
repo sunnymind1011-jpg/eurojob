@@ -1860,9 +1860,6 @@ function renderSaved() {
   }
   const sub = document.getElementById('saved-sub');
   if (sub) sub.textContent = `${savedJobs.length}개 저장됨`;
-  // 카운트 배지도 실제 렌더링 기준으로 동기화
-  const nbSaved = document.getElementById('nb-saved');
-  if (nbSaved) nbSaved.textContent = savedJobs.length;
   document.getElementById('savedGrid').innerHTML = savedJobs.length
     ? savedJobs.map(j => buildCard(j, false)).join('')
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔖</div><div class="empty-title">저장한 공고가 없어요</div><div class="empty-text">공고 카드의 ♡ 버튼으로 저장하세요.</div></div>';
@@ -2651,44 +2648,35 @@ async function upsertSavedJob(job) {
 async function deleteSavedJob(jobId) {
   if (!currentUser) return;
   const { error } = await sb.from('saved_jobs').delete().eq('user_id', currentUser.id).eq('job_id', jobId);
-  if (error) {
-    console.log('delete err:', error.message);
-    return;
-  }
-  // 삭제 성공 후 savedIds, localStorage, trackerJobs 동기화
-  savedIds.delete(jobId);
-  trackerJobs = trackerJobs.filter(j => j.job_id !== jobId);
-  localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
-  const nbSaved = document.getElementById('nb-saved');
-  if (nbSaved) nbSaved.textContent = savedIds.size;
+  if (error) console.log('delete err:', error.message);
 }
 
-function toggleSave(id, btn) {
+async function toggleSave(id, btn) {
   if (savedIds.has(id)) {
     savedIds.delete(id); btn.textContent='♡'; btn.classList.remove('saved');
-    deleteSavedJob(id);
+    await deleteSavedJob(id);
   } else {
     savedIds.add(id); btn.textContent='♥'; btn.classList.add('saved');
     const job = allJobs.find(j => j.id === id);
-    if (job) upsertSavedJob(job);
+    if (job) await upsertSavedJob(job);
   }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
-  trackerJobs = []; // 저장 변경 시 트래커 캐시 무효화
+  trackerJobs = [];
   renderSaved();
   loadTracker();
 }
 
-function toggleSaveFromDrawer(id, btn) {
+async function toggleSaveFromDrawer(id, btn) {
   if (savedIds.has(id)) {
     savedIds.delete(id);
     btn.textContent = "♡ 저장하기"; btn.style.color = "var(--text2)";
-    deleteSavedJob(id);
+    await deleteSavedJob(id);
   } else {
     savedIds.add(id);
     btn.textContent = "♥ 저장됨"; btn.style.color = "var(--warn)";
     const job = allJobs.find(j => j.id === id);
-    if (job) upsertSavedJob(job);
+    if (job) await upsertSavedJob(job);
   }
   localStorage.setItem("ej_saved", JSON.stringify([...savedIds]));
   document.getElementById("nb-saved").textContent = savedIds.size;
@@ -3398,18 +3386,8 @@ async function onLogin(user) {
       .order('saved_at', { ascending: false });
     if (savedData && savedData.length > 0) {
       trackerJobs = savedData;
-      // Supabase 데이터로 savedIds 완전 초기화 (중복 방지)
-      savedIds = new Set(savedData.map(r => r.job_id));
+      savedData.forEach(r => savedIds.add(r.job_id));
       localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
-      const nbSaved = document.getElementById('nb-saved');
-      if (nbSaved) nbSaved.textContent = savedIds.size;
-    } else {
-      // Supabase에 데이터 없으면 savedIds도 초기화
-      savedIds = new Set();
-      trackerJobs = [];
-      localStorage.setItem('ej_saved', JSON.stringify([]));
-      const nbSaved = document.getElementById('nb-saved');
-      if (nbSaved) nbSaved.textContent = 0;
     }
   } catch(e) { console.log('saved_jobs sync err:', e.message); }
 
@@ -4875,4 +4853,4 @@ function closeSkillDrawer(e) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   
 </body>
-</html>
+</html> 
