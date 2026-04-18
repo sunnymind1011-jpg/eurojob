@@ -3918,6 +3918,33 @@ function generateWeeklyReport() {
   d.write('<div class="wm">&copy; EUROGATE BY SUNNY KIM &middot; BLOG.NAVER.COM/SUNNNYMIND &middot; 무단 복제 금지</div>');
   d.write('</div></body></html>');
   d.close();
+
+  // ── Supabase 스냅샷 저장 (백그라운드)
+  saveWeeklySnapshot(weekStr, thisWeek, catStats, countryStats, topSkills, visaCount, remoteCount, korFriendly.length, visaCats);
+}
+
+async function saveWeeklySnapshot(weekLabel, thisWeek, catStats, countryStats, topSkills, visaCount, remoteCount, korCount, visaCats) {
+  try {
+    if (!window.supabase) return;
+    const today = new Date().toISOString().split('T')[0];
+    const data = {
+      totalJobs: thisWeek.length,
+      categories: catStats.map(function(c){ return {name:c.name, count:c.thisWeek, diff:c.thisWeek-c.lastWeek}; }),
+      countries: countryStats.map(function(c){ return {name:c.name, code:c.code, count:c.thisWeek, diff:c.thisWeek-c.lastWeek}; }),
+      topSkills: topSkills.map(function(s){ return {name:s.name, count:s.count}; }),
+      visaCount: visaCount,
+      remoteCount: remoteCount,
+      korFriendlyCount: korCount,
+      visaHotJobs: visaCats.map(function(c){ return {name:c.name, count:c.tw, diff:c.diff}; }),
+    };
+    const { error } = await window.supabase
+      .from('weekly_snapshots')
+      .upsert({ week_label: weekLabel, snapshot_date: today, data: data }, { onConflict: 'week_label' });
+    if (error) console.warn('스냅샷 저장 실패:', error.message);
+    else console.log('✅ 주간 스냅샷 저장 완료:', weekLabel);
+  } catch(e) {
+    console.warn('스냅샷 저장 오류:', e);
+  }
 }
 
 
