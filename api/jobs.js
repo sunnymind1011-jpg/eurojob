@@ -261,18 +261,17 @@ function fetchRemotive() {
   return new Promise((resolve) => {
     const categories = ['marketing', 'data', 'hr', 'software-dev', 'product', 'business-finance', 'writing-editing'];
     // 명확한 비EU 전용만 제외 (블랙리스트) — 나머지는 전부 통과
-    // 비EU 국가/타임존 패턴 — loc이 이것들만으로 구성되면 제외
+    const EU_PASS = ['europe', 'worldwide', 'emea', 'european', 'global', 'anywhere', 'eu timezone', 'cet', 'cest'];
     const NON_EU_PATTERNS = [
       'usa', 'us only', 'united states', 'canada', 'australia', 'new zealand',
-      'latin america', 'south america', 'north america', 'india', 'brazil',
-      'mexico', 'argentina', 'colombia', 'chile', 'nigeria', 'south africa',
-      'japan', 'china', 'south korea', 'philippines', 'indonesia', 'vietnam',
-      'thailand', 'malaysia', 'pakistan', 'egypt', 'turkey',
+      'latin america', 'latam', 'south america', 'north america', 'india', 'brazil',
+      'mexico', 'argentina', 'colombia', 'chile', 'bolivia', 'ecuador', 'peru',
+      'nigeria', 'south africa', 'kenya', 'ghana',
+      'japan', 'china', 'south korea', 'asia', 'philippines', 'indonesia', 'vietnam',
+      'thailand', 'malaysia', 'singapore', 'pakistan', 'egypt', 'turkey',
+      'middle east', 'gulf', 'saudi arabia', 'uae',
       'usa timezones', 'us timezones', 'american timezones', 'pst', 'est', 'cst', 'mst',
     ];
-    // EU/글로벌 키워드가 하나라도 있으면 무조건 통과
-    const EU_PASS = ['europe', 'worldwide', 'emea', 'european', 'global', 'anywhere', 'eu timezone', 'cet', 'cest'];
-
     let allJobs = [];
     let done = 0;
     categories.forEach(cat => {
@@ -289,10 +288,8 @@ function fetchRemotive() {
             const raw = JSON.parse(data).jobs || [];
             const filtered = raw.filter(r => {
               const loc = (r.candidate_required_location || '').toLowerCase().trim();
-              if (!loc) return true; // 빈값 → Worldwide 간주
-              // EU/글로벌 키워드 있으면 무조건 통과
+              if (!loc) return true;
               if (EU_PASS.some(kw => loc.includes(kw))) return true;
-              // 비EU 패턴이 포함되면 제외
               return !NON_EU_PATTERNS.some(kw => loc.includes(kw));
             });
             const jobs = filtered.map(r => ({
@@ -341,11 +338,13 @@ const HIMALAYAS_FLAG = {
 };
 const NON_EU_HM = [
   'united states','usa','canada','australia','new zealand',
-  'latin america','south america','africa','asia',
+  'latin america','latam','south america','africa','asia',
   'india','china','japan','brazil','mexico','argentina','colombia',
-  'chile','peru','nigeria','kenya','south africa','egypt','pakistan',
-  'philippines','indonesia','vietnam','thailand','malaysia',
-  'south korea','taiwan','hong kong','middle east','gulf',
+  'chile','peru','bolivia','ecuador','venezuela','paraguay','uruguay',
+  'nigeria','kenya','south africa','egypt','pakistan','ghana','ethiopia',
+  'philippines','indonesia','vietnam','thailand','malaysia','singapore',
+  'south korea','taiwan','hong kong','middle east','gulf','saudi arabia',
+  'uae','qatar','kuwait','bahrain','oman','israel',
 ];
  
 function fetchHimalayasCountry(country, code) {
@@ -373,22 +372,33 @@ function fetchHimalayasCountry(country, code) {
                 HIMALAYAS_COUNTRY_MAP[k]
               );
               if (hasEu) return true;
-              return !keys.every(k => NON_EU_HM.some(n => k.includes(n)));
+              // 비EU 키워드가 하나라도 있으면 제외 (every→some: 더 엄격하게)
+              return !keys.some(k => NON_EU_HM.some(n => k.includes(n)));
             })
             .map(j => {
               // 1. 공고마다 절대 겹치지 않도록 제목, 회사명, 랜덤 숫자를 조합해서 새 ID를 만듭니다.
               const uniqueId = `${j.title}-${j.companyName}-${Math.random().toString(36).slice(2, 9)}`;
               const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_'); 
  
+              // locationRestrictions에서 실제 국가 감지
+              const restrictions = j.locationRestrictions || [];
+              const detectedCountry = restrictions.reduce((acc, r) => {
+                if (acc) return acc;
+                const mapped = HIMALAYAS_COUNTRY_MAP[r.toLowerCase()];
+                return mapped || acc;
+              }, null);
+              const finalCode = detectedCountry || code;
+              const finalFlag = HIMALAYAS_FLAG[finalCode] || HIMALAYAS_FLAG[code] || '🌍';
+ 
               return {
                 // 2. 이제 각 공고는 'hm_ES_제목_회사_랜덤값' 형태의 고유한 ID를 가집니다.
-                id:          `hm_${code}_${safeId}`,
+                id:          `hm_${finalCode}_${safeId}`,
                 title:       j.title || '',
                 level:       detectLevel(j.title || '', j.description || ''),
                 company:     j.companyName || '',
-                location:    country,
-                country:     code,
-                flag:        HIMALAYAS_FLAG[code] || '🌍',
+                location:    restrictions.length > 0 ? restrictions.join(', ') : country,
+                country:     finalCode,
+                flag:        finalFlag,
                 logo:        companyEmoji(j.companyName || ''),
                 description: j.description || '',
                 url:         j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
