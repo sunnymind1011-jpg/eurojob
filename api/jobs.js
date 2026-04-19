@@ -399,14 +399,80 @@ function fetchHimalayasCountry(country, code) {
   });
 }
  
+function fetchHimalayasWorldwide() {
+  return new Promise((resolve) => {
+    const params = new URLSearchParams({ remote: 'true', limit: '100', sort: 'recent' });
+    const req = https.request({
+      hostname: 'himalayas.app',
+      path: `/jobs/api/search?${params}`,
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+    }, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(raw);
+          const jobs = (data.jobs || [])
+            .filter(j => {
+              const restrictions = j.locationRestrictions || [];
+              if (restrictions.length === 0) return true;
+              const keys = restrictions.map(r => r.toLowerCase());
+              // Worldwide/Europe/EMEA 포함이면 통과, 명확한 비EU 전용이면 제외
+              const hasGlobal = keys.some(k =>
+                k.includes('worldwide') || k.includes('europe') ||
+                k.includes('emea') || k.includes('european') ||
+                k === 'anywhere' || k === 'remote'
+              );
+              if (hasGlobal) return true;
+              return !keys.every(k => NON_EU_HM.some(n => k.includes(n)));
+            })
+            .map(j => {
+              const uniqueId = `${j.title}-${j.companyName}-${Math.random().toString(36).slice(2, 9)}`;
+              const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_');
+              return {
+                id:          `hm_WW_${safeId}`,
+                title:       j.title || '',
+                level:       detectLevel(j.title || '', j.description || ''),
+                company:     j.companyName || '',
+                location:    'Worldwide',
+                country:     'EU',
+                flag:        '🌍',
+                logo:        companyEmoji(j.companyName || ''),
+                description: j.description || '',
+                url:         j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
+                salary:      j.salary ? `${j.salary}` : null,
+                postedAt:    j.createdAt || j.publishedAt || new Date().toISOString(),
+                source:      'Himalayas',
+                skills:      (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+                visaSponsored: false,
+                relocation:   false,
+                remoteType:   'Remote',
+                languageReqs: ['English'],
+              };
+            });
+          console.log(`  Himalayas Worldwide: ${jobs.length}개`);
+          resolve(jobs);
+        } catch(e) { resolve([]); }
+      });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(8000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
+ 
 async function fetchHimalayas() {
   const targets = [
     ['Germany','DE'], ['Spain','ES'], ['Netherlands','NL'],
     ['United Kingdom','GB'], ['France','FR'], ['Ireland','IE'],
   ];
   try {
-    const results = await Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code)));
-    const jobs = results.flat();
+    const [countryResults, worldwideJobs] = await Promise.all([
+      Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code))),
+      fetchHimalayasWorldwide(),
+    ]);
+    const jobs = [...countryResults.flat(), ...worldwideJobs];
     console.log(`  Himalayas 합계: ${jobs.length}개`);
     return jobs;
   } catch(e) {
@@ -674,4 +740,3 @@ export default async function handler(req, res) {
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
   });
 }
- 
