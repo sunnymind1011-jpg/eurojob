@@ -261,7 +261,18 @@ function fetchRemotive() {
   return new Promise((resolve) => {
     const categories = ['marketing', 'data', 'hr', 'software-dev', 'product', 'business-finance', 'writing-editing'];
     // 명확한 비EU 전용만 제외 (블랙리스트) — 나머지는 전부 통과
-    const NON_EU_ONLY = ['usa only', 'us only', 'united states only', 'canada only', 'australia only', 'latin america only', 'india only', 'asia only', 'brazil only', 'mexico only', 'uk only', 'us, canada', 'north america only'];
+    // 비EU 국가/타임존 패턴 — loc이 이것들만으로 구성되면 제외
+    const NON_EU_PATTERNS = [
+      'usa', 'us only', 'united states', 'canada', 'australia', 'new zealand',
+      'latin america', 'south america', 'north america', 'india', 'brazil',
+      'mexico', 'argentina', 'colombia', 'chile', 'nigeria', 'south africa',
+      'japan', 'china', 'south korea', 'philippines', 'indonesia', 'vietnam',
+      'thailand', 'malaysia', 'pakistan', 'egypt', 'turkey',
+      'usa timezones', 'us timezones', 'american timezones', 'pst', 'est', 'cst', 'mst',
+    ];
+    // EU/글로벌 키워드가 하나라도 있으면 무조건 통과
+    const EU_PASS = ['europe', 'worldwide', 'emea', 'european', 'global', 'anywhere', 'eu timezone', 'cet', 'cest'];
+
     let allJobs = [];
     let done = 0;
     categories.forEach(cat => {
@@ -276,10 +287,13 @@ function fetchRemotive() {
         res.on('end', () => {
           try {
             const raw = JSON.parse(data).jobs || [];
-            // 명확한 비EU 전용만 제외, 나머지(Worldwide, Europe, EMEA, 빈값 등) 전부 통과
             const filtered = raw.filter(r => {
-              const loc = (r.candidate_required_location || '').toLowerCase();
-              return !NON_EU_ONLY.some(kw => loc.includes(kw));
+              const loc = (r.candidate_required_location || '').toLowerCase().trim();
+              if (!loc) return true; // 빈값 → Worldwide 간주
+              // EU/글로벌 키워드 있으면 무조건 통과
+              if (EU_PASS.some(kw => loc.includes(kw))) return true;
+              // 비EU 패턴이 포함되면 제외
+              return !NON_EU_PATTERNS.some(kw => loc.includes(kw));
             });
             const jobs = filtered.map(r => ({
               id:           'rm_' + String(r.id),
