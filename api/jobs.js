@@ -259,22 +259,14 @@ function fetchAdzunaKeyword(countryCode, keyword) {
  
 function fetchRemotive() {
   return new Promise((resolve) => {
-    const categories = ['marketing', 'data', 'hr'];
+    const categories = ['marketing', 'data', 'hr', 'software-dev', 'product', 'business-finance', 'writing-editing'];
+    const EU_LOCATIONS = ['europe', 'worldwide', 'emea', 'european', 'global', 'anywhere', 'remote', 'estonia', 'eu '];
     let allJobs = [];
     let done = 0;
-    const NON_EU = [
-      'united states','usa','us only','canada','australia','new zealand',
-      'latin america','south america','africa','asia',
-      'india','china','japan','brazil','mexico','argentina','colombia',
-      'chile','peru','venezuela','ecuador','bolivia','paraguay','uruguay',
-      'nigeria','kenya','south africa','egypt','pakistan','bangladesh',
-      'philippines','indonesia','vietnam','thailand','malaysia',
-      'south korea','taiwan','hong kong','middle east','gulf',
-    ];
     categories.forEach(cat => {
       const req = https.request({
         hostname: 'remotive.com',
-        path: `/api/remote-jobs?category=${cat}&limit=50`,
+        path: `/api/remote-jobs?category=${cat}&limit=100`,
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       }, res => {
@@ -282,33 +274,32 @@ function fetchRemotive() {
         res.on('data', c => data += c);
         res.on('end', () => {
           try {
-            const jobs = (JSON.parse(data).jobs || [])
-              .filter(r => {
-                const loc = (r.candidate_required_location || '').toLowerCase();
-                if (!loc || loc === 'remote' || loc === 'worldwide' || loc === 'anywhere') return true;
-                if (loc.includes('europe') || loc.includes('worldwide')) return true;
-                return !NON_EU.some(n => loc.includes(n));
-              })
-              .map(r => ({
-                id:           String(r.id),
-                title:        r.title || '',
-                level:        detectLevel(r.title || '', r.description || ''),
-                company:      r.company_name || '',
-                location:     r.candidate_required_location || 'Remote',
-                country:      'EU',
-                flag:         '🌍',
-                logo:         '🚀',
-                description:  (r.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
-                url:          r.url || '#',
-                salary:       r.salary || null,
-                postedAt:     r.publication_date || new Date().toISOString(),
-                source:       'Remotive',
-                skills:       (r.tags || []).slice(0, 6),
-                visaSponsored: false,
-                relocation:   false,
-                remoteType:   'Remote',
-                languageReqs: ['English'],
-              }));
+            const raw = JSON.parse(data).jobs || [];
+            // EU/Worldwide/Remote 필터 — 특정 비EU 국가 제외
+            const filtered = raw.filter(r => {
+              const loc = (r.candidate_required_location || '').toLowerCase();
+              if (!loc) return true; // 위치 없으면 통과 (Worldwide 간주)
+              return EU_LOCATIONS.some(kw => loc.includes(kw));
+            });
+            const jobs = filtered.map(r => ({
+              id:           'rm_' + String(r.id),
+              title:        r.title || '',
+              company:      r.company_name || '',
+              location:     r.candidate_required_location || 'Remote',
+              country:      'EU',
+              flag:         '🌍',
+              logo:         '🚀',
+              description:  r.description || '',
+              url:          r.url || '#',
+              salary:       r.salary || null,
+              postedAt:     r.publication_date || new Date().toISOString(),
+              source:       'Remotive',
+              skills:       (r.tags || []).slice(0, 6),
+              visaSponsored: false,
+              relocation:   false,
+              remoteType:   'Remote',
+              languageReqs: ['English'],
+            }));
             allJobs.push(...jobs);
           } catch(e) {}
           done++;
@@ -316,7 +307,7 @@ function fetchRemotive() {
         });
       });
       req.on('error', () => { done++; if (done === categories.length) resolve(allJobs); });
-      req.setTimeout(8000, () => { req.destroy(); done++; if (done === categories.length) resolve(allJobs); });
+      req.setTimeout(10000, () => { req.destroy(); done++; if (done === categories.length) resolve(allJobs); });
       req.end();
     });
   });
