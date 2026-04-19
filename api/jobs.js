@@ -30,11 +30,11 @@ const OPS_COUNTRIES = ['es', 'de', 'nl', 'gb', 'fr'];
 // 경영/전략 키워드
 const MGMT_KEYWORDS = ['business development', 'project manager'];
 const MGMT_COUNTRIES = ['es', 'de', 'nl', 'gb'];
-
+ 
 // HR 키워드
 const HR_KEYWORDS = ['hr manager', 'human resources', 'talent acquisition', 'recruiter', 'people operations'];
 const HR_COUNTRIES = ['gb', 'de', 'nl', 'es', 'fr'];
-
+ 
 // 마케팅 키워드
 const MARKETING_KEYWORDS = ['marketing manager', 'digital marketing', 'performance marketing', 'growth marketing', 'marketing specialist'];
 const MARKETING_COUNTRIES = ['gb', 'de', 'nl', 'es', 'fr'];
@@ -260,7 +260,8 @@ function fetchAdzunaKeyword(countryCode, keyword) {
 function fetchRemotive() {
   return new Promise((resolve) => {
     const categories = ['marketing', 'data', 'hr', 'software-dev', 'product', 'business-finance', 'writing-editing'];
-    const EU_LOCATIONS = ['europe', 'worldwide', 'emea', 'european', 'global', 'anywhere', 'remote', 'estonia', 'eu '];
+    // 명확한 비EU 전용만 제외 (블랙리스트) — 나머지는 전부 통과
+    const NON_EU_ONLY = ['usa only', 'us only', 'united states only', 'canada only', 'australia only', 'latin america only', 'india only', 'asia only', 'brazil only', 'mexico only', 'uk only', 'us, canada', 'north america only'];
     let allJobs = [];
     let done = 0;
     categories.forEach(cat => {
@@ -275,11 +276,10 @@ function fetchRemotive() {
         res.on('end', () => {
           try {
             const raw = JSON.parse(data).jobs || [];
-            // EU/Worldwide/Remote 필터 — 특정 비EU 국가 제외
+            // 명확한 비EU 전용만 제외, 나머지(Worldwide, Europe, EMEA, 빈값 등) 전부 통과
             const filtered = raw.filter(r => {
               const loc = (r.candidate_required_location || '').toLowerCase();
-              if (!loc) return true; // 위치 없으면 통과 (Worldwide 간주)
-              return EU_LOCATIONS.some(kw => loc.includes(kw));
+              return !NON_EU_ONLY.some(kw => loc.includes(kw));
             });
             const jobs = filtered.map(r => ({
               id:           'rm_' + String(r.id),
@@ -674,3 +674,4 @@ export default async function handler(req, res) {
     fetchedAt: cache.fetchedAt, cached: false, jobs: cache.jobs,
   });
 }
+ 
