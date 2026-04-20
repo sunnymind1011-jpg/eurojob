@@ -510,12 +510,17 @@ function fetchHimalayasEurope() {
           const jobs = (data.jobs || [])
             .filter(j => {
               const restrictions = (j.locationRestrictions || []).map(r => r.toLowerCase());
-              // restrictions 없으면 제외 (US 기업도 제한 없이 올릴 수 있음)
-              if (restrictions.length === 0) return false;
-              return restrictions.some(k =>
+              // restrictions 없음 = Himalayas API 특성상 locationRestrictions를 채우지 않는 경우가 많음
+              // NON_EU 키워드 없으면 Worldwide로 간주하고 통과
+              if (restrictions.length === 0) return true;
+              // restrictions 있으면: Europe/Worldwide 명시 → 통과
+              const hasEu = restrictions.some(k =>
                 k.includes('europe') || k.includes('worldwide') ||
                 k.includes('emea') || k === 'anywhere' || k === 'remote'
               );
+              if (hasEu) return true;
+              // 비EU 키워드가 모두를 덮으면 제외, 아니면 통과
+              return !restrictions.every(k => NON_EU_HM.some(n => k.includes(n)));
             })
             .map(j => {
               const uniqueId = `${j.title}-${j.companyName}-${Math.random().toString(36).slice(2, 9)}`;
