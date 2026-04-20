@@ -1540,6 +1540,10 @@ function detectCountry(l) {
   return 'EU';
 }
 function countryFlag(c){return{ES:'🇪🇸',GB:'🇬🇧',DE:'🇩🇪',NL:'🇳🇱',FR:'🇫🇷',PT:'🇵🇹',EU:'🇪🇺',IT:'🇮🇹',BE:'🇧🇪',AT:'🇦🇹',CH:'🇨🇭',PL:'🇵🇱'}[c]||'🌍';}
+function stripHtml(html){
+  if(!html) return '';
+  return html.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&quot;/g,'"');
+}
 function countryName(c){return{ES:'스페인',GB:'영국',DE:'독일',NL:'네덜란드',FR:'프랑스',PT:'포르투갈',EU:'유럽',BE:'벨기에',IT:'이탈리아',CH:'스위스',AT:'오스트리아',IE:'아일랜드',PL:'폴란드'}[c]||c;}
 function detectVisaSponsorship(d) {
   if (!d) return false;
@@ -2003,7 +2007,7 @@ function openDrawer(id) {
       </div>
     </div>` : ''}
     ${j.salary?`<div class="drawer-section"><h4>급여</h4><div style="font-size:18px;font-weight:700;color:var(--accent3)">${j.salary}</div></div>`:''}
-    ${j.source!=='VisaSponsor'?`<div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc" id="desc-${j.id}">${j.description||'상세 없음'}</div></div>`:''}
+    ${j.source!=='VisaSponsor'?`<div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc" id="desc-${j.id}">${stripHtml(j.description)||'상세 없음'}</div></div>`:''}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <a href="${j.url}" target="_blank" class="btn btn-primary btn-sm">지원하러 가기 →</a>
       <button class="btn btn-ghost btn-sm" id="drawer-save-${j.id}" onclick="toggleSaveFromDrawer('${j.id}',this)" style="color:${savedIds.has(j.id)?'var(--warn)':'var(--text2)'}">${savedIds.has(j.id)?'♥ 저장됨':'♡ 저장하기'}</button>
