@@ -353,7 +353,7 @@ const NON_EU_HM = [
  
 function fetchHimalayasCountry(country, code) {
   return new Promise((resolve) => {
-    const params = new URLSearchParams({ country, limit: '20', sort: 'recent' });
+    const params = new URLSearchParams({ country, remote: 'true', limit: '20', sort: 'recent' });
     const req = https.request({
       hostname: 'himalayas.app',
       path: `/jobs/api/search?${params}`,
@@ -510,10 +510,11 @@ function fetchHimalayasEurope() {
           const jobs = (data.jobs || [])
             .filter(j => {
               const restrictions = (j.locationRestrictions || []).map(r => r.toLowerCase());
-              if (restrictions.length === 0) return true; // 제한 없음 = Worldwide
+              // restrictions 없으면 제외 (US 기업도 제한 없이 올릴 수 있음)
+              if (restrictions.length === 0) return false;
               return restrictions.some(k =>
                 k.includes('europe') || k.includes('worldwide') ||
-                k.includes('emea') || k === 'anywhere'
+                k.includes('emea') || k === 'anywhere' || k === 'remote'
               );
             })
             .map(j => {
@@ -559,11 +560,12 @@ async function fetchHimalayas() {
     ['Switzerland','CH'], ['Portugal','PT'], ['Italy','IT'],
   ];
   try {
-    const [countryResults, europeJobs] = await Promise.all([
+    const [countryResults, europeJobs, worldwideJobs] = await Promise.all([
       Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code))),
       fetchHimalayasEurope(),
+      fetchHimalayasWorldwide(),
     ]);
-    const jobs = [...countryResults.flat(), ...europeJobs];
+    const jobs = [...countryResults.flat(), ...europeJobs, ...worldwideJobs];
     console.log(`  Himalayas 합계: ${jobs.length}개`);
     return jobs;
   } catch(e) {
