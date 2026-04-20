@@ -3951,7 +3951,7 @@ function generateWeeklyReport() {
 
 async function saveWeeklySnapshot(weekLabel, thisWeek, catStats, countryStats, topSkills, visaCount, remoteCount, korCount, visaCats) {
   try {
-    if (!window.supabase) return;
+    if (!sb) return;
     const today = new Date().toISOString().split('T')[0];
     const data = {
       totalJobs: thisWeek.length,
@@ -3963,7 +3963,7 @@ async function saveWeeklySnapshot(weekLabel, thisWeek, catStats, countryStats, t
       korFriendlyCount: korCount,
       visaHotJobs: visaCats.map(function(c){ return {name:c.name, count:c.tw, diff:c.diff}; }),
     };
-    const { error } = await window.supabase
+    const { error } = await sb
       .from('weekly_snapshots')
       .upsert({ week_label: weekLabel, snapshot_date: today, data: data }, { onConflict: 'week_label' });
     if (error) console.warn('스냅샷 저장 실패:', error.message);
