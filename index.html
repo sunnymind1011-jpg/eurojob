@@ -1393,7 +1393,11 @@ function addLog(type, msg) {
 // ════════════════════════════════════════
 //  JSEARCH API
 // ════════════════════════════════════════
+let isFetchingJobs = false;
+
 async function startJSearch(force = false) {
+  // 이미 수집 중이면 중복 호출 차단
+  if (isFetchingJobs && !force) return;
   if (!force) {
     const cached = localStorage.getItem('ej_jobs_cache');
     if (cached) {
@@ -1412,6 +1416,7 @@ async function startJSearch(force = false) {
       } catch(e) {}
     }
   }
+  isFetchingJobs = true;
   setStatus('loading', '채용공고 불러오는 중...', 0);
   document.getElementById('jobGrid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏳</div><div class="empty-title">채용공고 수집 중...</div><div class="empty-text">잠시만 기다려주세요.</div></div>';
   addLog('info', force ? '🔄 강제 새로고침...' : '🔍 유럽 채용공고 로딩...');
@@ -1436,6 +1441,8 @@ async function startJSearch(force = false) {
   } catch(e) {
     setStatus('error', `❌ 로드 실패: ${e.message}`);
     try { addLog('err', e.message); } catch(e) {}
+  } finally {
+    isFetchingJobs = false;
   }
 }
 
@@ -1461,6 +1468,8 @@ async function fetchAdzunaJobs(force = false) {
   } catch(e) {
     setStatus('error', `❌ 로드 실패: ${e.message}`);
     try { addLog('err', e.message); } catch(e) {}
+  } finally {
+    isFetchingJobs = false;
   }
 }
 
