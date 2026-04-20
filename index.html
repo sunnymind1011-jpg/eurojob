@@ -3367,14 +3367,10 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
-  let authInitialized = false;
   sb.auth.onAuthStateChange(async (event, session) => {
-    // SIGNED_IN은 getSession()에서 이미 처리 — 중복 수집 방지
-    if (event === 'SIGNED_IN') {
-      if (!authInitialized) { authInitialized = true; return; }
+    if (event === 'SIGNED_IN' && session?.user) {
       await onLogin(session.user);
     } else if (event === 'SIGNED_OUT') {
-      authInitialized = false;
       showLanding();
     }
   });
@@ -3947,10 +3943,11 @@ function generateWeeklyReport() {
   d.write('<div class="fcopy">&copy; '+now.getFullYear()+' EuroGate &middot; Sunny Kim. All rights reserved.<br>무단 복제 및 재배포 금지 &middot; Data-driven by EuroGate<br><span class="flink">blog.naver.com/sunnnymind</span></div></div>');
   d.write('<div class="wm">&copy; EUROGATE BY SUNNY KIM &middot; BLOG.NAVER.COM/SUNNNYMIND &middot; 무단 복제 금지</div>');
   d.write('</div></body></html>');
-  d.close();
 
-  // ── Supabase 스냅샷 저장 (백그라운드)
+  // ── Supabase 스냅샷 저장 (d.close() 전에 실행)
   saveWeeklySnapshot(weekStr, thisWeek, catStats, countryStats, topSkills, visaCount, remoteCount, korFriendly.length, visaCats);
+
+  d.close();
 }
 
 async function saveWeeklySnapshot(weekLabel, thisWeek, catStats, countryStats, topSkills, visaCount, remoteCount, korCount, visaCats) {
