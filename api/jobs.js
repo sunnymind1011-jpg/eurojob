@@ -330,6 +330,10 @@ const HIMALAYAS_COUNTRY_MAP = {
   'germany':'DE','netherlands':'NL','spain':'ES','united kingdom':'GB','united-kingdom':'GB',
   'france':'FR','portugal':'PT','ireland':'IE','belgium':'BE','switzerland':'CH','italy':'IT',
   'norway':'NO','sweden':'SE','denmark':'DK','finland':'FI','austria':'AT','poland':'PL',
+  // "only" 버전도 매핑
+  'germany only':'DE','netherlands only':'NL','spain only':'ES','united kingdom only':'GB',
+  'france only':'FR','portugal only':'PT','ireland only':'IE','belgium only':'BE',
+  'switzerland only':'CH','italy only':'IT','austria only':'AT','poland only':'PL',
 };
 const HIMALAYAS_FLAG = {
   DE:'🇩🇪',NL:'🇳🇱',ES:'🇪🇸',GB:'🇬🇧',FR:'🇫🇷',PT:'🇵🇹',IE:'🇮🇪',
@@ -490,13 +494,13 @@ async function fetchHimalayas() {
   const targets = [
     ['Germany','DE'], ['Spain','ES'], ['Netherlands','NL'],
     ['United Kingdom','GB'], ['France','FR'], ['Ireland','IE'],
+    ['Poland','PL'], ['Belgium','BE'], ['Austria','AT'],
+    ['Switzerland','CH'], ['Portugal','PT'], ['Italy','IT'],
+    ['Europe','EU'], // Worldwide/유럽 기준 공고 — 에스토니아 등 국가 무관
   ];
   try {
-    const [countryResults, worldwideJobs] = await Promise.all([
-      Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code))),
-      fetchHimalayasWorldwide(),
-    ]);
-    const jobs = [...countryResults.flat(), ...worldwideJobs];
+    const results = await Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code)));
+    const jobs = results.flat();
     console.log(`  Himalayas 합계: ${jobs.length}개`);
     return jobs;
   } catch(e) {
