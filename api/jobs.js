@@ -353,7 +353,7 @@ const NON_EU_HM = [
  
 function fetchHimalayasCountry(country, code) {
   return new Promise((resolve) => {
-    const params = new URLSearchParams({ country, remote: 'true', limit: '20', sort: 'recent' });
+    const params = new URLSearchParams({ country, limit: '20', sort: 'recent' });
     const req = https.request({
       hostname: 'himalayas.app',
       path: `/jobs/api/search?${params}`,
