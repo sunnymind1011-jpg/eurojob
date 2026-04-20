@@ -565,12 +565,10 @@ async function fetchHimalayas() {
     ['Switzerland','CH'], ['Portugal','PT'], ['Italy','IT'],
   ];
   try {
-    const [countryResults, europeJobs, worldwideJobs] = await Promise.all([
-      Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code))),
-      fetchHimalayasEurope(),
-      fetchHimalayasWorldwide(),
-    ]);
-    const jobs = [...countryResults.flat(), ...europeJobs, ...worldwideJobs];
+    const countryResults = await Promise.all(
+      targets.map(([c, code]) => fetchHimalayasCountry(c, code))
+    );
+    const jobs = countryResults.flat();
     console.log(`  Himalayas 합계: ${jobs.length}개`);
     return jobs;
   } catch(e) {
