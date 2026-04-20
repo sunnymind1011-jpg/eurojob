@@ -3509,14 +3509,18 @@ function showAdminDashboard() {
 }
 
 async function loadAdminStats() {
-  // 공고 수 표시
+  // 공고 수 표시 — /api/jobs 호출 없이 캐시에서 바로 읽기
   try {
-    const res = await fetch('/api/jobs');
-    const data = await res.json();
-    document.getElementById('stat-jobs').textContent = data.count || 0;
-    if (data.fetchedAt) {
-      document.getElementById('stat-lastfetch').textContent =
-        new Date(data.fetchedAt).toLocaleString('ko-KR');
+    const cached = localStorage.getItem('ej_jobs_cache');
+    if (cached) {
+      const { jobs, fetchedAt } = JSON.parse(cached);
+      document.getElementById('stat-jobs').textContent = jobs?.length || 0;
+      if (fetchedAt) {
+        document.getElementById('stat-lastfetch').textContent =
+          new Date(fetchedAt).toLocaleString('ko-KR');
+      }
+    } else if (allJobs?.length) {
+      document.getElementById('stat-jobs').textContent = allJobs.length;
     }
   } catch(e) {}
 
