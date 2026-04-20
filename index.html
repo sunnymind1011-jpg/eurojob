@@ -3367,10 +3367,14 @@ async function initAuth() {
   }
 
   // 로그인/로그아웃 상태 변경 감지
+  let authInitialized = false;
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+    // SIGNED_IN은 getSession()에서 이미 처리 — 중복 수집 방지
+    if (event === 'SIGNED_IN') {
+      if (!authInitialized) { authInitialized = true; return; }
       await onLogin(session.user);
     } else if (event === 'SIGNED_OUT') {
+      authInitialized = false;
       showLanding();
     }
   });
