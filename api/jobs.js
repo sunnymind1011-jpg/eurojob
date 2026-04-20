@@ -490,17 +490,80 @@ function fetchHimalayasWorldwide() {
   });
 }
  
+// Himalayas Worldwide — country 파라미터 없이 전체 원격 공고 수집
+function fetchHimalayasEurope() {
+  // Himalayas는 country 없이 호출 시 전체 원격 공고 반환
+  // locationRestrictions에서 Europe/Worldwide 포함된 것만 필터링
+  return new Promise((resolve) => {
+    const params = new URLSearchParams({ limit: '50', sort: 'recent' });
+    const req = https.request({
+      hostname: 'himalayas.app',
+      path: `/jobs/api/search?${params}`,
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+    }, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(raw);
+          const jobs = (data.jobs || [])
+            .filter(j => {
+              const restrictions = (j.locationRestrictions || []).map(r => r.toLowerCase());
+              if (restrictions.length === 0) return true; // 제한 없음 = Worldwide
+              return restrictions.some(k =>
+                k.includes('europe') || k.includes('worldwide') ||
+                k.includes('emea') || k === 'anywhere'
+              );
+            })
+            .map(j => {
+              const uniqueId = `${j.title}-${j.companyName}-${Math.random().toString(36).slice(2, 9)}`;
+              const safeId = uniqueId.replace(/[^a-zA-Z0-9_-]/g, '_');
+              return {
+                id:          `hm_EU_${safeId}`,
+                title:       j.title || '',
+                level:       detectLevel(j.title || '', j.description || ''),
+                company:     j.companyName || '',
+                location:    'Europe / Worldwide',
+                country:     'EU',
+                flag:        '🌍',
+                logo:        companyEmoji(j.companyName || ''),
+                description: j.description || '',
+                url:         j.applyUrl || j.applicationLink || `https://himalayas.app/jobs/${j.slug}`,
+                salary:      j.salary ? `${j.salary}` : null,
+                postedAt:    j.createdAt || j.publishedAt || new Date().toISOString(),
+                source:      'Himalayas',
+                skills:      (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+                visaSponsored: false,
+                relocation:   false,
+                remoteType:   'Remote',
+                languageReqs: ['English'],
+              };
+            });
+          console.log(`  Himalayas Europe/WW: ${jobs.length}개`);
+          resolve(jobs);
+        } catch(e) { resolve([]); }
+      });
+    });
+    req.on('error', () => resolve([]));
+    req.setTimeout(8000, () => { req.destroy(); resolve([]); });
+    req.end();
+  });
+}
+ 
 async function fetchHimalayas() {
   const targets = [
     ['Germany','DE'], ['Spain','ES'], ['Netherlands','NL'],
     ['United Kingdom','GB'], ['France','FR'], ['Ireland','IE'],
     ['Poland','PL'], ['Belgium','BE'], ['Austria','AT'],
     ['Switzerland','CH'], ['Portugal','PT'], ['Italy','IT'],
-    ['Europe','EU'], // Worldwide/유럽 기준 공고 — 에스토니아 등 국가 무관
   ];
   try {
-    const results = await Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code)));
-    const jobs = results.flat();
+    const [countryResults, europeJobs] = await Promise.all([
+      Promise.all(targets.map(([c, code]) => fetchHimalayasCountry(c, code))),
+      fetchHimalayasEurope(),
+    ]);
+    const jobs = [...countryResults.flat(), ...europeJobs];
     console.log(`  Himalayas 합계: ${jobs.length}개`);
     return jobs;
   } catch(e) {
