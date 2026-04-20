@@ -391,16 +391,18 @@ function fetchHimalayasCountry(country, code) {
                 const mapped = HIMALAYAS_COUNTRY_MAP[r.toLowerCase()];
                 return mapped || acc;
               }, null);
-              const finalCode = detectedCountry || code;
-              const finalFlag = HIMALAYAS_FLAG[finalCode] || HIMALAYAS_FLAG[code] || '🌍';
+              // locationRestrictions가 3개 이상 = Worldwide 공고로 처리
+              const isWorldwide = restrictions.length >= 3;
+              const finalCode = isWorldwide ? 'EU' : (detectedCountry || code);
+              const finalFlag = isWorldwide ? '🌍' : (HIMALAYAS_FLAG[finalCode] || HIMALAYAS_FLAG[code] || '🌍');
+              const finalLocation = isWorldwide ? 'Worldwide' : (restrictions.length > 0 ? restrictions[0] : country);
  
               return {
-                // 2. 이제 각 공고는 'hm_ES_제목_회사_랜덤값' 형태의 고유한 ID를 가집니다.
                 id:          `hm_${finalCode}_${safeId}`,
                 title:       j.title || '',
                 level:       detectLevel(j.title || '', j.description || ''),
                 company:     j.companyName || '',
-                location:    restrictions.length > 0 ? restrictions.join(', ') : country,
+                location:    finalLocation,
                 country:     finalCode,
                 flag:        finalFlag,
                 logo:        companyEmoji(j.companyName || ''),
