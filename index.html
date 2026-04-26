@@ -2016,7 +2016,17 @@ function openDrawer(id) {
       </div>
     </div>` : ''}
     ${j.salary?`<div class="drawer-section"><h4>급여</h4><div style="font-size:18px;font-weight:700;color:var(--accent3)">${j.salary}</div></div>`:''}
-    ${j.source!=='VisaSponsor'?`<div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc" id="desc-${j.id}">${stripHtml(j.description)||'상세 없음'}</div></div>`:''}
+    <div class="drawer-section">
+      <h4>📋 핵심 정보</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+        ${(j.remoteType?'<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;"><span style="color:var(--text3);display:block;font-size:10px;margin-bottom:2px">근무형태</span><span style="color:var(--text);font-weight:600">'+j.remoteType+'</span></div>':'')}
+        ${(j.level?'<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;"><span style="color:var(--text3);display:block;font-size:10px;margin-bottom:2px">경력</span><span style="color:var(--text);font-weight:600">'+j.level+'</span></div>':'')}
+        ${(j.languageReqs&&j.languageReqs.length?'<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;"><span style="color:var(--text3);display:block;font-size:10px;margin-bottom:2px">언어</span><span style="color:var(--text);font-weight:600">'+j.languageReqs.join(', ')+'</span></div>':'')}
+        ${(j.visaSponsored?'<div style="background:rgba(46,213,115,.08);border:1px solid rgba(46,213,115,.2);border-radius:8px;padding:8px 10px;"><span style="color:var(--text3);display:block;font-size:10px;margin-bottom:2px">비자</span><span style="color:#2ed573;font-weight:600">스폰서 가능</span></div>':'<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;"><span style="color:var(--text3);display:block;font-size:10px;margin-bottom:2px">비자</span><span style="color:var(--text);font-weight:600">미확인</span></div>')}
+        ${(j.skills&&j.skills.length?'<div style="grid-column:1/-1;background:var(--bg2);border-radius:8px;padding:8px 10px;"><span style="color:var(--text3);display:block;font-size:10px;margin-bottom:5px">주요 스킬</span><div style="display:flex;flex-wrap:wrap;gap:4px">'+j.skills.slice(0,6).map(s=>'<span style="background:rgba(79,142,247,.12);color:var(--accent);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600">'+s+'</span>').join('')+'</div></div>':'')}
+      </div>
+    </div>
+    ${(j.source!=='VisaSponsor'?'<div class="drawer-section"><h4>채용 내용</h4><div class="drawer-desc" id="desc-'+j.id+'">'+( stripHtml(j.description)||'상세 없음')+'</div></div>':'')}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <a href="${j.url}" target="_blank" class="btn btn-primary btn-sm">지원하러 가기 →</a>
       <button class="btn btn-ghost btn-sm" id="drawer-save-${j.id}" onclick="toggleSaveFromDrawer('${j.id}',this)" style="color:${savedIds.has(j.id)?'var(--warn)':'var(--text2)'}">${savedIds.has(j.id)?'♥ 저장됨':'♡ 저장하기'}</button>
