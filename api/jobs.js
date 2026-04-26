@@ -862,7 +862,12 @@ export default async function handler(req, res) {
   himalayasJobs.forEach(j => (j.skills || []).forEach(s => {
     if (s && s.length > 1 && s.length < 40) himalayasTags.add(s);
   }));
-  const dynamicSkills = [...himalayasTags].filter(t => !SKILL_KEYWORDS_SERVER.includes(t));
+  const GENERIC_EXCLUDE = new Set(['IT','HR','UI','UX','PM','QA','PR','BD','AI','ML','BI','API','ERP','SaaS','B2B','B2C','Go']);
+  const dynamicSkills = [...himalayasTags].filter(t =>
+    !SKILL_KEYWORDS_SERVER.includes(t) &&
+    !GENERIC_EXCLUDE.has(t) &&
+    t.length > 2
+  );
   if (dynamicSkills.length > 0) {
     // Adzuna 공고에 동적 스킬 재추출
     adzunaJobs.forEach(j => {
