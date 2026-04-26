@@ -79,12 +79,12 @@ const SKILL_KEYWORDS_SERVER = [
   'B2B Sales','Account Management','Negotiation','Market Research','Go-to-Market',
   'Revenue Operations','Pipeline Management','Supply Chain','Logistics','Procurement',
   'Operations Management','Process Improvement','Vendor Management','Recruitment',
-  'Talent Acquisition','HRIS','ATS','Content Strategy','R','TypeScript','Node.js',
+  'Talent Acquisition','HRIS','ATS','Content Strategy','Data Governance','Data Quality','Data Catalog','Data Modeling','Business Intelligence','R','TypeScript','Node.js',
   'PHP','Ruby','Kotlin','Swift','Rust','Go','Scala','C++','C#','.NET',
   'Spring','Django','FastAPI','PostgreSQL','MySQL','MongoDB','Redis','Kafka',
   'Terraform','Ansible','Jenkins','GitHub Actions','GraphQL','REST API',
 ];
-
+ 
 function extractSkills(desc) {
   if (!desc) return [];
   const found = [];
@@ -103,7 +103,7 @@ function extractSkills(desc) {
   }
   return found;
 }
-
+ 
 function detectVisaSponsorship(d) {
   if (!d) return false;
   const text = d.toLowerCase();
