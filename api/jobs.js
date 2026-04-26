@@ -89,6 +89,12 @@ function extractSkills(desc) {
   if (!desc) return [];
   const found = [];
   for (const skill of SKILL_KEYWORDS_SERVER) {
+    if (skill === 'R') {
+      if (/python[,\s]+r\b|\br[,\s]+python|\band\s+r\b|\br\s+and\b|rstudio|tidyverse|ggplot/i.test(desc)) {
+        found.push(skill);
+      }
+      continue;
+    }
     const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (new RegExp('\\b' + escaped + '\\b', 'i').test(desc)) {
       found.push(skill);
@@ -241,7 +247,7 @@ function fetchAdzuna(countryCode, categoryTag) {
   return new Promise((resolve) => {
     const params = new URLSearchParams({
       app_id: ADZUNA_APP_ID, app_key: ADZUNA_APP_KEY,
-      results_per_page: '20', max_days_old: '21', 'content-type': 'full_time',
+      results_per_page: '20', max_days_old: '21', 'content-type': 'full_time', 'description_type': 'full',
     });
     const req = https.request({
       hostname: 'api.adzuna.com',
