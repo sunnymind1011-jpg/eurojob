@@ -449,7 +449,7 @@ function fetchHimalayasCountry(country, code) {
                 salary:      j.salary ? `${j.salary}` : null,
                 postedAt:    j.createdAt || j.publishedAt || new Date().toISOString(),
                 source:      'Himalayas',
-                skills:      (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+                skills:      (j.tags || j.categories || []).slice(0, 8).map(c => c.replace(/-/g, ' ')),
                 visaSponsored: false, 
                 relocation:   false, 
                 remoteType:   'Remote', 
@@ -512,7 +512,7 @@ function fetchHimalayasWorldwide() {
                 salary:      j.salary ? `${j.salary}` : null,
                 postedAt:    j.createdAt || j.publishedAt || new Date().toISOString(),
                 source:      'Himalayas',
-                skills:      (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+                skills:      (j.tags || j.categories || []).slice(0, 8).map(c => c.replace(/-/g, ' ')),
                 visaSponsored: false,
                 relocation:   false,
                 remoteType:   'Remote',
@@ -579,7 +579,7 @@ function fetchHimalayasEurope() {
                 salary:      j.salary ? `${j.salary}` : null,
                 postedAt:    j.createdAt || j.publishedAt || new Date().toISOString(),
                 source:      'Himalayas',
-                skills:      (j.categories || []).slice(0, 5).map(c => c.replace(/-/g, ' ')),
+                skills:      (j.tags || j.categories || []).slice(0, 8).map(c => c.replace(/-/g, ' ')),
                 visaSponsored: false,
                 relocation:   false,
                 remoteType:   'Remote',
@@ -856,7 +856,25 @@ export default async function handler(req, res) {
   ]);
  
   console.log(`  Adzuna: ${adzunaJobs.length}개, Himalayas: ${himalayasJobs.length}개, Remotive: ${remotiveJobs.length}개`);
- 
+
+  // Himalayas tags를 수집해서 Adzuna 스킬 추출 보강
+  const himalayasTags = new Set();
+  himalayasJobs.forEach(j => (j.skills || []).forEach(s => {
+    if (s && s.length > 1 && s.length < 40) himalayasTags.add(s);
+  }));
+  const dynamicSkills = [...himalayasTags].filter(t => !SKILL_KEYWORDS_SERVER.includes(t));
+  if (dynamicSkills.length > 0) {
+    // Adzuna 공고에 동적 스킬 재추출
+    adzunaJobs.forEach(j => {
+      if (!j.description) return;
+      const extra = dynamicSkills.filter(skill => {
+        const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp('\\b' + escaped + '\\b', 'i').test(j.description);
+      }).slice(0, Math.max(0, 8 - j.skills.length));
+      j.skills = [...j.skills, ...extra].slice(0, 8);
+    });
+  }
+
   let allJobs = [...adzunaJobs, ...himalayasJobs, ...remotiveJobs];
  
   // WorldJob
