@@ -66,6 +66,38 @@ function companyEmoji(name) {
   return e[(name.charCodeAt(0) || 0) % e.length] || '🏢';
 }
  
+// ── description에서 스킬 추출 (Adzuna용)
+const SKILL_KEYWORDS_SERVER = [
+  'Python','SQL','JavaScript','React','Java','AWS','GCP','Azure','BigQuery',
+  'dbt','Airflow','Spark','Kubernetes','Docker','Git','Snowflake','Databricks',
+  'Looker','Salesforce','HubSpot','SAP','Workday','Jira','Figma','Tableau',
+  'Power BI','Excel','Google Analytics','Google Ads','Meta Ads','SEO','SEM',
+  'Machine Learning','Deep Learning','NLP','Data Analysis','Statistics','A/B Testing',
+  'ETL','DevOps','CI/CD','Agile','Scrum','Project Management','Leadership',
+  'TensorFlow','PyTorch','Kubernetes','Docker','ERP','Power Query','SharePoint',
+  'Business Development','Partnership Management','Stakeholder Management','CRM',
+  'B2B Sales','Account Management','Negotiation','Market Research','Go-to-Market',
+  'Revenue Operations','Pipeline Management','Supply Chain','Logistics','Procurement',
+  'Operations Management','Process Improvement','Vendor Management','Recruitment',
+  'Talent Acquisition','HRIS','ATS','Content Strategy','R','TypeScript','Node.js',
+  'PHP','Ruby','Kotlin','Swift','Rust','Go','Scala','C++','C#','.NET',
+  'Spring','Django','FastAPI','PostgreSQL','MySQL','MongoDB','Redis','Kafka',
+  'Terraform','Ansible','Jenkins','GitHub Actions','GraphQL','REST API',
+];
+
+function extractSkills(desc) {
+  if (!desc) return [];
+  const found = [];
+  for (const skill of SKILL_KEYWORDS_SERVER) {
+    const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp('\\b' + escaped + '\\b', 'i').test(desc)) {
+      found.push(skill);
+    }
+    if (found.length >= 8) break;
+  }
+  return found;
+}
+
 function detectVisaSponsorship(d) {
   if (!d) return false;
   const text = d.toLowerCase();
@@ -197,7 +229,7 @@ function normalizeAdzuna(raw, countryCode) {
     salary,
     postedAt:     raw.created || new Date().toISOString(),
     source:       'Adzuna',
-    skills:       [],
+    skills:       extractSkills(desc),
     visaSponsored: detectVisaSponsorship(desc),
     relocation:   detectRelocation(desc),
     remoteType:   detectRemote(desc),
