@@ -3512,7 +3512,11 @@ function showMain() {
           </div>
           <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
         </div>
-        ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}`;
+        ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:12px;">
+          <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--text3);text-decoration:none;font-size:10px;">✍️ 블로그</a>
+          <a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:10px;">🔒 개인정보</a>
+        </div>`;
     }
   }
 
