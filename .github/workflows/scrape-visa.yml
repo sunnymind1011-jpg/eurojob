@@ -1,37 +1,36 @@
 name: Scrape visasponsor.jobs
-
+ 
 on:
   schedule:
     - cron: '0 1 * * *'   # 매일 UTC 01:00 = 한국시간 오전 10시
   workflow_dispatch:        # 수동 실행 버튼
-
+ 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
+ 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+ 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
+ 
       - name: Install dependencies
         run: |
           npm install puppeteer
           npm install @supabase/supabase-js
-
+ 
       - name: Run scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: node .github/scripts/scrape-visa.mjs
-
+ 
       - name: Trigger EuroGate job collection
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.VERCEL_APP_URL }}/api/jobs?refresh=1"
+          curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
+            "https://eurogate-dreams.vercel.app/api/jobs?refresh=1"
