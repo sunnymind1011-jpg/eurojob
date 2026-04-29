@@ -573,7 +573,10 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
   </div>
   <div class="sidebar-footer">
     <div style="padding:8px;font-size:11px;color:var(--text3);line-height:1.6">
-      <a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px">🔒 개인정보 처리방침</a>
+      <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--accent3);text-decoration:none;font-weight:500">✍️ 취업 꿀팁 블로그 →</a>
+      <div style="margin-top:6px">
+        <a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:10px">🔒 개인정보 처리방침</a>
+      </div>
     </div>
   </div>
 </nav>
@@ -826,7 +829,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
             <div style="font-size:11px;color:var(--text3);margin-top:2px">클릭하거나 파일을 여기에 끌어다 놓으세요</div>
           </div>
           <input type="file" id="resumeFileInput" accept=".pdf,.docx" style="display:none" onchange="handleResumeFile(this.files[0])">
-          <div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.5">🔒 업로드한 파일은 내 브라우저에서만 처리되며 외부 서버로 <b>전송되지 않습니다.</b></div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.5">🔒 업로드한 파일은 내 브라우저에서만 처리되며 외부 서버로 전송되지 않습니다.</div>
           <div id="resumeFileStatus" style="font-size:11px;color:var(--accent3);margin-bottom:6px;display:none"></div>
           <textarea id="resumeText" rows="10" placeholder="이력서 내용을 붙여넣으세요.&#10;&#10;예시:&#10;경력: 5년 디지털 마케팅 (스타트업)&#10;기술: Google Analytics, SEO, SEM, Meta Ads&#10;언어: 한국어(모국어), 영어(비즈니스)&#10;학력: 경영학 학사 — 연세대"></textarea>
           <div style="margin-top:8px;display:flex;gap:7px;align-items:center;flex-wrap:wrap">
@@ -1793,6 +1796,12 @@ function filterJobs() {
   const selectedCats = [...activeFilters]
     .filter(f => f.startsWith('cat:'))
     .map(f => f.split(':')[1]);
+  const selectedLevels = [...activeFilters]
+    .filter(f => f.startsWith('level:'))
+    .map(f => f.split(':')[1]);
+  const selectedLangs = [...activeFilters]
+    .filter(f => f.startsWith('lang:'))
+    .map(f => f.split(':')[1]);
 
   // 필터 버튼이 있는 국가들 (이 목록에 없는 유럽 국가는 기타유럽/글로벌로 처리)
   const FILTER_COUNTRIES = new Set(['ES','GB','DE','NL','FR','PT','CH','IT','BE','IE']);
@@ -1824,6 +1833,15 @@ function filterJobs() {
       });
       if (!matched) return false;
     }
+    // 레벨 OR 조건
+    if (selectedLevels.length > 0) {
+      if (!selectedLevels.includes(j.level)) return false;
+    }
+    // 언어 OR 조건
+    if (selectedLangs.length > 0) {
+      const jLangs = j.languageReqs || [];
+      if (!selectedLangs.some(l => jLangs.includes(l))) return false;
+    }
     // 나머지 AND 조건
     for (const f of activeFilters) {
       const [k,v] = f.split(':');
@@ -1842,8 +1860,8 @@ function filterJobs() {
         const remoteFilters = [...activeFilters].filter(f=>f.startsWith('remote:')).map(f=>f.split(':')[1]);
         if (!remoteFilters.includes(j.remoteType)) return false;
       }
-      if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
-      if (k==='level' && j.level !== v) return false;
+      if (k==='lang') continue; // lang은 아래에서 OR 처리
+      if (k==='level') continue; // level은 아래에서 OR 처리
     }
     return true;
   });
@@ -3510,7 +3528,10 @@ function showMain() {
           <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
         </div>
         ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><a onclick="showPrivacyModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">🔒 개인정보 처리방침</a></div>`;
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:12px;">
+          <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="color:var(--text3);text-decoration:none;font-size:10px;">✍️ 블로그</a>
+          <a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:10px;">🔒 개인정보</a>
+        </div>`;
     }
   }
 
@@ -4910,42 +4931,19 @@ function closeSkillDrawer(e) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   
-<div id="privacyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:500px;width:90%;max-height:84vh;overflow-y:auto;position:relative;">
+<div id="privacyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;position:relative;">
     <button onclick="document.getElementById('privacyModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer">✕</button>
-    <h3 style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">🔒 개인정보 처리방침</h3>
-    <div style="font-size:12px;color:var(--text2);line-height:1.85">
-      <p style="margin-bottom:16px">EuroGate는 한국 또는 유럽 내에서 취업을 준비하는 한국인을 위한 채용정보 및 도우미 플랫폼으로 사용자의 프라이버시를 최우선으로 하며 관련 법령을 준수합니다.</p>
-
-      <p style="font-weight:700;color:var(--text);margin-bottom:6px">1. 수집하는 정보 및 목적</p>
-      <p style="margin-bottom:16px">
-        • <strong style="color:var(--text)">이메일 주소</strong> — 사용자 식별, 서비스 등급(일반/베타) 관리, 중요 공지사항 전달.<br>
-        • <strong style="color:var(--text)">저장 공고 데이터</strong> — 사용자가 스크랩한 공고 리스트 관리 (익명화된 ID와 매칭).
-      </p>
-
-      <p style="font-weight:700;color:var(--text);margin-bottom:6px">2. 수집하지 않는 정보 (Local-only)</p>
-      <p style="margin-bottom:16px">
-        • <strong style="color:var(--text)">이력서 및 JD 텍스트</strong> — 해당 데이터는 사용자의 웹 브라우저 내(Local Storage)에서만 처리됩니다. 외부 서버로 전송되거나 저장되지 않으므로 안심하고 이용하셔도 됩니다.<br>
-        • ChatGPT 등 외부 AI로 분석을 요청할 경우, 해당 내용은 사용자가 직접 복사·붙여넣기 하는 방식으로만 이루어지며 EuroGate가 자동으로 전송하지 않습니다.<br>
-        • 기타: 광고 타겟팅, 마케팅 활용, 제3자 데이터 판매를 위한 수집은 일절 없습니다.
-      </p>
-
-      <p style="font-weight:700;color:var(--text);margin-bottom:6px">3. 데이터의 보유 및 파기</p>
-      <p style="margin-bottom:16px">
-        • 사용자의 데이터는 서비스 이용 기간 동안만 보유하며, 회원 탈퇴 요청 시 또는 목적 달성 시 즉시 파기합니다.<br>
-        • 사용자가 직접 저장한 공고는 언제든 직접 삭제할 수 있습니다.
-      </p>
-
-      <p style="font-weight:700;color:var(--text);margin-bottom:6px">4. 쿠키 및 자동 수집 장치의 운영</p>
-      <p style="margin-bottom:16px">
-        • 본 서비스는 로그인 상태 유지 및 사용자 설정 저장을 위해 쿠키(Cookie) 또는 로컬 스토리지를 사용합니다. 사용자는 브라우저 설정을 통해 이를 거부할 수 있습니다.
-      </p>
-
-      <p style="font-weight:700;color:var(--text);margin-bottom:6px">5. 개인정보 보호 문의</p>
-      <p style="margin-bottom:0">
-        • 서비스 이용 중 궁금한 점이나 권리 행사는 아래로 연락해주시기 바랍니다.<br>
-        • 문의: <a href="https://blog.naver.com/sunnnymind" target="_blank" style="color:var(--accent);text-decoration:none;">blog.naver.com/sunnnymind</a>
-      </p>
+    <h3 style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">🔒 개인정보 처리방침</h3>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      <p style="margin-bottom:12px">EuroGate는 한국인 유럽 구직자를 위한 채용정보 플랫폼으로, 사용자의 개인정보를 최소한으로만 수집합니다.</p>
+      <p style="font-weight:700;color:var(--text);margin-bottom:4px">수집하는 정보</p>
+      <p style="margin-bottom:12px">• 이메일 주소 — 로그인 및 서비스 등급(일반/베타) 관리 목적으로만 사용됩니다.<br>• 저장 공고 — 익명화된 사용자 ID와 함께 저장되며, 개인을 특정할 수 없습니다.</p>
+      <p style="font-weight:700;color:var(--text);margin-bottom:4px">수집하지 않는 정보</p>
+      <p style="margin-bottom:12px">• 이력서 및 JD 텍스트는 내 브라우저에서만 처리되며, 외부 서버로 전송되거나 저장되지 않습니다.<br>• 광고, 마케팅, 제3자 데이터 판매 목적의 정보 수집은 일절 없습니다.</p>
+      <p style="font-weight:700;color:var(--text);margin-bottom:4px">데이터 보관</p>
+      <p style="margin-bottom:12px">• 저장 공고 등 데이터는 사용자가 직접 삭제할 수 있으며, 탈퇴 요청 시 즉시 삭제됩니다.</p>
+      <p style="color:var(--text3);font-size:11px">문의: blog.naver.com/sunnnymind</p>
     </div>
   </div>
 </div>
