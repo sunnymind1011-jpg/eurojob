@@ -1793,6 +1793,12 @@ function filterJobs() {
   const selectedCats = [...activeFilters]
     .filter(f => f.startsWith('cat:'))
     .map(f => f.split(':')[1]);
+  const selectedLevels = [...activeFilters]
+    .filter(f => f.startsWith('level:'))
+    .map(f => f.split(':')[1]);
+  const selectedLangs = [...activeFilters]
+    .filter(f => f.startsWith('lang:'))
+    .map(f => f.split(':')[1]);
 
   // 필터 버튼이 있는 국가들 (이 목록에 없는 유럽 국가는 기타유럽/글로벌로 처리)
   const FILTER_COUNTRIES = new Set(['ES','GB','DE','NL','FR','PT','CH','IT','BE','IE']);
@@ -1824,6 +1830,10 @@ function filterJobs() {
       });
       if (!matched) return false;
     }
+    // 레벨 OR 조건
+    if (selectedLevels.length > 0 && !selectedLevels.includes(j.level)) return false;
+    // 언어 OR 조건
+    if (selectedLangs.length > 0 && !selectedLangs.some(l => (j.languageReqs||[]).includes(l))) return false;
     // 나머지 AND 조건
     for (const f of activeFilters) {
       const [k,v] = f.split(':');
@@ -1842,8 +1852,8 @@ function filterJobs() {
         const remoteFilters = [...activeFilters].filter(f=>f.startsWith('remote:')).map(f=>f.split(':')[1]);
         if (!remoteFilters.includes(j.remoteType)) return false;
       }
-      if (k==='lang' && !(j.languageReqs||[]).includes(v)) return false;
-      if (k==='level' && j.level !== v) return false;
+      if (k==='lang') continue; // OR 처리
+      if (k==='level') continue; // OR 처리
     }
     return true;
   });
