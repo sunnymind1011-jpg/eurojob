@@ -2333,8 +2333,8 @@ async function runJobMatch() {
   // 이전 결과는 새 결과 나올 때까지 유지 (resultsEl.innerHTML 지우지 않음)
 
   // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드만)
-  const jobList = allJobs.slice(0, 300).map((j, i) =>
-    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${j.remoteType||'Unknown'} | ${(j.skills||[]).slice(0,5).join(',')} | ${(j.languageReqs||[]).join(',')} | ${(j.description||'').slice(0,120).replace(/\n/g,' ')}`
+  const jobList = allJobs.slice(0, 200).map((j, i) =>
+    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${j.remoteType||'?'} | ${(j.skills||[]).slice(0,4).join(',')} | ${(j.languageReqs||[]).join(',')}`
   ).join('\n');
 
 
