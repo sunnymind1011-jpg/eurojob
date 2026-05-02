@@ -58,7 +58,7 @@ JOB LIST:
 ${jobs}
  
 Return ONLY a JSON array (no wrapper object). Each item must have:
-{"index": number, "score": number, "reason": "한글로 매칭 이유 설명(25자이내)"}`;
+{"index": number, "score": number, "reason": "한글로 매칭 이유 설명(50자이내, 구체적 스킬·직군·연차 언급 필수)"}`;
  
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
