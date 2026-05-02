@@ -2415,7 +2415,7 @@ async function runJobMatch() {
     const response = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resume, jobs: jobList }),
+      body: JSON.stringify({ resume, jobs: jobList, category: selectedCat }),
     });
 
     const data = await response.json();
