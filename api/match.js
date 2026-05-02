@@ -9,16 +9,35 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
  
-  const { resume, jobs } = req.body;
+  const { resume, jobs, category } = req.body;
   if (!resume || !jobs) return res.status(400).json({ error: '데이터 부족' });
+ 
+  // 직군 카테고리 한글 매핑
+  const CATEGORY_LABELS = {
+    data: '데이터/분석 (Data Analyst, Data Scientist, BI, ML Engineer)',
+    marketing: '마케팅 (Digital Marketing, Growth, SEO, Brand, CRM)',
+    dev: '개발 (Software Engineer, Backend, Frontend, DevOps)',
+    hr: 'HR (HR Manager, Recruiter, Talent Acquisition, People Ops)',
+    finance: '금융/재무 (Finance, Accounting, Audit, Risk, Compliance)',
+    management: '경영/전략 (Product Manager, Strategy, Business Analyst, Consulting)',
+    sales: '영업/BD (Sales, Business Development, Account Executive, Commercial)',
+    ops: '운영/물류·SCM (Operations, Logistics, Supply Chain, Procurement)',
+  };
+  const categoryLabel = category ? CATEGORY_LABELS[category] : null;
  
   // 환경변수 이름을 GROQ_API_KEY로 바꿔주세요
   const apiKey = process.env.GROQ_API_KEY; 
   if (!apiKey) return res.status(500).json({ error: 'API 키가 없습니다' });
  
+  const categoryInstruction = categoryLabel
+    ? `⚠️ CRITICAL OVERRIDE — USER SELECTED JOB CATEGORY: ${categoryLabel}
+You MUST return ONLY jobs that belong to this category. Even if the resume contains keywords from other fields (e.g. Excel, data, management), ignore them. The user explicitly chose this job function. Returning jobs outside this category is a FAILURE.
+`
+    : '';
+ 
   const prompt = `You are a professional job matching expert specializing in European job markets for Korean job seekers.
  
-Analyze the resume carefully and find the TOP 10 best matching jobs from the job list.
+${categoryInstruction}Analyze the resume carefully and find the TOP 10 best matching jobs from the job list.
  
 IMPORTANT MATCHING RULES:
 1. Match based on the candidate's ACTUAL job function, industry, and skills — not just keyword overlap.
