@@ -907,6 +907,9 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
         </div>
       </div>
 
+      <!-- 이력서 파싱 인사이트 -->
+      <div id="resumeInsight" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px"></div>
+
       <!-- 상태 메시지 -->
       <div id="matchStatus" style="display:none;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--text2);margin-bottom:16px;align-items:center;gap:10px">
         <span style="font-size:18px" id="matchStatusIcon">⏳</span>
@@ -2307,6 +2310,8 @@ function clearMatchResults() {
   // 결과 초기화
   document.getElementById('matchResults').innerHTML = '';
   document.getElementById('matchStatus').style.display = 'none';
+  const insightEl = document.getElementById('resumeInsight');
+  if (insightEl) insightEl.style.display = 'none';
   document.getElementById('jobmatchJobCount').textContent = '';
   document.getElementById('clearMatchBtn').style.display = 'none';
   // 캐시 삭제
@@ -2376,6 +2381,100 @@ function renderMatchResults(matches, resultsEl) {
 }
 
 // 이력서 텍스트에서 직군 자동 감지
+// 이력서 파싱 — 직군/스킬/경력/언어 추출
+const RESUME_SKILLS = [
+  'Python','SQL','R','Excel','Tableau','Power BI','Looker','Databricks','Spark','AWS','GCP','Azure',
+  'JavaScript','TypeScript','React','Vue','Node.js','Java','C++','Go','Rust','Kotlin','Swift',
+  'Salesforce','HubSpot','Marketo','Google Analytics','SEO','SEM','Meta Ads','Google Ads',
+  'Figma','Sketch','Adobe','Photoshop','Illustrator','After Effects',
+  'Workday','SAP','SuccessFactors','HRIS','BambooHR','Greenhouse','Lever',
+  'Jira','Confluence','Asana','Notion','Slack','Trello',
+  'Docker','Kubernetes','Terraform','CI/CD','DevOps','Git',
+  'Machine Learning','Deep Learning','NLP','LLM','TensorFlow','PyTorch',
+  'Bloomberg','Reuters','QuickBooks','Xero','NetSuite',
+];
+
+const RESUME_LANGS = [
+  {label:'한국어', patterns:['korean','한국어','ko native','native korean']},
+  {label:'영어', patterns:['english','영어','english native','business english','fluent english']},
+  {label:'스페인어', patterns:['spanish','스페인어','español']},
+  {label:'독일어', patterns:['german','독일어','deutsch']},
+  {label:'프랑스어', patterns:['french','프랑스어','français']},
+  {label:'네덜란드어', patterns:['dutch','네덜란드어','nederlands']},
+  {label:'포르투갈어', patterns:['portuguese','포르투갈어']},
+  {label:'이탈리아어', patterns:['italian','이탈리아어']},
+];
+
+function parseResume(text) {
+  const lower = text.toLowerCase();
+
+  // 직군 감지
+  const cat = detectResumeCategory(text);
+  const SECTOR_LABELS = {
+    data:'📊 데이터/분석', marketing:'📣 마케팅', dev:'💻 개발',
+    hr:'🤝 HR', finance:'💰 금융', management:'🏢 경영/전략',
+    sales:'🤝 영업/BD', ops:'🚛 운영/물류·SCM'
+  };
+
+  // 스킬 추출
+  const skills = RESUME_SKILLS.filter(s => lower.includes(s.toLowerCase()));
+
+  // 경력 연차 추출 (예: "10 years", "5년", "over 7 years")
+  const yearMatches = [...lower.matchAll(/(\d+)\+?\s*(year|yr|년)/g)];
+  const years = yearMatches.length > 0
+    ? Math.max(...yearMatches.map(m => parseInt(m[1])))
+    : null;
+
+  // 언어 추출
+  const langs = RESUME_LANGS.filter(l => l.patterns.some(p => lower.includes(p))).map(l => l.label);
+
+  return { cat, catLabel: cat ? SECTOR_LABELS[cat] : null, skills, years, langs };
+}
+
+function renderResumeInsight(parsed, el) {
+  const parts = [];
+
+  if (parsed.catLabel) {
+    parts.push(`<div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">감지된 직군</div>
+      <span style="background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--accent);font-weight:600">${parsed.catLabel}</span>
+      ${parsed.years ? `<span style="margin-left:8px;font-size:12px;color:var(--text2)">경력 약 <strong style="color:var(--text)">${parsed.years}년</strong></span>` : ''}
+    </div>`);
+  }
+
+  if (parsed.skills.length > 0) {
+    const tags = parsed.skills.slice(0,12).map(s =>
+      `<span style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text2)">${s}</span>`
+    ).join('');
+    parts.push(`<div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">감지된 스킬 (${parsed.skills.length}개)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${tags}</div>
+    </div>`);
+  }
+
+  if (parsed.langs.length > 0) {
+    const tags = parsed.langs.map(l =>
+      `<span style="background:rgba(62,207,160,.1);border:1px solid rgba(62,207,160,.2);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--accent3)">${l}</span>`
+    ).join('');
+    parts.push(`<div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600">감지된 언어</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${tags}</div>
+    </div>`);
+  }
+
+  if (parts.length === 0) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">🔍 AI가 이력서에서 읽은 정보</div>
+    ${parts.join('')}
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">* 이 정보를 기반으로 공고를 매칭해요. 이력서가 영문이거나 상세할수록 정확도가 높아져요.</div>
+  `;
+}
+
 function detectResumeCategory(resumeText) {
   const text = resumeText.toLowerCase();
   const catRegex = getCatRegex();
@@ -2425,6 +2524,13 @@ async function runJobMatch() {
   statusEl.style.display = 'flex';
   statusIcon.textContent = '⏳';
   statusText.textContent = `${allJobs.length}개 공고 중 최적 매칭을 찾는 중... (10~20초 소요)`;
+
+  // 이력서 파싱 시각화
+  const insightEl = document.getElementById('resumeInsight');
+  if (insightEl) {
+    const parsed = parseResume(resume);
+    renderResumeInsight(parsed, insightEl);
+  }
   // 이전 결과는 새 결과 나올 때까지 유지 (resultsEl.innerHTML 지우지 않음)
 
   // 선택된 직군 확인
