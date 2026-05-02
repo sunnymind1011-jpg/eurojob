@@ -1294,6 +1294,7 @@ if (typeof pdfjsLib !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 }
 let allJobs = [];
+let lastJobsForMatch = []; // AI 매칭에 사용된 공고 목록 (인덱스 기준)
 let savedIds = new Set(JSON.parse(localStorage.getItem('ej_saved')||'[]'));
 let activeFilters = new Set();
 let logs = [];
@@ -2321,7 +2322,7 @@ function saveMatchCache(matches, statusText) {
 function renderMatchResults(matches, resultsEl) {
   resultsEl.innerHTML = '';
   matches.forEach((m, rank) => {
-    const job = allJobs[m.index];
+    const job = (lastJobsForMatch.length > 0 ? lastJobsForMatch : allJobs)[m.index];
     if (!job) return;
     const score = Math.round((m.score || 0) <= 1 ? (m.score || 0) * 100 : (m.score || 0));
     const scoreColor = score >= 80 ? 'var(--accent3)' : score >= 60 ? 'var(--warn)' : 'var(--text3)';
@@ -2405,8 +2406,11 @@ async function runJobMatch() {
     if (jobsForMatch.length < 10) jobsForMatch = allJobs;
   }
 
+  // AI 매칭에 사용된 공고 목록 전역 저장 (renderMatchResults에서 인덱스 참조용)
+  lastJobsForMatch = jobsForMatch.slice(0, 80);
+
   // 공고 목록 압축 (최대 80개, 직군 필터 덕분에 description 100자 포함 가능)
-  const jobList = jobsForMatch.slice(0, 80).map((j, i) =>
+  const jobList = lastJobsForMatch.map((j, i) =>
     `[${i}] ${j.title} | ${j.company} | ${j.country} | ${(j.skills||[]).slice(0,4).join(',')} | ${(j.description||'').slice(0,100)}`
   ).join('\n');
 
@@ -2415,7 +2419,7 @@ async function runJobMatch() {
     const response = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resume, jobs: jobList, category: selectedCat }),
+      body: JSON.stringify({ resume, jobs: jobList }),
     });
 
     const data = await response.json();
