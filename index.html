@@ -265,6 +265,9 @@ textarea::placeholder{color:var(--text3);}
 .ctab{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;}
 .ctab:hover{border-color:var(--border2);color:var(--text);}
 .ctab.active{border-color:rgba(62,207,160,.32);background:rgba(62,207,160,.1);color:var(--accent3);}
+.match-sector-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;font-family:inherit;}
+.match-sector-btn:hover{border-color:var(--border2);color:var(--text);}
+.match-sector-btn.active{border-color:rgba(79,142,247,.5);background:rgba(79,142,247,.12);color:var(--accent);font-weight:600;}
 .visa-table{font-size:13px;}
 .visa-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
 .visa-row:last-child{border-bottom:none;}
@@ -876,6 +879,22 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
       <div style="background:linear-gradient(135deg,rgba(62,207,160,.07),rgba(79,142,247,.07));border:1px solid rgba(62,207,160,.18);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px;font-size:13px;color:var(--text2)">
         💡 <strong style="color:var(--text)">매칭 적합도</strong> 메뉴에서 이력서를 먼저 저장해두면 바로 사용할 수 있어요.
         <span id="jobmatchResumeCheck" style="margin-left:8px"></span>
+      </div>
+
+      <!-- 직군 필터 -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">🎯 내 직군을 선택하세요 <span style="font-weight:400;color:var(--text3)">(선택 시 해당 직군 공고만 AI에게 전달돼 정확도가 높아져요)</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px" id="matchSectorBtns">
+          <button class="match-sector-btn active" data-cat="" onclick="toggleMatchSector(this)">🔍 전체</button>
+          <button class="match-sector-btn" data-cat="data" onclick="toggleMatchSector(this)">📊 데이터</button>
+          <button class="match-sector-btn" data-cat="marketing" onclick="toggleMatchSector(this)">📣 마케팅</button>
+          <button class="match-sector-btn" data-cat="dev" onclick="toggleMatchSector(this)">💻 개발</button>
+          <button class="match-sector-btn" data-cat="hr" onclick="toggleMatchSector(this)">🤝 HR</button>
+          <button class="match-sector-btn" data-cat="finance" onclick="toggleMatchSector(this)">💰 금융</button>
+          <button class="match-sector-btn" data-cat="management" onclick="toggleMatchSector(this)">🏢 경영/전략</button>
+          <button class="match-sector-btn" data-cat="sales" onclick="toggleMatchSector(this)">🤝 영업/BD</button>
+          <button class="match-sector-btn" data-cat="ops" onclick="toggleMatchSector(this)">🚛 운영/물류·SCM</button>
+        </div>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -1771,7 +1790,33 @@ const CAT_KEYWORDS = {
     // ES
     'logística','almacén','aprovisionamiento','cadena de suministro',
   ],
+  sales: [
+    // EN — 코어
+    'sales','account executive','account manager','sales manager','sales director',
+    'sales representative','sales rep','sales consultant','sales specialist',
+    'business development','bd manager','bd director','bd executive',
+    'commercial manager','commercial director','commercial executive',
+    'revenue manager','revenue operations','revops',
+    'inside sales','outside sales','field sales','enterprise sales',
+    'channel sales','partner manager','partnership manager',
+    'key account','key account manager','national account',
+    'pre-sales','presales','solution selling','value selling',
+    'sales engineer','technical sales','sales enablement',
+    'vp of sales','head of sales','chief revenue officer','cro',
+    // DE
+    'vertrieb','vertriebsmanager','vertriebsleiter','kundenbetreuer',
+    'außendienst','geschäftsentwicklung','verkaufsleiter',
+    // FR
+    'commercial','responsable commercial','directeur commercial',
+    'chargé de clientèle','développement commercial','ingénieur commercial',
+    // ES
+    'ventas','responsable de ventas','director comercial','ejecutivo de ventas',
+    'desarrollo de negocio','comercial','asesor comercial',
+    // NL
+    'verkoop','accountmanager','salesmanager','commercieel manager',
+  ],
 };
+
 
 // CAT_KEYWORDS 정규식 미리 컴파일 (CAT_KEYWORDS 선언 후에 위치해야 함)
 let _CAT_REGEX_CACHE = null;
@@ -2307,6 +2352,20 @@ function renderMatchResults(matches, resultsEl) {
   });
 }
 
+function toggleMatchSector(btn) {
+  document.querySelectorAll('.match-sector-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // 선택된 직군 공고 수 업데이트
+  const cat = btn.dataset.cat;
+  if (cat && allJobs) {
+    const catRegex = getCatRegex();
+    const cnt = allJobs.filter(j => (catRegex[cat]||[]).some(rx => rx.test((j.title||'').toLowerCase()))).length;
+    document.getElementById('jobmatchJobCount').textContent = `${btn.textContent} 직군 공고 ${cnt}개 중 매칭`;
+  } else if (allJobs) {
+    document.getElementById('jobmatchJobCount').textContent = `전체 ${allJobs.length}개 공고 중 매칭`;
+  }
+}
+
 async function runJobMatch() {
   const resume = document.getElementById('resumeText').value.trim();
   if (!resume) {
@@ -2332,9 +2391,23 @@ async function runJobMatch() {
   statusText.textContent = `${allJobs.length}개 공고 중 최적 매칭을 찾는 중... (10~20초 소요)`;
   // 이전 결과는 새 결과 나올 때까지 유지 (resultsEl.innerHTML 지우지 않음)
 
-  // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드만)
-  const jobList = allJobs.slice(0, 150).map((j, i) =>
-    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${(j.skills||[]).slice(0,4).join(',')}`
+  // 선택된 직군으로 필터링 (선택 없으면 전체)
+  const selectedSectorBtn = document.querySelector('.match-sector-btn.active');
+  const selectedCat = selectedSectorBtn ? selectedSectorBtn.dataset.cat : '';
+  let jobsForMatch = allJobs;
+  if (selectedCat) {
+    const catRegex = getCatRegex();
+    jobsForMatch = allJobs.filter(j => {
+      const titleLower = (j.title||'').toLowerCase();
+      return (catRegex[selectedCat]||[]).some(rx => rx.test(titleLower));
+    });
+    // 필터 결과가 너무 적으면 전체로 fallback
+    if (jobsForMatch.length < 10) jobsForMatch = allJobs;
+  }
+
+  // 공고 목록 압축 (최대 80개, 직군 필터 덕분에 description 100자 포함 가능)
+  const jobList = jobsForMatch.slice(0, 80).map((j, i) =>
+    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${(j.skills||[]).slice(0,4).join(',')} | ${(j.description||'').slice(0,100)}`
   ).join('\n');
 
 
