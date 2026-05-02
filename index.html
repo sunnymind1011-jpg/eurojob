@@ -899,9 +899,12 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div style="font-size:13px;color:var(--text2)" id="jobmatchJobCount"></div>
-        <button class="btn btn-primary" id="runMatchBtn" onclick="runJobMatch()" style="gap:8px">
-          ✨ AI 매칭 시작
-        </button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" id="clearMatchBtn" onclick="clearMatchResults()" style="color:var(--red);border-color:rgba(240,100,100,.3);display:none">🗑 초기화</button>
+          <button class="btn btn-primary" id="runMatchBtn" onclick="runJobMatch()" style="gap:8px">
+            ✨ AI 매칭 시작
+          </button>
+        </div>
       </div>
 
       <!-- 상태 메시지 -->
@@ -1364,6 +1367,8 @@ function nav(id, el) {
       const resultsEl = document.getElementById('matchResults');
       if (statusEl) { statusEl.style.display = 'flex'; statusIcon.textContent = '✅'; statusText.textContent = cache.statusText; }
       if (resultsEl) renderMatchResults(cache.matches, resultsEl);
+      const clearBtn = document.getElementById('clearMatchBtn');
+      if (clearBtn) clearBtn.style.display = 'inline-flex';
     }
   }
 }
@@ -2298,6 +2303,20 @@ function openClaudeWithJD(jobId, type) {
 // ── AI 잡 매칭 ────────────────────────────────────────────
 const MATCH_CACHE_KEY = 'ej_jobmatch_cache';
 
+function clearMatchResults() {
+  // 결과 초기화
+  document.getElementById('matchResults').innerHTML = '';
+  document.getElementById('matchStatus').style.display = 'none';
+  document.getElementById('jobmatchJobCount').textContent = '';
+  document.getElementById('clearMatchBtn').style.display = 'none';
+  // 캐시 삭제
+  localStorage.removeItem(MATCH_CACHE_KEY);
+  // 직군 버튼 전체로 초기화
+  document.querySelectorAll('.match-sector-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.match-sector-btn[data-cat=""]').classList.add('active');
+  lastJobsForMatch = [];
+}
+
 function loadMatchCache() {
   try {
     const raw = localStorage.getItem(MATCH_CACHE_KEY);
@@ -2483,6 +2502,7 @@ async function runJobMatch() {
 
     renderMatchResults(matches, resultsEl);
     saveMatchCache(matches, `${matches.length}개의 맞춤 공고를 찾았어요!`);
+    document.getElementById('clearMatchBtn').style.display = 'inline-flex';
 
   } catch(e) {
     statusIcon.textContent = '❌';
