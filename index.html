@@ -2356,6 +2356,21 @@ function renderMatchResults(matches, resultsEl) {
   });
 }
 
+// 이력서 텍스트에서 직군 자동 감지
+function detectResumeCategory(resumeText) {
+  const text = resumeText.toLowerCase();
+  const catRegex = getCatRegex();
+  const scores = {};
+  for (const [cat, regexList] of Object.entries(catRegex)) {
+    scores[cat] = regexList.filter(rx => rx.test(text)).length;
+  }
+  // 가장 높은 점수 직군 반환 (동점이면 null)
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  if (sorted[0][1] === 0) return null; // 아무것도 안 매칭
+  if (sorted[0][1] === sorted[1][1]) return null; // 동점이면 판단 불가
+  return sorted[0][0];
+}
+
 function toggleMatchSector(btn) {
   document.querySelectorAll('.match-sector-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -2395,11 +2410,28 @@ async function runJobMatch() {
   statusText.textContent = `${allJobs.length}개 공고 중 최적 매칭을 찾는 중... (10~20초 소요)`;
   // 이전 결과는 새 결과 나올 때까지 유지 (resultsEl.innerHTML 지우지 않음)
 
-  // 선택된 직군으로 필터링 (선택 없으면 전체)
+  // 선택된 직군 확인
   const selectedSectorBtn = document.querySelector('.match-sector-btn.active');
-  const selectedCat = selectedSectorBtn ? selectedSectorBtn.dataset.cat : '';
-  // 전체 선택 시 lastJobsForMatch 초기화 (이전 직군 필터 캐시 제거)
-  if (!selectedCat) lastJobsForMatch = [];
+  let selectedCat = selectedSectorBtn ? selectedSectorBtn.dataset.cat : '';
+
+  // 전체 선택 시 이력서에서 직군 자동 감지
+  let autoDetected = false;
+  if (!selectedCat) {
+    const detected = detectResumeCategory(resume);
+    if (detected) {
+      selectedCat = detected;
+      autoDetected = true;
+    }
+  }
+
+  // 감지된 직군 라벨 (UI 표시용)
+  const SECTOR_LABELS = {
+    data:'📊 데이터', marketing:'📣 마케팅', dev:'💻 개발',
+    hr:'🤝 HR', finance:'💰 금융', management:'🏢 경영/전략',
+    sales:'🤝 영업/BD', ops:'🚛 운영/물류·SCM'
+  };
+
+  // 직군 필터링
   let jobsForMatch = allJobs;
   if (selectedCat) {
     const catRegex = getCatRegex();
@@ -2408,8 +2440,17 @@ async function runJobMatch() {
       return (catRegex[selectedCat]||[]).some(rx => rx.test(titleLower));
     });
     // 필터 결과가 너무 적으면 전체로 fallback
-    if (jobsForMatch.length < 10) jobsForMatch = allJobs;
+    if (jobsForMatch.length < 10) { jobsForMatch = allJobs; selectedCat = ''; autoDetected = false; }
   }
+
+  // 자동 감지 시 UI에 안내 표시
+  const countEl = document.getElementById('jobmatchJobCount');
+  if (autoDetected && selectedCat) {
+    countEl.innerHTML = `이력서 분석 결과 <strong style="color:var(--accent)">${SECTOR_LABELS[selectedCat]||selectedCat}</strong> 직군으로 감지됐어요 · ${jobsForMatch.length}개 공고 중 매칭`;
+  }
+
+  // lastJobsForMatch 초기화
+  lastJobsForMatch = [];
 
   // AI 매칭에 사용된 공고 목록 전역 저장 (renderMatchResults에서 인덱스 참조용)
   lastJobsForMatch = jobsForMatch.slice(0, 80);
