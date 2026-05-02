@@ -27,8 +27,10 @@ IMPORTANT MATCHING RULES:
 4. Consider seniority level — a Director-level candidate should be matched with Senior/Lead/Director roles.
 5. Language requirements must match — if the candidate only speaks English, avoid roles requiring local languages.
 6. Score must reflect TRUE relevance (0-100). A Sales Director should score <30 for Data Engineer roles.
+7. VISA BONUS: If a job description mentions visa sponsorship, sponsored, or work permit support, add +5 to the score for candidates based outside the EU.
+8. Reason must be specific: mention the matched skill, industry, or seniority (e.g. "SaaS 영업 5년 경력 일치", "Healthcare BD 직무 매칭"). Do NOT write vague reasons like "경력 일치" alone.
  
-JOB LIST FORMAT: [index] title | company | country | remoteType | skills | languages | description_snippet
+JOB LIST FORMAT: [index] title | company | country | skills | description_snippet
  
 RESUME:
 ${resume}
