@@ -2332,9 +2332,9 @@ async function runJobMatch() {
   statusText.textContent = `${allJobs.length}개 공고 중 최적 매칭을 찾는 중... (10~20초 소요)`;
   // 이전 결과는 새 결과 나올 때까지 유지 (resultsEl.innerHTML 지우지 않음)
 
-  // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드 + description 앞 150자)
-  const jobList = allJobs.slice(0, 200).map((j, i) =>
-    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${j.remoteType||'?'} | ${(j.skills||[]).slice(0,6).join(',')} | ${(j.languageReqs||[]).join(',')} | ${(j.description||'').slice(0,150)}`
+  // 공고 목록 압축 (제목 + 회사 + 국가 + 스킬 키워드만)
+  const jobList = allJobs.slice(0, 150).map((j, i) =>
+    `[${i}] ${j.title} | ${j.company} | ${j.country} | ${(j.skills||[]).slice(0,4).join(',')}`
   ).join('\n');
 
 
@@ -4968,4 +4968,4 @@ function showPrivacyModal() {
 </script>
 
 </body>
-</html>
+</html> 
