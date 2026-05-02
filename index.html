@@ -2383,11 +2383,9 @@ function detectResumeCategory(resumeText) {
   for (const [cat, regexList] of Object.entries(catRegex)) {
     scores[cat] = regexList.filter(rx => rx.test(text)).length;
   }
-  // 가장 높은 점수 직군 반환 (동점이면 null)
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-  if (sorted[0][1] === 0) return null; // 아무것도 안 매칭
-  if (sorted[0][1] === sorted[1][1]) return null; // 동점이면 판단 불가
-  return sorted[0][0];
+  if (sorted[0][1] === 0) return null; // 아무것도 안 매칭되면 null
+  return sorted[0][0]; // 동점이어도 1위 반환
 }
 
 function toggleMatchSector(btn) {
@@ -2462,10 +2460,12 @@ async function runJobMatch() {
     if (jobsForMatch.length < 10) { jobsForMatch = allJobs; selectedCat = ''; autoDetected = false; }
   }
 
-  // 자동 감지 시 UI에 안내 표시
+  // 자동 감지 결과 UI 표시
   const countEl = document.getElementById('jobmatchJobCount');
   if (autoDetected && selectedCat) {
     countEl.innerHTML = `이력서 분석 결과 <strong style="color:var(--accent)">${SECTOR_LABELS[selectedCat]||selectedCat}</strong> 직군으로 감지됐어요 · ${jobsForMatch.length}개 공고 중 매칭`;
+  } else if (!selectedCat) {
+    countEl.textContent = `전체 ${jobsForMatch.length}개 공고 중 매칭`;
   }
 
   // lastJobsForMatch 초기화
