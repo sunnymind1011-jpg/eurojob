@@ -3108,6 +3108,17 @@ async function updateTrackerResult(jobId, result) {
   renderTracker();
 }
 
+async function updateTrackerField(jobId, field, value) {
+  if (!currentUser) return;
+  const updates = { [field]: value || null };
+  const { error } = await sb.from('saved_jobs').update(updates).eq('user_id', currentUser.id).eq('job_id', jobId);
+  if (error) console.log('updateTrackerField err:', error.message);
+  else {
+    const job = trackerJobs.find(j => j.job_id === jobId);
+    if (job) job[field] = value || null;
+  }
+}
+
 function renderTracker() {
   const empty = document.getElementById('tracker-empty');
   if (!trackerJobs.length) { empty.style.display='block'; STATUS_ORDER.forEach(s=>{document.getElementById(`tk-col-${s}`).innerHTML='';document.getElementById(`tk-count-${s}`).textContent='0';}); return; }
@@ -3133,6 +3144,41 @@ function renderTracker() {
           <button class="tk-status-btn" onclick="updateTrackerStatus('${j.job_id}','result');updateTrackerResult('${j.job_id}','pending')">⏳ 대기</button>
         </div>` : '';
       const resultBadge = status === 'result' ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;font-weight:600;background:${j.result==='pass'?'rgba(62,207,160,.15)':j.result==='fail'?'rgba(239,68,68,.15)':'rgba(245,166,35,.15)'};color:${j.result==='pass'?'#3ecfa0':j.result==='fail'?'#ef4444':'#f5a623'}">${j.result==='pass'?'✅ 합격':j.result==='fail'?'❌ 불합격':'⏳ 대기'}</span>` : '';
+      const euFields = status !== 'saved' ? `
+        <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;gap:5px;align-items:center">
+            <span style="font-size:9px;color:var(--text3);min-width:48px">비자</span>
+            <select style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onchange="updateTrackerField('${j.job_id}','visa_status',this.value)">
+              <option value="">미입력</option>
+              <option value="confirmed" ${j.visa_status==='confirmed'?'selected':''}>✅ 스폰서 확정</option>
+              <option value="checking" ${j.visa_status==='checking'?'selected':''}>🔍 확인 중</option>
+              <option value="unnecessary" ${j.visa_status==='unnecessary'?'selected':''}>➖ 불필요</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span style="font-size:9px;color:var(--text3);min-width:48px">면접어</span>
+            <select style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onchange="updateTrackerField('${j.job_id}','interview_lang',this.value)">
+              <option value="">미입력</option>
+              <option value="en" ${j.interview_lang==='en'?'selected':''}>🇬🇧 영어</option>
+              <option value="es" ${j.interview_lang==='es'?'selected':''}>🇪🇸 스페인어</option>
+              <option value="fr" ${j.interview_lang==='fr'?'selected':''}>🇫🇷 프랑스어</option>
+              <option value="de" ${j.interview_lang==='de'?'selected':''}>🇩🇪 독일어</option>
+              <option value="it" ${j.interview_lang==='it'?'selected':''}>🇮🇹 이탈리아어</option>
+              <option value="other" ${j.interview_lang==='other'?'selected':''}>🌐 기타 현지어</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span style="font-size:9px;color:var(--text3);min-width:48px">면접일</span>
+            <input type="date" value="${j.next_interview||''}" style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onchange="updateTrackerField('${j.job_id}','next_interview',this.value)">
+          </div>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span style="font-size:9px;color:var(--text3);min-width:48px">제안연봉</span>
+            <input type="text" value="${j.offered_salary||''}" placeholder="예: €65,000" style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onblur="updateTrackerField('${j.job_id}','offered_salary',this.value)">
+          </div>
+          <div>
+            <textarea rows="2" placeholder="메모 (레퍼런스 체크, 담당자 이름 등)" style="font-size:10px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;width:100%;resize:none;margin-top:2px" onblur="updateTrackerField('${j.job_id}','memo',this.value)">${j.memo||''}</textarea>
+          </div>
+        </div>` : '';
       return `<div class="tk-card">
         <div class="tk-card-title">${j.job_title||'제목 없음'}</div>
         <div class="tk-card-company">${j.job_flag||''} ${j.job_company||''}</div>
@@ -3141,6 +3187,7 @@ function renderTracker() {
           ${resultBadge}
           <a href="${j.job_url}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-left:auto">공고 →</a>
         </div>
+        ${euFields}
         ${next ? `<button class="tk-status-btn" style="margin-top:8px;width:100%" onclick="updateTrackerStatus('${j.job_id}','${next}')">→ ${STATUS_CONFIG[next].label}</button>` : ''}
         ${resultBtns}
       </div>`;
