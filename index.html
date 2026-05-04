@@ -122,7 +122,7 @@ body{font-family:'Sora','Noto Sans KR',sans-serif;background:var(--bg);color:var
 .c-red{color:var(--red);}
 
 /* ── HERO ──────────────────────────── */
-.hero{background:linear-gradient(135deg,rgba(79,142,247,.1),rgba(124,106,240,.1));border:1px solid rgba(79,142,247,.18);border-radius:16px;padding:30px 34px;margin-bottom:24px;position:relative;overflow:hidden;}
+.hero{background:linear-gradient(135deg,rgba(79,142,247,.1),rgba(124,106,240,.1));border:1px solid rgba(79,142,247,.18);border-radius:16px;padding:30px 34px;margin-bottom:16px;position:relative;overflow:hidden;}
 .hero::before{content:'';position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(79,142,247,.07) 0%,transparent 70%);pointer-events:none;}
 .hero-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(62,207,160,.1);border:1px solid rgba(62,207,160,.22);color:var(--accent3);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin-bottom:11px;text-transform:uppercase;letter-spacing:.5px;}
 .hero h1{font-size:25px;font-weight:700;margin-bottom:7px;letter-spacing:-.4px;}
@@ -576,8 +576,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
   </div>
   <div class="sidebar-footer">
     <div style="padding:8px;font-size:11px;color:var(--text3);line-height:1.6">
-      <a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px;display:block">🔒 개인정보 처리방침</a>
-      <a onclick="showGuideModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px;display:block;margin-top:4px">❓ 사용 가이드</a>
+      <span style="white-space:nowrap"><a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px">🔒 개인정보</a> &nbsp;<a onclick="showGuideModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px">❓ 사용 가이드</a></span>
     </div>
   </div>
 </nav>
@@ -649,7 +648,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
         <div id="homeTrackerSummary"></div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-top:16px">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:18px">✍️</span>
           <div>
@@ -3963,7 +3962,7 @@ function showMain() {
           <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
         </div>
         ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px"><a onclick="showPrivacyModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">🔒 개인정보 처리방침</a><a onclick="showGuideModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">❓ 사용 가이드</a></div>`;
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);white-space:nowrap"><a onclick="showPrivacyModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">🔒 개인정보</a> &nbsp;<a onclick="showGuideModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">❓ 사용 가이드</a></div>`;
     }
   }
 
@@ -5468,4 +5467,4 @@ function showPrivacyModal() {
 </script>
 
 </body>
-</html>
+</html> 
