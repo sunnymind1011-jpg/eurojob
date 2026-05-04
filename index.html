@@ -619,31 +619,45 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
 
     <!-- ★ HOME ──────────────────────────────────────── -->
     <div class="page active" id="page-home">
-      <div class="hero">
-        <div class="hero-tag">✨ 실시간 업데이트</div>
-        <h1>유럽에서 <span>커리어를 펼치세요</span></h1>
-        <p>스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.</p>
-        <div class="hero-actions">
-          <button class="btn btn-primary" onclick="nav('jobs',null)">🔍 채용공고 보기</button>
-          <button class="btn btn-ghost" onclick="nav('jobmatch',null)">✨ 나에게 맞는 공고 찾기</button>
+      <div class="hero" style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
+        <div>
+          <div class="hero-tag">✨ 실시간 업데이트</div>
+          <h1>유럽에서 <span>커리어를 펼치세요</span></h1>
+          <p>스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="nav('jobs',null)">🔍 채용공고 보기</button>
+            <button class="btn btn-ghost" onclick="nav('jobmatch',null)">✨ 나에게 맞는 공고 찾기</button>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:40px;font-weight:800;color:var(--accent);line-height:1" id="hs-total">0</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">유럽 채용공고</div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+            <span style="font-size:11px;background:rgba(62,207,160,.12);color:var(--accent3);border:1px solid rgba(62,207,160,.25);padding:2px 8px;border-radius:10px;cursor:pointer" onclick="navWithFilter('jobs',['visa:true','relocation:true'])">비자 <span id="hs-visa">0</span></span>
+            <span style="font-size:11px;background:rgba(245,166,35,.12);color:var(--warn);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:10px;cursor:pointer" onclick="navWithFilter('jobs',['remote:Remote','remote:Hybrid'])">원격 <span id="hs-remote">0</span></span>
+            <span style="font-size:11px;background:rgba(124,106,240,.12);color:#7c6af0;border:1px solid rgba(124,106,240,.25);padding:2px 8px;border-radius:10px"><span id="hs-countries">0</span>개국</span>
+          </div>
         </div>
       </div>
-      <div class="stats4">
-        <div class="stat" onclick="nav('jobs',null)" style="cursor:pointer" title="채용공고 보기" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'"><div class="stat-lbl">총 채용공고</div><div class="stat-val c-blue" id="hs-total">0</div><div class="stat-note">오늘 신규 확인 중</div></div>
-        <div class="stat" onclick="navWithFilter('jobs', ['visa:true','relocation:true'])" style="cursor:pointer" title="비자 스폰서 공고 보기" onmouseover="this.style.borderColor='var(--accent3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'"><div class="stat-lbl">비자 스폰서</div><div class="stat-val c-green" id="hs-visa">0</div><div class="stat-note">리로케이션 포함</div></div>
-        <div class="stat" onclick="navWithFilter('jobs', ['remote:Remote','remote:Hybrid'])" style="cursor:pointer" title="원격/하이브리드 공고 보기" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'"><div class="stat-lbl">원격/하이브리드</div><div class="stat-val c-warn" id="hs-remote">0</div><div class="stat-note">재택 가능 공고</div></div>
-        <div class="stat"><div class="stat-lbl">활성 국가</div><div class="stat-val c-purple" id="hs-countries">0</div><div class="stat-note">유럽 전역</div></div>
+
+      <div style="background:var(--bg2);border:1px solid rgba(79,142,247,.35);border-radius:14px;padding:16px 20px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">📋 나의 지원 현황</div>
+          <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('tracker',null)">트래커 보기 →</span>
+        </div>
+        <div id="homeTrackerSummary"></div>
       </div>
-      <div class="blog-banner">
-        <div class="blog-icon">✍️</div>
-        <div class="blog-text"><h4>해외취업 꿀팁 블로그</h4><p>실전 경험으로 쌓은 유럽 취업 노하우 공유</p></div>
-        <a href="https://blog.naver.com/sunnnymind/" target="_blank" class="blog-link">블로그 방문 →</a>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">✍️</span>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">해외취업 꿀팁 블로그</div>
+            <div style="font-size:11px;color:var(--text2)">실전 경험으로 쌓은 유럽 취업 노하우</div>
+          </div>
+        </div>
+        <a href="https://blog.naver.com/sunnnymind/" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;white-space:nowrap">블로그 방문 →</a>
       </div>
-      <div class="sec-hd">
-        <div><div class="sec-title">📋 나의 지원 현황</div><div class="sec-sub">지원 트래커 요약</div></div>
-        <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('tracker',null)">트래커 보기 →</span>
-      </div>
-      <div id="homeTrackerSummary"></div>
     </div>
 
     <!-- ★ JOBS ──────────────────────────────────────── -->
