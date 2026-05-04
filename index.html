@@ -3957,7 +3957,7 @@ function showMain() {
             <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
             <div style="font-size:11px;color:var(--text3)">${isAdmin ? '👑 관리자' : isBeta ? '⭐ 베타 멤버' : '일반 사용자'}</div>
           </div>
-          <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
+          <button onclick="signOut()" title="로그아웃" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;transition:all .15s;flex-shrink:0" onmouseover="this.style.color='#ef4444';this.style.background='rgba(239,68,68,.1)';this.title='로그아웃'" onmouseout="this.style.color='var(--text3)';this.style.background='none'">↩</button>
         </div>
         ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);white-space:nowrap"><a onclick="showPrivacyModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:10px;">🔒 개인정보 처리방침</a>&nbsp;&nbsp;&nbsp;<a onclick="showGuideModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:10px;">❓ 사용 가이드</a></div>`;
