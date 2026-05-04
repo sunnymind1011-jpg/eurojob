@@ -640,10 +640,10 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
         <a href="https://blog.naver.com/sunnnymind/" target="_blank" class="blog-link">블로그 방문 →</a>
       </div>
       <div class="sec-hd">
-        <div><div class="sec-title">🔥 최근 공고</div><div class="sec-sub">가장 최근에 올라온 공고</div></div>
-        <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('jobs',null)">전체보기 →</span>
+        <div><div class="sec-title">📋 나의 지원 현황</div><div class="sec-sub">지원 트래커 요약</div></div>
+        <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('tracker',null)">트래커 보기 →</span>
       </div>
-      <div class="job-grid" id="homeGrid"></div>
+      <div id="homeTrackerSummary"></div>
     </div>
 
     <!-- ★ JOBS ──────────────────────────────────────── -->
@@ -744,7 +744,8 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
     <div>① 채용공고 ♡ 버튼으로 저장하면 <b>저장됨</b> 컬럼에 자동으로 나타나요</div>
     <div>② 외부 사이트에서 지원 완료 후 <b>→ 지원완료</b> 버튼으로 단계를 이동하세요</div>
     <div>③ 서류통과 → 면접 → 최종결과 순으로 단계를 업데이트하세요</div>
-    <div>④ 공고를 삭제하려면 <b>저장목록</b> 메뉴에서 ♥ 버튼을 눌러 저장 해제하세요</div>
+    <div>④ 지원완료 이후 단계부터 비자 상태, 면접언어, 면접일, 제안연봉, 메모를 기록할 수 있어요</div>
+    <div>⑤ 공고를 삭제하려면 <b>저장목록</b> 메뉴에서 ♥ 버튼을 눌러 저장 해제하세요</div>
   </div>
   <div id="tracker-alerts" style="margin-bottom:16px"></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:start">
@@ -1356,6 +1357,7 @@ function nav(id, el) {
   if (id==='trends') renderTrends();
   if (id==='skillmap') renderSkillMap();
   if (id==='tracker') loadTracker();
+  if (id==='home') renderHomeTrackerSummary();
   if (id==='jobmatch') {
     const resume = document.getElementById('resumeText').value.trim() || localStorage.getItem('eurogate_resume') || '';
     const checkEl = document.getElementById('jobmatchResumeCheck');
@@ -1950,6 +1952,70 @@ async function refreshSaved(btn) {
 }
 
 // 공고 카드 하트 버튼 전체 동기화 (로드 타이밍 보정)
+function renderHomeTrackerSummary() {
+  const el = document.getElementById('homeTrackerSummary');
+  if (!el) return;
+
+  const now = Date.now();
+  const counts = { saved:0, applied:0, screening:0, interview:0, result:0 };
+  let passCount = 0, overdueCount = 0, nextInterview = null;
+
+  trackerJobs.forEach(j => {
+    if (counts[j.status] !== undefined) counts[j.status]++;
+    if (j.status === 'result' && j.result === 'pass') passCount++;
+    if (j.status === 'saved' && (now - new Date(j.saved_at)) / 86400000 >= 14) overdueCount++;
+    if (j.next_interview) {
+      const d = new Date(j.next_interview);
+      if (d >= new Date() && (!nextInterview || d < new Date(nextInterview.date))) {
+        nextInterview = { date: j.next_interview, title: j.job_title };
+      }
+    }
+  });
+
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+
+  if (total === 0) {
+    el.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center">
+      <div style="font-size:14px;color:var(--text2);margin-bottom:8px">아직 저장한 공고가 없어요</div>
+      <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('jobs',null)">채용공고 둘러보기 →</span>
+    </div>`;
+    return;
+  }
+
+  const fmtDate = (d) => {
+    const dt = new Date(d);
+    return `${dt.getMonth()+1}월 ${dt.getDate()}일`;
+  };
+
+  el.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:var(--text)">${counts.saved}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">저장됨</div>
+        </div>
+        <div style="background:rgba(79,142,247,.1);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:var(--accent)">${counts.applied + counts.screening}</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:2px;opacity:.85">지원완료</div>
+        </div>
+        <div style="background:rgba(245,166,35,.1);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:var(--warn)">${counts.interview}</div>
+          <div style="font-size:11px;color:var(--warn);margin-top:2px;opacity:.85">면접 진행</div>
+        </div>
+        <div style="background:rgba(62,207,160,.1);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:var(--accent3)">${counts.result}</div>
+          <div style="font-size:11px;color:var(--accent3);margin-top:2px;opacity:.85">최종결과</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:7px">
+        ${nextInterview ? `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text2)">다음 면접</span><span style="color:var(--text);font-weight:600">${nextInterview.title} · ${fmtDate(nextInterview.date)}</span></div>` : ''}
+        ${overdueCount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text2)">14일 경과 미지원</span><span style="color:#ef4444;font-weight:600">${overdueCount}개 공고</span></div>` : ''}
+        ${passCount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text2)">합격</span><span style="color:var(--accent3);font-weight:600">${passCount}개 🎉</span></div>` : ''}
+        ${!nextInterview && overdueCount === 0 && passCount === 0 ? `<div style="font-size:12px;color:var(--text3);text-align:center">지원 현황을 트래커에서 업데이트해보세요</div>` : ''}
+      </div>
+    </div>`;
+}
+
 function syncSaveButtons() {
   document.querySelectorAll('.save-btn[data-id]').forEach(btn => {
     const id = btn.dataset.id;
@@ -3077,6 +3143,7 @@ async function loadTracker() {
   document.getElementById('nb-saved').textContent = savedIds.size;
   renderSaved();
   renderTracker();
+  renderHomeTrackerSummary();
 }
 
 async function updateTrackerStatus(jobId, newStatus) {
