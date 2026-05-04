@@ -3951,7 +3951,7 @@ function showMain() {
     const sidebar = document.querySelector('.sidebar-footer');
     if (sidebar) {
       sidebar.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;">
+        <div style="display:flex;align-items:left;gap:10px;padding:8px;border-radius:8px;">
           ${avatar ? `<img src="${avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div class="avatar">${name[0]}</div>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
