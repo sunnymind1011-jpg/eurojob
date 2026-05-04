@@ -3964,7 +3964,7 @@ function showMain() {
           <button onclick="signOut()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;" title="로그아웃">↩</button>
         </div>
         ${isAdmin ? `<button onclick="showAdminDashboard()" style="width:100%;margin-top:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent);padding:7px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">⚙️ 관리자 대시보드</button>` : ''}
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><a onclick="showPrivacyModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">🔒 개인정보 처리방침</a></div>`;
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center"><a onclick="showPrivacyModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">🔒 개인정보 처리방침</a><span style="color:var(--text3);font-size:11px">·</span><a onclick="showGuideModal()" style="color:var(--text2);text-decoration:none;cursor:pointer;font-size:11px;">❓ 사용 가이드</a></div>`;
     }
   }
 
