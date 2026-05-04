@@ -619,20 +619,18 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
 
     <!-- ★ HOME ──────────────────────────────────────── -->
     <div class="page active" id="page-home">
-      <div class="hero" style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
-        <div>
-          <div class="hero-tag">✨ 실시간 업데이트</div>
-          <h1>유럽에서 <span>커리어를 펼치세요</span></h1>
-          <p>스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.</p>
-          <div class="hero-actions">
-            <button class="btn btn-primary" onclick="nav('jobs',null)">🔍 채용공고 보기</button>
-            <button class="btn btn-ghost" onclick="nav('jobmatch',null)">✨ 나에게 맞는 공고 찾기</button>
-          </div>
+      <div class="hero">
+        <div class="hero-tag">✨ 실시간 업데이트</div>
+        <h1>유럽에서 <span>커리어를 펼치세요</span></h1>
+        <p>스페인·영국·독일·네덜란드 등 유럽 전역 채용공고를 한 곳에서.<br>AI가 내 이력서와 딱 맞는 공고를 찾아드려요.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="nav('jobs',null)">🔍 채용공고 보기</button>
+          <button class="btn btn-ghost" onclick="nav('jobmatch',null)">✨ 나에게 맞는 공고 찾기</button>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:40px;font-weight:800;color:var(--accent);line-height:1" id="hs-total">0</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">유럽 채용공고</div>
-          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+          <span style="font-size:22px;font-weight:800;color:var(--accent)" id="hs-total">0</span>
+          <span style="font-size:12px;color:var(--text2)">개 유럽 채용공고</span>
+          <div style="display:flex;gap:6px;margin-left:4px;flex-wrap:wrap">
             <span style="font-size:11px;background:rgba(62,207,160,.12);color:var(--accent3);border:1px solid rgba(62,207,160,.25);padding:2px 8px;border-radius:10px;cursor:pointer" onclick="navWithFilter('jobs',['visa:true','relocation:true'])">비자 <span id="hs-visa">0</span></span>
             <span style="font-size:11px;background:rgba(245,166,35,.12);color:var(--warn);border:1px solid rgba(245,166,35,.25);padding:2px 8px;border-radius:10px;cursor:pointer" onclick="navWithFilter('jobs',['remote:Remote','remote:Hybrid'])">원격 <span id="hs-remote">0</span></span>
             <span style="font-size:11px;background:rgba(124,106,240,.12);color:#7c6af0;border:1px solid rgba(124,106,240,.25);padding:2px 8px;border-radius:10px"><span id="hs-countries">0</span>개국</span>
