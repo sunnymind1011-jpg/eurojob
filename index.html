@@ -577,6 +577,8 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
   <div class="sidebar-footer">
     <div style="padding:8px;font-size:11px;color:var(--text3);line-height:1.6">
       <a onclick="showPrivacyModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px">🔒 개인정보 처리방침</a>
+      <span style="color:var(--text3);margin:0 4px">·</span>
+      <a onclick="showGuideModal()" style="color:var(--text3);text-decoration:none;cursor:pointer;font-size:11px">❓ 사용 가이드</a>
     </div>
   </div>
 </nav>
@@ -1986,10 +1988,27 @@ function renderHomeTrackerSummary() {
   const total = Object.values(counts).reduce((a,b) => a+b, 0);
 
   if (total === 0) {
-    el.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center">
-      <div style="font-size:14px;color:var(--text2);margin-bottom:8px">아직 저장한 공고가 없어요</div>
-      <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="nav('jobs',null)">채용공고 둘러보기 →</span>
-    </div>`;
+    el.innerHTML = `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">아직 저장한 공고가 없어요. 아래 순서로 시작해보세요!</div>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <div style="flex:1;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="nav('jobs',null)">
+          <div style="font-size:20px;margin-bottom:5px">🔍</div>
+          <div style="font-size:12px;font-weight:600;color:var(--accent)">① 공고 탐색</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px">채용공고 메뉴</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text3);font-size:14px;flex-shrink:0">→</div>
+        <div style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:5px">🔖</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">② 저장하기</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px">♡ 버튼 클릭</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text3);font-size:14px;flex-shrink:0">→</div>
+        <div style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="nav('jobmatch',null)">
+          <div style="font-size:20px;margin-bottom:5px">✨</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">③ AI 매칭</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px">이력서 입력</div>
+        </div>
+      </div>`;
     return;
   }
 
@@ -3963,6 +3982,11 @@ function showMain() {
 
   // 홈 지원 현황 초기 렌더 (trackerJobs 이미 있으면 즉시)
   setTimeout(() => renderHomeTrackerSummary(), 100);
+
+  // 첫 로그인 시 가이드 팝업 (한 번만)
+  if (!localStorage.getItem('ej_guide_seen')) {
+    setTimeout(() => showGuideModal(), 800);
+  }
 } // ← showMain 닫는 괄호
 
 function showAdminDashboard() {
@@ -5356,6 +5380,39 @@ function closeSkillDrawer(e) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   
+<div id="guideModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px 32px;max-width:480px;width:90%;position:relative;max-height:90vh;overflow-y:auto">
+    <button onclick="closeGuideModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer">✕</button>
+    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px">🗺️ EuroGate 사용 가이드</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:20px">유럽 취업을 준비하는 한국인을 위한 채용 플랫폼</div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">💼 채용공고</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">국가·직종·비자·근무형태 필터로 원하는 공고를 찾아보세요. 검색창에 직무명, 도시명, 스킬을 조합해서 검색할 수 있어요.</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">🔖 저장목록 & 지원 트래커</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">♡ 버튼으로 저장하면 저장목록에 추가돼요. 지원 후 단계를 저장됨 → 지원완료 → 서류통과 → 면접 → 최종결과 순으로 업데이트하고, 비자 상태·면접언어·제안연봉·메모도 기록할 수 있어요.</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">✨ AI 추천 포지션</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">이력서를 붙여넣고 직군을 선택하면 AI가 현재 수집된 공고 중 나에게 맞는 TOP 10을 추천해줘요.</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">🤖 매칭 적합도 & JD 인사이트</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">공고를 클릭하면 AI 매칭에 사용 버튼으로 이력서와 공고의 적합도를 분석할 수 있어요. JD 인사이트는 공고에서 비자·언어·스킬 요건을 자동으로 추출해줘요.</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">📊 직종 트렌드 & 직종별 스킬맵</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">유럽 채용 시장의 직종별 공고 수, 인기 스킬, 국가별 분포를 확인할 수 있어요.</div>
+      </div>
+    </div>
+
+    <button onclick="closeGuideModal()" style="width:100%;margin-top:20px;padding:10px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">확인</button>
+  </div>
+</div>
+
 <div id="privacyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:500px;width:90%;max-height:84vh;overflow-y:auto;position:relative;">
     <button onclick="document.getElementById('privacyModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer">✕</button>
@@ -5397,6 +5454,14 @@ function closeSkillDrawer(e) {
 </div>
 
 <script>
+function showGuideModal() {
+  document.getElementById('guideModal').style.display = 'flex';
+}
+function closeGuideModal() {
+  document.getElementById('guideModal').style.display = 'none';
+  localStorage.setItem('ej_guide_seen', '1');
+}
+
 function showPrivacyModal() {
   const m = document.getElementById('privacyModal');
   m.style.display = 'flex';
