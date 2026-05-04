@@ -3269,7 +3269,7 @@ function renderTracker() {
             <input type="text" value="${j.offered_salary||''}" placeholder="예: €65,000" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box" onblur="updateTrackerField('${j.job_id}','offered_salary',this.value)">
           </div>
           <div>
-            <textarea rows="2" placeholder="메모 (레퍼런스 체크, 담당자 이름 등)" style="font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box;resize:none" onblur="updateTrackerField('${j.job_id}','memo',this.value)">${j.memo||''}</textarea>
+            <textarea rows="2" placeholder="메모 (레퍼런스 체크, 담당자 이름 등)" style="font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box;resize:none" onblur="updateTrackerField('${j.job_id}','memo',this.value)">${(j.memo||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}</textarea>
           </div>
         </div>` : '';
       return `<div class="tk-card">
