@@ -3145,19 +3145,19 @@ function renderTracker() {
         </div>` : '';
       const resultBadge = status === 'result' ? `<span style="font-size:10px;padding:2px 7px;border-radius:6px;font-weight:600;background:${j.result==='pass'?'rgba(62,207,160,.15)':j.result==='fail'?'rgba(239,68,68,.15)':'rgba(245,166,35,.15)'};color:${j.result==='pass'?'#3ecfa0':j.result==='fail'?'#ef4444':'#f5a623'}">${j.result==='pass'?'✅ 합격':j.result==='fail'?'❌ 불합격':'⏳ 대기'}</span>` : '';
       const euFields = status !== 'saved' ? `
-        <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:5px">
-          <div style="display:flex;gap:5px;align-items:center">
-            <span style="font-size:9px;color:var(--text3);min-width:48px">비자</span>
-            <select style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onchange="updateTrackerField('${j.job_id}','visa_status',this.value)">
+        <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:grid;grid-template-columns:56px 1fr;gap:5px;align-items:center">
+            <span style="font-size:11px;color:var(--text2);font-weight:500">비자</span>
+            <select style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box" onchange="updateTrackerField('${j.job_id}','visa_status',this.value)">
               <option value="">미입력</option>
               <option value="confirmed" ${j.visa_status==='confirmed'?'selected':''}>✅ 스폰서 확정</option>
               <option value="checking" ${j.visa_status==='checking'?'selected':''}>🔍 확인 중</option>
               <option value="unnecessary" ${j.visa_status==='unnecessary'?'selected':''}>➖ 불필요</option>
             </select>
           </div>
-          <div style="display:flex;gap:5px;align-items:center">
-            <span style="font-size:9px;color:var(--text3);min-width:48px">면접어</span>
-            <select style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onchange="updateTrackerField('${j.job_id}','interview_lang',this.value)">
+          <div style="display:grid;grid-template-columns:56px 1fr;gap:5px;align-items:center">
+            <span style="font-size:11px;color:var(--text2);font-weight:500">면접언어</span>
+            <select style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box" onchange="updateTrackerField('${j.job_id}','interview_lang',this.value)">
               <option value="">미입력</option>
               <option value="en" ${j.interview_lang==='en'?'selected':''}>🇬🇧 영어</option>
               <option value="es" ${j.interview_lang==='es'?'selected':''}>🇪🇸 스페인어</option>
@@ -3167,16 +3167,16 @@ function renderTracker() {
               <option value="other" ${j.interview_lang==='other'?'selected':''}>🌐 기타 현지어</option>
             </select>
           </div>
-          <div style="display:flex;gap:5px;align-items:center">
-            <span style="font-size:9px;color:var(--text3);min-width:48px">면접일</span>
-            <input type="date" value="${j.next_interview||''}" style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onchange="updateTrackerField('${j.job_id}','next_interview',this.value)">
+          <div style="display:grid;grid-template-columns:56px 1fr;gap:5px;align-items:center">
+            <span style="font-size:11px;color:var(--text2);font-weight:500">면접일</span>
+            <input type="date" value="${j.next_interview||''}" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box" onchange="updateTrackerField('${j.job_id}','next_interview',this.value)">
           </div>
-          <div style="display:flex;gap:5px;align-items:center">
-            <span style="font-size:9px;color:var(--text3);min-width:48px">제안연봉</span>
-            <input type="text" value="${j.offered_salary||''}" placeholder="예: €65,000" style="font-size:10px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;flex:1" onblur="updateTrackerField('${j.job_id}','offered_salary',this.value)">
+          <div style="display:grid;grid-template-columns:56px 1fr;gap:5px;align-items:center">
+            <span style="font-size:11px;color:var(--text2);font-weight:500">제안연봉</span>
+            <input type="text" value="${j.offered_salary||''}" placeholder="예: €65,000" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box" onblur="updateTrackerField('${j.job_id}','offered_salary',this.value)">
           </div>
           <div>
-            <textarea rows="2" placeholder="메모 (레퍼런스 체크, 담당자 이름 등)" style="font-size:10px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;width:100%;resize:none;margin-top:2px" onblur="updateTrackerField('${j.job_id}','memo',this.value)">${j.memo||''}</textarea>
+            <textarea rows="2" placeholder="메모 (레퍼런스 체크, 담당자 이름 등)" style="font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box;resize:none" onblur="updateTrackerField('${j.job_id}','memo',this.value)">${j.memo||''}</textarea>
           </div>
         </div>` : '';
       return `<div class="tk-card">
