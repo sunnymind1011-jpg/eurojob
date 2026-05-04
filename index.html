@@ -3967,7 +3967,7 @@ function showMain() {
   // 관리자/베타 전용 메뉴 표시/숨김
   const canSeeAll = isAdmin || isBeta;
   const adminBarEl = document.getElementById('adminBar');
-  if (adminBarEl) adminBarEl.style.display = isAdmin ? 'flex' : 'none';
+  if (adminBarEl) adminBarEl.style.display = 'none';
 
   const extendedMenuIds = ['nav-section-ai','nav-ai','nav-jobmatch','nav-coverletter','nav-jdanalysis','nav-section-info','nav-trends','nav-skillmap','nav-tips','nav-visa','nav-chat','nav-tracker'];
   extendedMenuIds.forEach(id => {
