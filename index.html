@@ -3950,6 +3950,8 @@ function showMain() {
     el.style.display = canSeeAll ? (id.startsWith('nav-section') ? 'block' : 'flex') : 'none';
   });
 
+  // 홈 지원 현황 초기 렌더 (trackerJobs 이미 있으면 즉시)
+  setTimeout(() => renderHomeTrackerSummary(), 100);
 } // ← showMain 닫는 괄호
 
 function showAdminDashboard() {
