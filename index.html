@@ -1684,7 +1684,7 @@ function updateHomeStats() {
   document.getElementById('hs-countries').textContent = new Set(allJobs.map(j=>j.country)).size;
   const featured = [...allJobs].sort((a,b)=>new Date(b.postedAt)-new Date(a.postedAt)).slice(0,5);
   document.getElementById('homeGrid').innerHTML = featured.length
-    ? featured.map(j=>buildCard(j,true)).join('')
+    ? (() => { const h = featured.map(j=>buildCard(j,true)).join(''); setTimeout(syncSaveButtons, 0); return h; })()
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💼</div><div class="empty-title">공고를 수집하거나 샘플 데이터를 불러오세요</div></div>';
 }
 
@@ -1925,6 +1925,8 @@ function filterJobs() {
   document.getElementById('jobGrid').innerHTML = jobs.length
     ? jobs.map(j=>buildCard(j,false)).join('')
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">조건에 맞는 공고가 없어요</div></div>';
+  // 저장 상태 동기화 (비동기 로드 타이밍 보정)
+  syncSaveButtons();
 }
 
 async function refreshSaved(btn) {
@@ -1945,6 +1947,18 @@ async function refreshSaved(btn) {
   } catch(e) { console.log('refreshSaved err:', e.message); }
   renderSaved();
   if (btn) { btn.textContent = '✅ 완료'; btn.disabled = false; setTimeout(() => { btn.textContent = orig; }, 1500); }
+}
+
+// 공고 카드 하트 버튼 전체 동기화 (로드 타이밍 보정)
+function syncSaveButtons() {
+  document.querySelectorAll('.save-btn[data-id]').forEach(btn => {
+    const id = btn.dataset.id;
+    if (savedIds.has(id)) {
+      btn.textContent = '♥'; btn.classList.add('saved');
+    } else {
+      btn.textContent = '♡'; btn.classList.remove('saved');
+    }
+  });
 }
 
 function renderSaved() {
@@ -1980,11 +1994,10 @@ function buildCard(j, showFeat) {
   return `
   <div class="job-card${showFeat&&j.visaSponsored?' featured':''}" data-id="${j.id}" onclick="openDrawer(this.dataset.id)">
     ${showFeat&&j.visaSponsored?'<div class="feat-tag" style="background:rgba(79,142,247,.12);color:var(--accent);border:1px solid rgba(79,142,247,.28)">추천</div>':''}
-    ${isNew?`<div class="feat-tag" style="background:rgba(62,207,160,.12);color:var(--accent3);border:1px solid rgba(62,207,160,.28);top:14px;right:${showFeat&&j.visaSponsored?'60px':'14px'}">NEW</div>`:''}
     <div class="jc-top">
       <div class="co-logo">${j.logo}</div>
       <div style="flex:1;min-width:0">
-        <div class="jc-title">${j.title}</div>
+        <div class="jc-title">${j.title}${isNew?' <span style="display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:rgba(62,207,160,.15);color:var(--accent3);border:1px solid rgba(62,207,160,.3);vertical-align:middle;letter-spacing:.4px">NEW</span>':''}</div>
         <div class="jc-company">${j.company} · ${j.flag} ${(j.location||'').split(',')[0]}</div>
       </div>
       <button class="save-btn${saved?' saved':''}" data-id="${j.id}" onclick="event.stopPropagation();toggleSave(this.dataset.id,this)">${saved?'♥':'♡'}</button>
