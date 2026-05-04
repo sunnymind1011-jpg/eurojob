@@ -721,6 +721,7 @@ window.addEventListener('scroll',()=>{const h=document.getElementById('lpHint');
     <div class="page" id="page-saved">
   <div class="sec-hd" style="margin-bottom:20px">
     <div><div class="sec-title">🔖 저장목록</div><div class="sec-sub" id="saved-sub">0개 저장됨</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="refreshSaved(this)" style="gap:6px;color:var(--text2)">🔄 새로고침</button>
   </div>
   <div class="job-grid" id="savedGrid">
     <div class="empty" style="grid-column:1/-1">
@@ -1926,6 +1927,26 @@ function filterJobs() {
     : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">조건에 맞는 공고가 없어요</div></div>';
 }
 
+async function refreshSaved(btn) {
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ 동기화 중...'; btn.disabled = true; }
+  try {
+    // Supabase에서 최신 저장 목록 다시 가져오기
+    const { data, error } = await sb.from('saved_jobs')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('saved_at', { ascending: false });
+    if (!error && data) {
+      savedIds = new Set(data.map(r => r.job_id));
+      trackerJobs = data;
+      localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
+      document.getElementById('nb-saved').textContent = savedIds.size;
+    }
+  } catch(e) { console.log('refreshSaved err:', e.message); }
+  renderSaved();
+  if (btn) { btn.textContent = '✅ 완료'; btn.disabled = false; setTimeout(() => { btn.textContent = orig; }, 1500); }
+}
+
 function renderSaved() {
   // allJobs에서 찾고, 없으면 trackerJobs(Supabase)에서 fallback으로 카드 생성
   const savedJobs = [];
@@ -2963,6 +2984,11 @@ async function toggleSave(id, btn) {
   }
   localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
   document.getElementById('nb-saved').textContent = savedIds.size;
+  // 공고 목록 카드 버튼 즉시 동기화
+  document.querySelectorAll(`.save-btn[data-id="${id}"]`).forEach(b => {
+    b.textContent = savedIds.has(id) ? '♥' : '♡';
+    savedIds.has(id) ? b.classList.add('saved') : b.classList.remove('saved');
+  });
   trackerJobs = [];
   renderSaved();
   await loadTracker();
@@ -5239,4 +5265,4 @@ function showPrivacyModal() {
 </script>
 
 </body>
-</html> 
+</html>
