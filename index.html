@@ -3891,9 +3891,10 @@ async function onLogin(user) {
       .select('*')
       .eq('user_id', user.id)
       .order('saved_at', { ascending: false });
-    if (savedData && savedData.length > 0) {
+    if (savedData) {
+      // localStorage 캐시 무시하고 Supabase 데이터로 완전 덮어쓰기
       trackerJobs = savedData;
-      savedData.forEach(r => savedIds.add(r.job_id));
+      savedIds = new Set(savedData.map(r => r.job_id));
       localStorage.setItem('ej_saved', JSON.stringify([...savedIds]));
     }
   } catch(e) { console.log('saved_jobs sync err:', e.message); }
